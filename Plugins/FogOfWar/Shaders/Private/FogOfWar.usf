@@ -1,0 +1,195 @@
+#include "/Engine/Public/Platform.ush"
+#include "/FogOfWar/Public/FogOfWarShaderTypes.ush"
+
+float2 GroundOrigin;
+float2 GroundSize;
+uint2 TextureSize;
+float SmoothStepThreshold;
+float SmoothStepDistanceThreshold;
+
+uint NumVisionStart;
+uint NumVision;
+uint NumRadiusSq;
+uint NumDirection;
+uint NumWorldHeghtBuffer;
+
+Texture2D WorldHeightTexture;
+StructuredBuffer<int2> VisionStartPosBuffer;
+StructuredBuffer<float2> VisionBuffer;
+StructuredBuffer<int> RadiusSqBuffer;
+StructuredBuffer<float2> DirectionBuffer;
+StructuredBuffer<FHeightData> WorldHeightBuffer;
+
+RWTexture2D<float4> OutputTexture;
+
+bool IsGridInVision(int2 GridPos);
+float GetNormalizedDistanceToBoundary(int2 GridPos, float2 StartPos, float2 Direction, float2 EdgeDirection);
+int GetGridHeight(int X, int Y);
+bool CheckLineOfSight(int2 Start, int2 End, int MaxSteps);
+
+[numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
+void MainCS(
+    uint3 DispatchThreadId : SV_DispatchThreadID,
+    uint3 GroupThreadId : SV_GroupThreadID,
+    uint3 GroupId : SV_GroupID
+)
+{
+    int x = DispatchThreadId.x;
+    int y = DispatchThreadId.y;
+
+    if (x >= TextureSize.x || y >= TextureSize.y)
+    {
+        return;
+    }
+    
+    int2 GridPos = int2(x, y);
+    int Index = y * TextureSize.x + x;
+
+
+    if (IsGridInVision(GridPos) && GetGridHeight(x, y) == 0)
+    {
+        OutputTexture[DispatchThreadId.xy] = float4(1, 0, 0, 1);
+        
+        float2 StartPos = VisionStartPosBuffer[0];
+        int2 Start = int2(StartPos.x, StartPos.y);
+        int2 End = int2(x, y);
+
+        if (!CheckLineOfSight(Start, End, 1000))
+        {
+            OutputTexture[DispatchThreadId.xy] = float4(0, 1, 0, 1);
+            return;
+        }
+        
+        //for (uint i = 0; i < NumVisionStart; i++)
+        //{
+        //    float2 StartPos = VisionStartPosBuffer[i];
+        //    //int StartX = (StartPos.x - GroundOrigin.x) / GroundSize.x * TextureSize.x;
+        //    //int StartY = (StartPos.y - GroundOrigin.y) / GroundSize.y * TextureSize.y;
+        //    
+        //    FBresenhamAlgoData Data = CreateBresenhamAlgoData(int2(StartPos.x, StartPos.y), int2(x, y));
+        //    while (Data.CurrentX != Data.EndPos.x || Data.CurrentY != Data.EndPos.y)
+        //    {
+        //        if (GetGridHeight(Data.CurrentX, Data.CurrentY) != 0)
+        //        {
+        //            OutputTexture[DispatchThreadId.xy] = float4(0, 1, 0, 1);
+        //        
+        //            return;
+        //        }
+        //        
+        //        Data = GetNextBresenhamAlgoDataPos(Data);
+        //    }
+        //}
+    }
+    else
+    {
+        OutputTexture[DispatchThreadId.xy] = float4(0, 0, 0, 1);
+    }
+    
+    //for (uint i = 0; i < NumVisionStart; i++)
+    //{
+    //    float2 StartPos = VisionStartPosBuffer[0];
+    //        
+    //    FBresenhamAlgoData Data = CreateBresenhamAlgoData(int2(StartPos.x, StartPos.y), int2(x, y));
+    //    while (Data.Current.x != Data.End.x || Data.Current.y != Data.End.y)
+    //    {
+    //        if (Data.Current.x == Data.Current.y)
+    //        {
+    //            OutputTexture[DispatchThreadId.xy] = float4(0, 1, 0, 1);
+    //            
+    //            return;
+    //        }
+    //            
+    //        Data = GetNextBresenhamAlgoDataPos(Data);
+    //    }
+    //}
+    
+    
+    //OutputTexture[DispatchThreadId.xy] = float4(1, 0, 0, 1);
+}
+
+bool IsGridInVision(int2 GridPos)
+{
+    if (NumVisionStart * 2 != NumVision)
+    {
+        return false;
+    }
+
+    for (uint i = 0; i < NumVisionStart; i++)
+    {
+        float2 StartPos = VisionStartPosBuffer[i];
+        float2 VisionLeft = VisionBuffer[i * 2];
+        float2 VisionRight = VisionBuffer[i * 2 + 1];
+        int RadiusSq = RadiusSqBuffer[i];
+
+        float2 GridDirection = float2(GridPos.x - StartPos.x, GridPos.y - StartPos.y);
+
+        float CrossLeft = VisionLeft.x * GridDirection.y - VisionLeft.y * GridDirection.x;
+        float CrossRight = GridDirection.x * VisionRight.y - GridDirection.y * VisionRight.x;
+        
+        if (CrossLeft > 0 && CrossRight > 0)
+        {
+            return true;
+        }
+        
+        if ((pow(StartPos.x - GridPos.x, 2) + pow(StartPos.y - GridPos.y, 2)) <= RadiusSq)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+float GetNormalizedDistanceToBoundary(int2 GridPos, float2 StartPos, float2 Direction, float2 EdgeDirection)
+{
+    return 1.0;
+}
+
+int GetGridHeight(int X, int Y)
+{
+    //uint Index = Y * TextureSize.x + X;
+    //
+    //for (uint i = Index, Step = 0; Step < NumWorldHeghtBuffer; i++, Step++)
+    //{
+    //    if (i >= NumWorldHeghtBuffer)
+    //    {
+    //        i = 0;
+    //    }
+    //    
+    //    FHeightData Data = WorldHeightBuffer[i];
+    //    if (Data.Key == Index)
+    //    {
+    //        return max(0, Data.Height);
+    //    }
+    //}
+    
+    return WorldHeightTexture[int2(X, Y)].r > 0 ? 1 : 0;
+    
+    //return 0;
+}
+
+bool CheckLineOfSight(int2 Start, int2 End, int MaxSteps)
+{
+    int2 Delta = End - Start;
+    float Steps = max(abs(Delta.x), abs(Delta.y));
+    
+    if (Steps == 0)
+        return true;
+    
+    float2 Step = float2(Delta.x, Delta.y) / Steps;
+    float2 Current = float2(Start.x, Start.y);
+    
+    for (int i = 0; i <= (int) Steps && i < MaxSteps; i++)
+    {
+        int2 Pos = int2(round(Current.x), round(Current.y));
+        
+        if (GetGridHeight(Pos.x, Pos.y) != 0)
+        {
+            return false; // Óöµ½ÕÏ°­
+        }
+        
+        Current += Step;
+    }
+    
+    return true;
+}

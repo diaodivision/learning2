@@ -1,0 +1,111 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Subsystems/LocalPlayerSubsystem.h"
+#include "FogOfWarTypes.h"
+#include "FogOfWarComputeShader.h"
+#include "Engine/EngineBaseTypes.h" // 必须包含此头文件以使用 FTickFunction
+#include "FogOfWarSubsystem.generated.h"
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnVisibilityTextureUpdated, UTexture2D*, Texture);
+DECLARE_MULTICAST_DELEGATE(FOnViewportSizeChangedDelegate);
+
+class APlayerCameraManager;
+class UFogOfWarComponent;
+class USceneComponent;
+
+/**
+ *
+ */
+UCLASS()
+class FOGOFWAR_API UFogOfWarSubsystem : public ULocalPlayerSubsystem, public FTickableGameObject
+{
+	GENERATED_BODY()
+
+public:
+	UFogOfWarSubsystem();
+
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+
+	virtual void Deinitialize() override;
+
+	virtual void Tick(float DeltaTime) override;
+	virtual void Tick_Internal();
+
+	virtual bool IsTickable() const override { return !IsTemplate(); }//不是CDO才Tick
+	virtual TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(UFogOfWarSubsystem, STATGROUP_Tickables); }
+
+	UFUNCTION(BlueprintCallable, Category = "FogOfWar")
+	void OnPostComponentInitialize(UFogOfWarComponent* Component);
+
+	UFUNCTION(BlueprintPure, Category = "Resolution")
+	bool GetScreenSize(int32& ScreenWidth, int32& ScreenHeight) const;
+
+	bool IsCameraFOVChanged();
+
+private:
+	void CreateDynamicTexture();
+	void SetLandLocationAndSizeParameters() const;
+
+	void CreateWorldHeightTexture();
+
+	void GetFogOfWarActorData(TArray<FIntPoint>& ActorPositions, TArray<FVector2f>& ActorVision, TArray<int32>& RadiusSqList) const;
+	void UpdateWorldHeightData();
+	void UpdateWorldHeightDataToTexture(FRHICommandListImmediate& RHICmdList);
+
+	void UploadFogOfWarActorData(const TArray<FIntPoint>& ActorPositions, const TArray<FVector2f>& ActorVision, const TArray<int32>& RadiusSqList, FFogOfWarComputeShader::FParameters& Parameter, FRDGBuilder& GraphBuilder) const;
+	void UploadFogOfWarWorldHeightData(FFogOfWarComputeShader::FParameters& Parameter, FRDGBuilder& GraphBuilder, const TCHAR* DebugName) const;
+
+	void SetComputeShaderOutputTextureCache(FRDGTextureRef& ShaderOutputTexture, FFogOfWarComputeShader::FParameters& Parameter, FRDGBuilder& GraphBuilder, const bool bCreateNewOne);
+
+	bool ProjectWorldToLand(FIntPoint& Position, const FVector2f& WorldLocation, const FVector2f& LandLeftDownLocation, const FVector2f& LandSize) const;
+
+	void SetupScaleFactor();
+
+	void OnViewportResized(FViewport* Viewport, uint32 Unused);
+
+	void SetUpPlayerCameraManager();
+
+	void OnFogOfWarComponentOwnerOrCameraTransformUpdated(USceneComponent* SceneComponent, EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport);
+
+public:
+	FOnViewportSizeChangedDelegate OnViewportSizeChangedDelegate;
+
+	UPROPERTY(BlueprintAssignable, Category = "FogOfWar")
+	FOnVisibilityTextureUpdated OnVisibilityTextureUpdated;
+
+private:
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> FogOfWarMaterial;
+
+	UPROPERTY()
+	TObjectPtr<UTexture2D> DynamicTexture;
+
+	UPROPERTY()
+	TArray<uint8> WorldHeightData;
+	uint32 CachedWorldHeightDataVersion{ 0 };
+
+	UPROPERTY()
+	TObjectPtr<UTexture2D> WorldHeightTexture;
+
+	// 缓存 GPU 纹理（用于 RDG 提取）
+	TRefCountPtr<IPooledRenderTarget> CachedOutputTexture;
+
+	UPROPERTY()
+	TArray<TWeakObjectPtr<UFogOfWarComponent>> FogOfWarComponents;
+	mutable bool bHasInvalidComponents{ false };
+
+	bool bIsInitialScale{ false };
+	constexpr static int16 kScreenBaseWidth{ 256 };
+	constexpr static int16 kScreenBaseHeight{ 256 };
+	float WidthScaleFactor{ 1 };
+	float HeightScaleFactor{ 1 };
+	bool bViewportResized{ false };
+
+	TWeakObjectPtr<APlayerCameraManager> PlayerCameraManager;
+	float LastFOVAngle{ 0.f };
+
+	TMap<TWeakObjectPtr<USceneComponent>, FTransform> LastComponentOwnerOrCameraTransformMap;
+};
