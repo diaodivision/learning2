@@ -7,7 +7,7 @@
 #include "Engine/TimerHandle.h"
 #include "Interface/BulletInterface.h"
 #include "Interface/FreezableInterface.h"
-#include "Base/BulletBase.h"
+#include "BulletBase.h"
 #include "FireArmBulletBase.generated.h"
 
 class UStaticMeshComponent;
@@ -82,9 +82,6 @@ protected:
 	virtual void PostInitializedBulletData_Implementation() override;
 
 protected:
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, meta = (ExposeOnSpawn = "true"), Category = "Damage")
-	TSubclassOf<UGameplayEffect> DamageClass;
-
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, meta = (ExposeOnSpawn = "true"), Category = "Life Time")
 	float LifeTime{ 10.f };
 

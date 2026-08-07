@@ -8,7 +8,7 @@
 #include "NavLinkCustomComponent.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Ability/TargetActor/GrenadeTargetActor.h"
-#include "Bullet/GrenadeBulletBase.h"
+#include "Bullet/Base/GrenadeBulletBase.h"
 
 ADoorBase::ADoorBase()
 {
@@ -54,6 +54,15 @@ FOrientedBox ADoorBase::GetBounds_Implementation() const
 	OrientedBox.ExtentZ = FMath::Abs(LocalBox.GetExtent().Z);
 
 	return OrientedBox;
+}
+
+FBox ADoorBase::GB() const
+{
+	const FOrientedBox Bounds{ IWorldHeightEffectiveActorInterface::Execute_GetBounds(this) };
+	const FVector Min{ Bounds.Center.X - Bounds.ExtentX , Bounds.Center.Y - Bounds.ExtentY , Bounds.Center.Z - Bounds.ExtentZ };
+	const FVector Max{ Bounds.Center.X + Bounds.ExtentX , Bounds.Center.Y + Bounds.ExtentY , Bounds.Center.Z + Bounds.ExtentZ };
+
+	return FBox{ Min, Max };
 }
 
 void ADoorBase::NotifySmartLinkReached(UNavLinkCustomComponent* LinkComp, UObject* PathingAgent, const FVector& DestPoint)

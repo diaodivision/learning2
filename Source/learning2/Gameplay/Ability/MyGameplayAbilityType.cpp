@@ -70,36 +70,52 @@ void FBoundAbilityInfo::Reset()
 	RedoBindCallback.Reset();
 }
 
-UInteractionAbilityOption* UInteractionAbilityOption::CreateInteractionAbilityOption(UGameplayAbility* InAbilityInstance)
+UInteractionAbilityOption* UInteractionAbilityOption::CreateInteractionAbilityOption(UGameplayAbility* InAbilityInstance, const int32 GroupID)
 {
 	if (!InAbilityInstance) { return nullptr; }
 
 	UInteractionAbilityOption* Option{ NewObject<UInteractionAbilityOption>() };
-	Option->AbilityInstance = InAbilityInstance;
-
-	if (InAbilityInstance && InAbilityInstance->Implements<UAbilityIconProviderInterface>())
-	{
-		Option->Icon = IAbilityIconProviderInterface::Execute_GetItemIcon(InAbilityInstance, InAbilityInstance->GetAbilitySystemComponentFromActorInfo());
-	}
+	CreateInteractionAbilityOption(*Option, InAbilityInstance, GroupID);
 
 	return Option;
 }
 
-UInteractionAbilityOption* UInteractionAbilityOption::CreateInteractionAbilityOption(FCombinedAbilityHandle&& Handle, TSoftObjectPtr<UTexture2D> InIcon)
+UInteractionAbilityOption* UInteractionAbilityOption::CreateInteractionAbilityOption(FCombinedAbilityHandle&& Handle, const int32 GroupID, TSoftObjectPtr<UTexture2D> InIcon)
 {
 	if (!Handle.IsValid()) { return nullptr; }
 
 	UInteractionAbilityOption* Option{ NewObject<UInteractionAbilityOption>() };
-	Option->AbilityInstance = Handle.AbilityInstance;
-	Option->GameplayEventData = MoveTemp(Handle.GameplayEventData);
-
-	if (!InIcon.IsNull()) { Option->Icon = InIcon; }
-	else if (Option->AbilityInstance.IsValid() && Option->AbilityInstance->Implements<UAbilityIconProviderInterface>())
-	{
-		Option->Icon = IAbilityIconProviderInterface::Execute_GetItemIcon(Option->AbilityInstance.Get(), Option->AbilityInstance->GetAbilitySystemComponentFromActorInfo());
-	}
+	CreateInteractionAbilityOption(*Option, MoveTemp(Handle), GroupID,InIcon);
 
 	return Option;
+}
+
+void UInteractionAbilityOption::CreateInteractionAbilityOption(UInteractionAbilityOption& Option, UGameplayAbility* InAbilityInstance, const int32 GroupID)
+{
+	if (!InAbilityInstance) { return; }
+
+	Option.AbilityInstance = InAbilityInstance;
+	Option.GroupID = GroupID;
+
+	if (InAbilityInstance && InAbilityInstance->Implements<UAbilityIconProviderInterface>())
+	{
+		Option.Icon = IAbilityIconProviderInterface::Execute_GetItemIcon(InAbilityInstance, InAbilityInstance->GetAbilitySystemComponentFromActorInfo());
+	}
+}
+
+void UInteractionAbilityOption::CreateInteractionAbilityOption(UInteractionAbilityOption& Option, FCombinedAbilityHandle&& Handle, const int32 GroupID, TSoftObjectPtr<UTexture2D> InIcon)
+{
+	if (!Handle.IsValid()) { return; }
+
+	Option.AbilityInstance = Handle.AbilityInstance;
+	Option.GroupID = GroupID;
+	Option.GameplayEventData = MoveTemp(Handle.GameplayEventData);
+
+	if (!InIcon.IsNull()) { Option.Icon = InIcon; }
+	else if (Option.AbilityInstance.IsValid() && Option.AbilityInstance->Implements<UAbilityIconProviderInterface>())
+	{
+		Option.Icon = IAbilityIconProviderInterface::Execute_GetItemIcon(Option.AbilityInstance.Get(), Option.AbilityInstance->GetAbilitySystemComponentFromActorInfo());
+	}
 }
 
 bool UInteractionAbilityOption::Activate()
@@ -115,6 +131,13 @@ bool UInteractionAbilityOption::Activate()
 		return AbilitySystemComponent->HandleGameplayEvent(GameplayEventData->EventTag, GameplayEventData.Get()) > 0;
 	}
 	else { return AbilitySystemComponent->TryActivateAbility(AbilityInstance->GetCurrentAbilitySpecHandle()); }
+}
+
+bool UInteractionAbilityOption::CanDestroy()
+{
+	if (!RecordedDataObjectHandle.IsSet() || !InputRecordComponent.IsValid()) { return true; }
+
+	return InputRecordComponent->IsRecordDataObjectExist(RecordedDataObjectHandle.GetValue()) == false;
 }
 
 void UInteractionAbilityOption::Destroy()

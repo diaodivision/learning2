@@ -27,15 +27,14 @@ public:
 protected:
 	virtual AActor* SpawnBullet_Implementation() const override;
 
+	virtual void InstantiateAbilityOnBeginPlay() override;
+
 protected:
 	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Bullet Class")
 	//TSubclassOf<ABulletBase> BulletClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Damage Class")
-	TSubclassOf<UGameplayEffect> DamageClass;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
-	TSubclassOf<UGameplayAbility> ReloadAbilityClass;
+	FWeaponAbilityInfo ReloadAbilityClass;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Ability")
 	FGameplayAbilitySpecHandle ReloadAbilityHandle;

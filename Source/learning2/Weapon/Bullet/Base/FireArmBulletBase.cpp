@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Base/BulletBase.h"
+#include "FireArmBulletBase.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -33,7 +33,7 @@ void AFireArmBulletBase::InitializeBulletData_Implementation(const UObject* InDa
 	const UBulletBaseInitData* Data = Cast<UBulletBaseInitData>(InData);
 	if (!ensure(Data)) { return; }
 
-	DamageClass = Data->DamageClass;
+	EffectClass = Data->EffectClass;
 	//LifeTime = Data->LifeTime;
 
 	Speed = Data->Speed;

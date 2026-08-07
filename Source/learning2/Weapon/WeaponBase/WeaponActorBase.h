@@ -16,6 +16,7 @@ class UGameplayAbility;
 class USkeletalMeshComponent;
 class UAbilitySystemComponent;
 class ABulletBase;
+class UGameplayEffect;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnMagazineAmmoChangedDelegate, const AWeaponActorBase*, Weapon, int32, OldMagazineAmmo, int32, NewMagazineAmmo);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnReserveAmmoChangedDelegate, const AWeaponActorBase*, Weapon, int32, OldReserveAmmo, int32, NewReserveAmmo);
@@ -155,6 +156,7 @@ public:
 	inline EWeaponSlot GetWeaponSlot() const { return WeaponSlot; }
 
 	virtual FORCEINLINE TSubclassOf<ABulletBase> GetWeaponBulletClass() const { return BulletClass; }
+	virtual FORCEINLINE TSubclassOf<UGameplayEffect> GetWeaponEffectClass() const { return EffectClass; }
 
 	UFUNCTION(BlueprintNativeEvent)
 	void OnShoot();
@@ -200,6 +202,8 @@ protected:
 
 	virtual void OnAbilityEnded(const FAbilityEndedData& AbilityEndedData);
 
+	virtual void InstantiateAbilityOnBeginPlay();
+
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Attribute")
 	FOnMagazineAmmoChangedDelegate OnMagazineAmmoChangedDelegate;
@@ -224,16 +228,16 @@ protected:
 	TWeakObjectPtr<UAbilitySystemComponent> AvatarAbilitySystemComponent;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
-	TSubclassOf<UGameplayAbility> FireAbilityClass;
+	FWeaponAbilityInfo FireAbilityClass;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Ability")
 	FGameplayAbilitySpecHandle FireAbilityHandle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
-	TSet<TSubclassOf<UGameplayAbility>> WeaponAbilities;
+	TSet<FWeaponAbilityInfo> WeaponAbilities;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Ability")
-	TArray<FGameplayAbilitySpecHandle> WeaponAbilityHandles;
+	TMap<FGameplayAbilitySpecHandle, FWeaponAbilityInfo> WeaponAbilityHandles;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
 	USkeletalMeshComponent* WeaponMesh;
@@ -256,6 +260,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Bullet Class")
 	TSubclassOf<ABulletBase> BulletClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ExposeOnSpawn = "true"), Category = "Effect")
+	TSubclassOf<UGameplayEffect> EffectClass;
 
 private:
 	//// 1. 定义材质实例的软引用（允许在编辑器中指定任何 MIC）

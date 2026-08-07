@@ -32,6 +32,9 @@ public:
 
 	virtual FOrientedBox GetBounds_Implementation() const override;
 
+	UFUNCTION(BlueprintPure)
+	FBox GB() const;
+
 	virtual void NotifySmartLinkReached(UNavLinkCustomComponent* LinkComp, UObject* PathingAgent, const FVector& DestPoint);
 
 	UFUNCTION(BlueprintImplementableEvent)
@@ -55,6 +58,11 @@ public:
 	void ShowPredictionLineStatic(const FPredictionLineParams& Params, const FVector& TargetLocation);
 	virtual void HidePredictionLine() override;
 	virtual bool IsPredictionLineVisible() const override;
+
+	virtual void NotifyOptionActivate()
+	{
+		//todo
+	}
 
 protected:
 	UFUNCTION(BlueprintCallable)

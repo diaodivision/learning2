@@ -88,9 +88,6 @@ protected:
 	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Bullet Class")
 	//TSubclassOf<ABulletBase> BulletClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effect Class")
-	TSubclassOf<UGameplayEffect> EffectClass;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USplineComponent> SplineComponent;
 

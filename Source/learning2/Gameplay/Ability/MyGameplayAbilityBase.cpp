@@ -128,6 +128,7 @@ void UMyGameplayAbilityBase::Unbind()
 	if (IsBound())
 	{
 		BoundAbilityInfo.Ability->Unbind();
+		BoundAbilityInfo.Reset();
 		CombinableAbilityData.Reset();
 	}
 }
@@ -195,7 +196,7 @@ void UMyGameplayAbilityBase::PostRecord(const FRecordedDataObjectHandle& Handle)
 
 	//Unbind();
 	if (CombinableAbilityData.PostRecordCallback.IsSet()) { CombinableAbilityData.PostRecordCallback.GetValue().ExecuteIfBound(Handle); }
-	CombinableAbilityData.Reset();
+	//CombinableAbilityData.Reset();
 }
 
 bool UMyGameplayAbilityBase::TryHandleRecordedData(TSharedPtr<IRecordedDataObjectInterface, ESPMode::NotThreadSafe> InRecordedData)
@@ -318,19 +319,20 @@ void UMyGameplayAbilityBase::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
 	}
 
+
+	//if (!ensureAlwaysMsgf(CombinableAbilityData.IsNull(), TEXT("Memory does not reset!")))
+	//{
+	//	UE_LOG(LogTemp, Error, TEXT("Memory does not reset %s"), *GetNameSafe(this));
+	//	CombinableAbilityData.Reset();
+	//}
+	if (TriggerEventData)
 	{
-		if (!ensureAlwaysMsgf(CombinableAbilityData.IsNull(), TEXT("Memory does not reset!")))
-		{
-			UE_LOG(LogTemp, Error, TEXT("Memory does not reset %s"), *GetNameSafe(this));
-			CombinableAbilityData.Reset();
-		}
-		if (TriggerEventData)
-		{
-			CombinableAbilityData.EventDataToBoundAbility = MakeUnique<FGameplayEventWeakData>(FGameplayEventWeakData{ *TriggerEventData });
-		}
+		CombinableAbilityData.EventDataToBoundAbility = MakeUnique<FGameplayEventWeakData>(FGameplayEventWeakData{ *TriggerEventData });
 	}
+
 
 	if (!IRecordableInterface::Execute_ShouldRecord(this))
 	{
@@ -347,6 +349,7 @@ void UMyGameplayAbilityBase::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 		{
 			Record();
 			EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+			return;
 		}
 	}
 
@@ -357,7 +360,7 @@ void UMyGameplayAbilityBase::EndAbility(const FGameplayAbilitySpecHandle Handle,
 {
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 
-	CombinableAbilityData.Reset();
+	//CombinableAbilityData.Reset();
 
 	//ReleaseRecordedData();
 }

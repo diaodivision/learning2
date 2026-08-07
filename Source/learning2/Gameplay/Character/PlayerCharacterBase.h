@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Base/MyCharacterBase.h"
+#include "Targeting/TargetingInstigatorInterface.h"
+#include "Targeting/TargetingInstigatorTypes.h"
 #include "PlayerCharacterBase.generated.h"
 
 class USpringArmComponent;
@@ -11,16 +13,8 @@ struct FOnAttributeChangeData;
 struct IRecordedDataObjectInterface;
 class URecordedLocationVisualizationComponent;
 
-UENUM(BlueprintType)
-enum class ETargetingState : uint8
-{
-	Targeting,
-	Confirm,
-	Cancel
-};
-
 UCLASS(Blueprintable, Blueprinttype)
-class LEARNING2_API APlayerCharacterBase : public AMyCharacterBase
+class LEARNING2_API APlayerCharacterBase : public AMyCharacterBase/*, public ITargetingInstigatorInterface*/
 {
 	GENERATED_BODY()
 
@@ -35,6 +29,8 @@ public:
 
 	virtual void SetTargetingState(ETargetingState TargetingState);
 
+	//virtual FORCEINLINE FOnTargetingStateChangedDelegate& GetOnTargetingStateChangedDelegate() override { return OnTargetingStateChangedDelegate; }
+
 protected:
 	virtual void InitializeDelegates() override;
 	virtual void DeinitializeDelegates() override;
@@ -48,6 +44,8 @@ private:
 
 public:
 	FOnOperationPreviewDelegate OnOperationPreviewDelegate;
+
+	//FOnTargetingStateChangedDelegate OnTargetingStateChangedDelegate;
 
 protected:
 	//UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Components")

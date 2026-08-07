@@ -3,7 +3,7 @@
 
 #include "WeaponActorBlueprintLibrary.h"
 #include "GameplayEffectTypes.h"
-#include "Bullet/FireArmBulletBase.h"
+#include "Bullet/Base/FireArmBulletBase.h"
 #include "WeaponBase/WeaponActorBase.h"
 #include "Abilities/GameplayAbility.h"
 #include "AbilitySystemComponent.h"
@@ -19,7 +19,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "EngineUtils.h"
 #include "Interface/BulletInterface.h"
-#include "Bullet/GrenadeBulletBase.h"
+#include "Bullet/Base/GrenadeBulletBase.h"
 
 FGameplayEffectSpecHandle UWeaponActorBlueprintLibrary::SetSetByCaller(const UGameplayAbility* Target, const TSubclassOf<UGameplayEffect> GameplayEffectClass, const FGameplayTag DataTag, const float Magtitude)
 {

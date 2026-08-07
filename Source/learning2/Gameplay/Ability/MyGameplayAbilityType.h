@@ -8,12 +8,14 @@
 #include "GameplayTagContainer.h"
 #include "Delegates/DelegateCombinations.h"
 #include "Interactable/InteractionOption.h"
+#include "InputRecordComponent.h"
 #include "MyGameplayAbilityType.generated.h"
 
 class UMyGameplayAbilityBase;
 class UAbilitySystemComponent;
 class AActor;
 class UTexture2D;
+class UInputRecordComponent;
 
 using FPostRecordCallbackType = TDelegate<void(FRecordedDataObjectHandle Handle), FNotThreadSafeNotCheckedDelegateUserPolicy>;
 
@@ -140,20 +142,17 @@ struct FBoundAbilityInfo
 
 struct FCombinableAbilityData
 {
-	FORCEINLINE bool IsValid() const { return EventDataToBoundAbility && AbilityTriggerTag.IsSet() && PostRecordCallback.IsSet(); }
+	FORCEINLINE bool IsValid() const { return EventDataToBoundAbility && PostRecordCallback.IsSet(); }
 
-	FORCEINLINE bool IsNull() const { return  !EventDataToBoundAbility && !AbilityTriggerTag.IsSet() && !PostRecordCallback.IsSet(); }
+	FORCEINLINE bool IsNull() const { return  !EventDataToBoundAbility && !PostRecordCallback.IsSet(); }
 
 	FORCEINLINE void Reset()
 	{
 		EventDataToBoundAbility.Reset();
-		AbilityTriggerTag.Reset();
 		PostRecordCallback.Reset();
 	}
 
 	TUniquePtr<FGameplayEventWeakData> EventDataToBoundAbility;
-
-	TOptional<FGameplayTag> AbilityTriggerTag;
 
 	TOptional<FPostRecordCallbackType> PostRecordCallback;
 };
@@ -167,14 +166,18 @@ public:
 	//void InitializeObject(UGameplayAbility* InAbilityInstance);
 	//void InitializeObject(FCombinedAbilityHandle&& Handle, TSoftObjectPtr<UTexture2D> InIcon);
 
-	static UInteractionAbilityOption* CreateInteractionAbilityOption(UGameplayAbility* InAbilityInstance);
-	static UInteractionAbilityOption* CreateInteractionAbilityOption(FCombinedAbilityHandle&& Handle, TSoftObjectPtr<UTexture2D> InIcon = nullptr);
+	static UInteractionAbilityOption* CreateInteractionAbilityOption(UGameplayAbility* InAbilityInstance, const int32 GroupID);
+	static UInteractionAbilityOption* CreateInteractionAbilityOption(FCombinedAbilityHandle&& Handle, const int32 GroupID, TSoftObjectPtr<UTexture2D> InIcon = nullptr);
+	static void CreateInteractionAbilityOption(UInteractionAbilityOption& Option, UGameplayAbility* InAbilityInstance, const int32 GroupID);
+	static void CreateInteractionAbilityOption(UInteractionAbilityOption& Option, FCombinedAbilityHandle&& Handle, const int32 GroupID, TSoftObjectPtr<UTexture2D> InIcon = nullptr);
 
 	virtual bool Activate() override;
 
 	virtual FORCEINLINE TSoftObjectPtr<UTexture2D> GetIcon() const override { return Icon; }
 
 	virtual FORCEINLINE bool IsValid() const override { return Super::IsValid() && AbilityInstance.IsValid(); }
+
+	virtual bool CanDestroy() override;
 
 	virtual void Destroy() override;
 
@@ -185,6 +188,14 @@ public:
 		Destroy();
 	}
 
+	FORCEINLINE void SetRecordedDataObjectHandle(const UInputRecordComponent* InInputRecordComponent, const FRecordedDataObjectHandle& InHandle)
+	{
+		InputRecordComponent = InInputRecordComponent;
+		RecordedDataObjectHandle = InHandle;
+	}
+	FORCEINLINE const FRecordedDataObjectHandle* GetRecordedDataObjectHandle() const { return RecordedDataObjectHandle.GetPtrOrNull(); }
+	FORCEINLINE const UInputRecordComponent* GetInputRecordComponent() const { return InputRecordComponent.Get(); }
+
 private:
 	/** 在互动对象上激活能力 */
 	//UPROPERTY(BlueprintReadWrite)
@@ -194,6 +205,9 @@ private:
 	TWeakObjectPtr<UGameplayAbility> AbilityInstance{ nullptr };
 
 	TUniquePtr<FGameplayEventData> GameplayEventData{ nullptr };
+
+	TWeakObjectPtr<const UInputRecordComponent> InputRecordComponent;
+	TOptional<FRecordedDataObjectHandle> RecordedDataObjectHandle;
 
 	UPROPERTY()
 	TSoftObjectPtr<UTexture2D> Icon;

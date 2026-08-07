@@ -8,7 +8,7 @@
 #include "BulletBaseTypes.h"
 #include "Interface/BulletInterface.h"
 #include "Interface/FreezableInterface.h"
-#include "Base/BulletBase.h"
+#include "BulletBase.h"
 #include "GrenadeBulletBase.generated.h"
 
 class UStaticMeshComponent;
@@ -112,9 +112,6 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UFreezableNiagaraComponent> NiagaraComponent;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ExposeOnSpawn = "true"), Category = "Damage")
-	TSubclassOf<UGameplayEffect> EffectClass;
 
 	UPROPERTY(BlueprintReadOnly, meta = (ExposeOnSpawn = "true"), Category = "Components", meta = (AllowPrivateAccess = true))
 	FGrenadeBulletAttributeData GrenadeBulletData;

@@ -33,7 +33,7 @@ void AWeaponActorBase::OnControl_Implementation(UObject* InOwner)
 	if (!Character) { return; }
 	SetOwner(Character);
 	//AvatarAbilitySystemComponent = Cast<UAbilitySystemComponent>(Character->FindComponentByClass(UAbilitySystemComponent::StaticClass()));
-	AvatarAbilitySystemComponent = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Character);
+	//AvatarAbilitySystemComponent = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Character);
 
 	USkeletalMeshComponent* CharacterMesh = Character->GetMesh();
 	WeaponMesh->AttachToComponent(CharacterMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponSocket);
@@ -41,11 +41,17 @@ void AWeaponActorBase::OnControl_Implementation(UObject* InOwner)
 	if (!AvatarAbilitySystemComponent.IsValid()) { return; }
 
 	{
-		FireAbilityHandle = AvatarAbilitySystemComponent->K2_GiveAbility(FireAbilityClass, GetWeaponLevel());
-
-		for (const TSubclassOf<UGameplayAbility>& Ability : WeaponAbilities)
+		if (FireAbilityClass.InstancingPolicy == EWeaponAbilityInstancingPolicy::InstancedOnPossession)
 		{
-			WeaponAbilityHandles.Add(AvatarAbilitySystemComponent->K2_GiveAbility(Ability, GetWeaponLevel()));
+			FireAbilityHandle = AvatarAbilitySystemComponent->K2_GiveAbility(FireAbilityClass.AbilityClass, GetWeaponLevel());
+		}
+
+		for (const FWeaponAbilityInfo& AbilityInfo : WeaponAbilities)
+		{
+			if (AbilityInfo.InstancingPolicy == EWeaponAbilityInstancingPolicy::InstancedOnPossession)
+			{
+				WeaponAbilityHandles.Add(AvatarAbilitySystemComponent->K2_GiveAbility(AbilityInfo.AbilityClass, GetWeaponLevel()), AbilityInfo);
+			}
 		}
 	}
 
@@ -74,18 +80,20 @@ void AWeaponActorBase::OnControlReleased_Implementation()
 	{
 		if (!AvatarAbilitySystemComponent.IsValid()) { return; }
 
-		if (FireAbilityHandle.IsValid())
+		if (FireAbilityHandle.IsValid() && FireAbilityClass.InstancingPolicy == EWeaponAbilityInstancingPolicy::InstancedOnPossession)
 		{
 			AvatarAbilitySystemComponent->ClearAbility(FireAbilityHandle);
 		}
 		FireAbilityHandle = FGameplayAbilitySpecHandle{};
 
-		for (FGameplayAbilitySpecHandle& Handle : WeaponAbilityHandles)
+		for (auto It{ WeaponAbilityHandles.CreateIterator() }; It; ++It)
 		{
-			if (Handle.IsValid())
+			const FGameplayAbilitySpecHandle& Handle{ It->Key };
+			const FWeaponAbilityInfo& AbilityInfo{ It->Value };
+			if (!Handle.IsValid() || AbilityInfo.InstancingPolicy == EWeaponAbilityInstancingPolicy::InstancedOnPossession)
 			{
 				AvatarAbilitySystemComponent->ClearAbility(Handle);
-				Handle = FGameplayAbilitySpecHandle{};
+				It.RemoveCurrent();
 			}
 		}
 
@@ -176,7 +184,7 @@ void AWeaponActorBase::OnShootStop_Implementation()
 
 FGameplayTag AWeaponActorBase::GetOnShootTag() const
 {
-	const UWeaponFireAbilityBase* WeaponFireAbilityCDO = Cast<UWeaponFireAbilityBase>(FireAbilityClass.GetDefaultObject());
+	const UWeaponFireAbilityBase* WeaponFireAbilityCDO = Cast<UWeaponFireAbilityBase>(FireAbilityClass.AbilityClass.GetDefaultObject());
 	if (WeaponFireAbilityCDO)
 	{
 		return WeaponFireAbilityCDO->GetOnShootTag();
@@ -187,7 +195,7 @@ FGameplayTag AWeaponActorBase::GetOnShootTag() const
 
 FGameplayTag AWeaponActorBase::GetShootCountTag() const
 {
-	const UWeaponFireAbilityBase* WeaponFireAbilityCDO = Cast<UWeaponFireAbilityBase>(FireAbilityClass.GetDefaultObject());
+	const UWeaponFireAbilityBase* WeaponFireAbilityCDO = Cast<UWeaponFireAbilityBase>(FireAbilityClass.AbilityClass.GetDefaultObject());
 	if (WeaponFireAbilityCDO)
 	{
 		return WeaponFireAbilityCDO->GetShotCountTag();
@@ -215,10 +223,14 @@ void AWeaponActorBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	AvatarAbilitySystemComponent = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetOwner());
+
 	check(WeaponAttributeDataTable.IsValid());
 	InitilizeWeaponAttribute();
 
 	checkf(FireAbilityClass, TEXT("Need to specify FireAbilityClass"));
+
+	InstantiateAbilityOnBeginPlay();
 }
 
 void AWeaponActorBase::InitializeDelegates()
@@ -261,6 +273,24 @@ void AWeaponActorBase::OnAbilityEnded(const FAbilityEndedData& AbilityEndedData)
 
 	OnWeaponAbilityEndedDelegate.Broadcast(AbilityEndedData.AbilitySpecHandle);
 	K2_OnAbilityEnded(AbilityEndedData);
+}
+
+void AWeaponActorBase::InstantiateAbilityOnBeginPlay()
+{
+	if (FireAbilityClass.InstancingPolicy == EWeaponAbilityInstancingPolicy::InstancedOnAddition)
+	{
+		FireAbilityHandle = AvatarAbilitySystemComponent->K2_GiveAbility(FireAbilityClass.AbilityClass, GetWeaponLevel());
+	}
+
+	UE_LOG(LogTemp, Error, TEXT("this: %s"), *GetNameSafe(this));
+
+	for (const FWeaponAbilityInfo& AbilityInfo : WeaponAbilities)
+	{
+		if (AbilityInfo.InstancingPolicy == EWeaponAbilityInstancingPolicy::InstancedOnAddition)
+		{
+			WeaponAbilityHandles.Add(AvatarAbilitySystemComponent->K2_GiveAbility(AbilityInfo.AbilityClass, GetWeaponLevel()), AbilityInfo);
+		}
+	}
 }
 
 //void AWeaponActorBase::UpdateAbilityLevelBySpecHandle(FGameplayAbilitySpecHandle Handle, int32 Level) const

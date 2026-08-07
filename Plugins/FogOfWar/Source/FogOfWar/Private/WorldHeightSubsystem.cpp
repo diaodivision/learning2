@@ -245,7 +245,7 @@ bool UWorldHeightSubsystem::CanAddActor(const AActor& Actor)
 #if WITH_EDITOR
 void UWorldHeightSubsystem::DrawVisualization() const
 {
-	if (true) { return; }
+	//if (true) { return; }
 
 	UWorld* World = GetWorld();
 	FlushPersistentDebugLines(World);
@@ -284,13 +284,28 @@ void UWorldHeightSubsystem::DrawVisualization() const
 
 		ValidData++;
 
-		FVector Origin, BoxExtent;
-		Actor->GetActorBounds(false, Origin, BoxExtent);
+		//FVector Origin, BoxExtent;
+		//Actor->GetActorBounds(false, Origin, BoxExtent);
+		FOrientedBox Box{ IWorldHeightEffectiveActorInterface::Execute_GetBounds(Actor) };
 
-		const double DistanceToLand{ Origin.Z - GridBounds.LandBounds.Box.Max.Z };
-		Origin.Z -= DistanceToLand > 0 ? DistanceToLand : DistanceToLand - (GridBounds.LandBounds.Box.GetExtent().Z * 2);
+		const double DistanceToLand{ Box.Center.Z - GridBounds.LandBounds.Box.Max.Z };
+		Box.Center.Z -= DistanceToLand > 0 ? DistanceToLand : DistanceToLand - (GridBounds.LandBounds.Box.GetExtent().Z * 2);
 
-		DrawDebugSolidBox(World, Origin, BoxExtent, FColor::Green, true);
+		// 1. 提取归一化后的三个局部轴向
+		FVector AxisX = Box.AxisX.GetSafeNormal();
+		FVector AxisY = Box.AxisY.GetSafeNormal();
+		FVector AxisZ = Box.AxisZ.GetSafeNormal();
+
+		// 2. 构造旋转矩阵与四元数
+		FMatrix RotationMatrix;
+		RotationMatrix.SetAxes(&AxisX, &AxisY, &AxisZ);
+		FQuat BoxQuat = RotationMatrix.ToQuat();
+
+		// 3. 直接使用 FOrientedBox 自带的局部空间 Extent（半长）
+		FVector LocalExtent{ (float)Box.ExtentX, (float)Box.ExtentY, (float)Box.ExtentZ };
+
+		// 4. 绘制 Debug Box
+		DrawDebugSolidBox(World, Box.Center, LocalExtent, BoxQuat, FColor::Green, true);
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("Valid Data: %d"), ValidData);

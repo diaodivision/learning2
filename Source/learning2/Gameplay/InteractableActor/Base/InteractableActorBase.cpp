@@ -3,7 +3,6 @@
 
 #include "InteractableActorBase.h"
 #include "Components/StaticMeshComponent.h"
-#include "Abilities/GameplayAbility.h"
 #include "Ability/MyGameplayAbilityBase.h"
 #include "AbilitySystemGlobals.h"
 //#include "AbilitySystemComponent.h"
@@ -36,15 +35,16 @@ AInteractableActorBase::AInteractableActorBase()
 
 void AInteractableActorBase::GatherInteractionOptions_Implementation(const FInteractionQuery& InteractionQuery)
 {
-	OptionsBuilder.Empty();
+	OptionsBuilder.ClearAllInvalidOption();
 
 	if (!InteractionQuery.IsValid()) { return; }
 
 	UAbilitySystemComponent* OtherASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(InteractionQuery.RequestingAvatar.Get());
 	if (!OtherASC) { return; }
 
-	for (const FGameplayAbilitySpec& Spec : AbilitySystemComponent->GetActivatableAbilities())
+	for (int32 Index{ 0 }; Index < AbilitySystemComponent->GetActivatableAbilities().Num(); Index++)
 	{
+		const FGameplayAbilitySpec& Spec{ AbilitySystemComponent->GetActivatableAbilities()[Index] };
 		UGameplayAbility* Instance{ Spec.GetPrimaryInstance() };
 		if (!Instance) { continue; }
 
@@ -67,9 +67,13 @@ void AInteractableActorBase::GatherInteractionOptions_Implementation(const FInte
 		}
 		else
 		{
-			OptionsBuilder.AddInteractionOption(UInteractionAbilityOption::CreateInteractionAbilityOption(Instance));
+			UInteractionOptionBase* Option{ UInteractionAbilityOption::CreateInteractionAbilityOption(Instance, GetOptionGroupIDByAbilityInstance(Instance)) };
+			OptionsBuilder.AddInteractionOption(Option);
+			OptionToAbilityIndexMap.Add(Option, Index);
 		}
 	}
+
+	OnInteractionOptionsUpdated();
 
 	UE_LOG(LogTemp, Warning, TEXT("OptionsBuilder.Options.Num(): %d"), OptionsBuilder.Options.Num());
 	int i = 0;
@@ -91,10 +95,9 @@ void AInteractableActorBase::ShowOptions_Implementation(const FInteractionQuery&
 
 	RequestingAvatar = InteractionQuery.RequestingAvatar;
 
-	IInteractableTargetInterface::Execute_GatherInteractionOptions(this, InteractionQuery);
-
 	WidgetComponent->SetVisibility(true);
-	WidgetComponent->UpdateInteractionOptions(OptionsBuilder.GetOptions());
+
+	IInteractableTargetInterface::Execute_GatherInteractionOptions(this, InteractionQuery);
 
 	{
 		AbilitySystemComponent->OnGiveGameplayAbilityDelegate.AddDynamic(this, &AInteractableActorBase::OnGiveAbility);
@@ -107,9 +110,6 @@ void AInteractableActorBase::ShowOptions_Implementation(const FInteractionQuery&
 			OtherAbilitySystemComponent->OnRemoveGameplayAbilityDelegate.AddDynamic(this, &AInteractableActorBase::OnRemoveAbility);
 		}
 	}
-
-	// todo
-	//OptionsBuilder.Options.Sort();
 }
 
 void AInteractableActorBase::HideOptions_Implementation()
@@ -117,8 +117,6 @@ void AInteractableActorBase::HideOptions_Implementation()
 	{
 		AbilitySystemComponent->OnGiveGameplayAbilityDelegate.RemoveAll(this);
 		AbilitySystemComponent->OnRemoveGameplayAbilityDelegate.RemoveAll(this);
-
-		WidgetComponent->UpdateInteractionOptions({});
 
 		if (CachedInteractionQuery.IsSet())
 		{
@@ -131,12 +129,16 @@ void AInteractableActorBase::HideOptions_Implementation()
 		}
 	}
 
-	//OptionsBuilder.Empty();
+	OptionsBuilder.ClearAllInactiveOption();
+	OnInteractionOptionsUpdated();
 
 	RequestingAvatar.Reset();
 	CachedInteractionQuery.Reset();
 
-	WidgetComponent->SetVisibility(false);
+	if (OptionsBuilder.IsEmpty())
+	{
+		WidgetComponent->SetVisibility(false);
+	}
 }
 
 bool AInteractableActorBase::IsShow_Implementation() const
@@ -205,13 +207,13 @@ void AInteractableActorBase::PostUnregisterAllComponents()
 
 void AInteractableActorBase::InitAbilities()
 {
-	for (TSubclassOf<UGameplayAbility> AbilityClass : OptionClasses)
+	for (const FOptionInfo& AbilityInfo : OptionClasses)
 	{
-		if (AbilityClass)
+		if (AbilityInfo.IsValid())
 		{
-			FGameplayAbilitySpecHandle Handle = AbilitySystemComponent->K2_GiveAbility(AbilityClass);
+			FGameplayAbilitySpecHandle Handle = AbilitySystemComponent->K2_GiveAbility(AbilityInfo.AbilityClass);
 
-			if (AbilityClass.GetDefaultObject() && AbilityClass.GetDefaultObject()->IsA<UMyGameplayAbilityBase>())
+			if (AbilityInfo.AbilityClass.GetDefaultObject()->IsA<UMyGameplayAbilityBase>())
 			{
 				FGameplayAbilitySpec* Spec{ AbilitySystemComponent->FindAbilitySpecFromHandle(Handle) };
 				if (UMyGameplayAbilityBase * AbilityInstance{ Spec ? Cast<UMyGameplayAbilityBase>(Spec->GetPrimaryInstance()) : nullptr })
@@ -226,6 +228,7 @@ void AInteractableActorBase::InitAbilities()
 void AInteractableActorBase::OnGiveAbility_Implementation(const FGameplayAbilitySpec& AbilitySpec, const UMyAbilitySystemComponent* InAbilitySystemComponent)
 {
 	if (!CachedInteractionQuery.IsSet() || !CachedInteractionQuery.GetValue().IsValid()) { return; }
+	const int32 OptionIndex{ OptionClasses.AddUnique({ AbilitySpec.Ability->StaticClass() }) };
 
 	UGameplayAbility* Instance = AbilitySpec.GetPrimaryInstance();
 	UMyGameplayAbilityBase* GA = Cast<UMyGameplayAbilityBase>(Instance);
@@ -233,7 +236,11 @@ void AInteractableActorBase::OnGiveAbility_Implementation(const FGameplayAbility
 	{
 		if (InAbilitySystemComponent == AbilitySystemComponent)
 		{
-			OptionsBuilder.AddInteractionOption(UInteractionAbilityOption::CreateInteractionAbilityOption(Instance));
+			UInteractionOptionBase* Option{ UInteractionAbilityOption::CreateInteractionAbilityOption(Instance, GetOptionGroupIDByAbilityInstance(Instance)) };
+			OptionsBuilder.AddInteractionOption(Option);
+			OptionToAbilityIndexMap.Add(Option, OptionIndex);
+
+			OnInteractionOptionsUpdated();
 		}
 		return;
 	}
@@ -266,9 +273,12 @@ void AInteractableActorBase::OnRemoveAbility_Implementation(const FGameplayAbili
 	UGameplayAbility* Instance = AbilitySpec.GetPrimaryInstance();
 	if (const TWeakObjectPtr<UInteractionOptionBase>*Option{ AbilityToOptionMap.Find(Instance) })
 	{
+		OptionToAbilityIndexMap.Remove(Option->Get());
 		OptionsBuilder.RemoveInteractionOption(Option->Get());
+		OnInteractionOptionsUpdated();
 	}
 
+	AbilityToOptionMap.Remove(Instance);
 
 	if (UMyGameplayAbilityBase * GA{ Cast<UMyGameplayAbilityBase>(Instance) })
 	{
@@ -276,6 +286,7 @@ void AInteractableActorBase::OnRemoveAbility_Implementation(const FGameplayAbili
 
 		if (InAbilitySystemComponent == AbilitySystemComponent) { GA->OnAbilityStateChangedDelegate.RemoveAll(this); }
 	}
+
 }
 
 void AInteractableActorBase::InitWidget()
@@ -301,7 +312,7 @@ void AInteractableActorBase::BindAbility(UMyGameplayAbilityBase& GA1, UAbilitySy
 	FBindAbilityParameter Param1{ GA1 };
 	FBindAbilityParameter Param2{ GA2 };
 
-	FRecordedDataObjectHandle RecordedDataObjectHandle;
+	UInteractionAbilityOption* Option{ NewObject<UInteractionAbilityOption>() };
 
 	FCombinedAbilityHandle Handle = UMyGameplayAbilityBase::BindWith(Param1, Param2,
 		[WeakThis = MakeWeakObjectPtr<AInteractableActorBase>(this), InteractionQuery]()
@@ -310,8 +321,13 @@ void AInteractableActorBase::BindAbility(UMyGameplayAbilityBase& GA1, UAbilitySy
 
 			IInteractableTargetInterface::Execute_GatherInteractionOptions(WeakThis.Get(), InteractionQuery);
 		},
-		FPostRecordCallbackType::CreateWeakLambda(this, [&RecordedDataObjectHandle](FRecordedDataObjectHandle InRecordedDataObjectHandle) {
-			RecordedDataObjectHandle = InRecordedDataObjectHandle;
+		FPostRecordCallbackType::CreateWeakLambda(this,
+			[WeakThis = MakeWeakObjectPtr(this), WeakOption = MakeWeakObjectPtr(Option), InteractionQuery](FRecordedDataObjectHandle InRecordedDataObjectHandle) {
+				if (!InRecordedDataObjectHandle.IsValid() || !WeakOption.IsValid()) { return; }
+
+				UInputRecordComponent* InputRecordComponent{ InteractionQuery.RequestingAvatar.IsValid() ? InteractionQuery.RequestingAvatar->FindComponentByClass<UInputRecordComponent>() : nullptr };
+				WeakOption->SetRecordedDataObjectHandle(InputRecordComponent, InRecordedDataObjectHandle);
+				WeakThis->PostAbilityOptionRecorded(WeakOption.Get(), InRecordedDataObjectHandle);
 			})
 	);
 
@@ -320,16 +336,27 @@ void AInteractableActorBase::BindAbility(UMyGameplayAbilityBase& GA1, UAbilitySy
 		Handle.GameplayEventData->Instigator = InteractionQuery.RequestingAvatar.Get();
 		const TSoftObjectPtr<UTexture2D> Icon{ IAbilityIconProviderInterface::Execute_GetItemIcon(&GA1, &ASC1) };
 
-		UInteractionAbilityOption* Option{ UInteractionAbilityOption::CreateInteractionAbilityOption(MoveTemp(Handle), Icon) };
+		UInteractionAbilityOption::CreateInteractionAbilityOption(*Option, MoveTemp(Handle), GetOptionGroupIDByAbilityInstance(Handle.AbilityInstance.Get()), Icon);
 		OptionsBuilder.AddInteractionOption(Option);
+		OptionToAbilityIndexMap.Add(Option, OptionClasses.IndexOfByPredicate([&Handle](const FOptionInfo& Option)
+			{ return Option.AbilityClass == Handle.AbilityInstance->StaticClass(); }));
 
-		if (RecordedDataObjectHandle.IsValid()) { PostAbilityOptionRecorded(Option, RecordedDataObjectHandle); }
+		OnInteractionOptionsUpdated();
 	}
+}
+
+void AInteractableActorBase::OnInteractionOptionsUpdated()
+{
+	ClearInvalidDataInOptionToAbilityMap();
+
+	RemoveOptionIfSameGroupActivating();
+
+	if (WidgetComponent->IsVisible()) { WidgetComponent->UpdateInteractionOptions(OptionsBuilder.GetOptions()); }
 }
 
 void AInteractableActorBase::OnAbilityStateChanged(EActionState OldState, EActionState NewState)
 {
-	WidgetComponent->UpdateInteractionOptions(OptionsBuilder.GetOptions());
+	OnInteractionOptionsUpdated();
 }
 
 void AInteractableActorBase::PostAbilityOptionRecorded(UInteractionOptionBase* Option, const FRecordedDataObjectHandle Handle)
@@ -337,12 +364,21 @@ void AInteractableActorBase::PostAbilityOptionRecorded(UInteractionOptionBase* O
 	if (!Handle.IsValid()) { return; }
 
 
-	Handle.InputRecordComponent->OnOperationPreviewDelegate.AddWeakLambda(Option, [Option, Handle](const bool bIsPreview, const IRecordedDataObjectInterface* Data)
+	Handle.InputRecordComponent->OnOperationPreviewDelegate.AddWeakLambda(Option, [WeakOption = MakeWeakObjectPtr(Option), Handle](const bool bIsPreview, const IRecordedDataObjectInterface* Data)
 		{
 			if (Data->Handle != Handle) { return; }
 
-			Option->SetWillBeActivate(bIsPreview);
+			WeakOption->SetWillBeActivate(bIsPreview);
 		});
+}
+
+InteractionOptionTypes::OptionGroupIDType AInteractableActorBase::GetOptionGroupIDByAbilityInstance(const UGameplayAbility* AbilityInstance) const
+{
+	const TSubclassOf<UGameplayAbility> AbilityClass{ AbilityInstance->StaticClass() };
+	const FOptionInfo* TargetOption{ OptionClasses.FindByPredicate([AbilityClass](const FOptionInfo& OptionInfo) {return OptionInfo.AbilityClass == AbilityClass; }) };
+
+	if (TargetOption) { return TargetOption->GroupID; }
+	else { return INDEX_NONE; }
 }
 //void AInteractableActorBase::OnUIInitialized_Implementation(UUserWidget* UserWidget)
 //{

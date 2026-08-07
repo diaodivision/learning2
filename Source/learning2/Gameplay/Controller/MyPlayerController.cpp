@@ -18,6 +18,7 @@
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "WorldPauseSubsystem.h"
 #include "AbilitySystemComponent.h"
+#include "Targeting/TargetingInstigatorTypes.h"
 
 AMyPlayerController::AMyPlayerController()
 {
@@ -52,6 +53,8 @@ void AMyPlayerController::PossessToPawn(APawn* NewPawn, const UObject* WorldCont
 
 	PlayerController->Possess(NewPawn);	//必须先调用 PlayerController->Possess(NewPawn)
 	AIController->Possess(OldPawn);		//再调用 AIController->Possess(OldPawn)
+
+	if (AMyPlayerController * MP{ Cast<AMyPlayerController>(PlayerController) }) { MP->OnCancelTargeting(); }
 }
 
 void AMyPlayerController::SetTargeting(const bool IsTargeting, UAbilitySystemComponent* AbilitySystemComponent)
@@ -435,13 +438,13 @@ void AMyPlayerController::OnCancelTargeting()
 {
 	if (bIsTargeting)
 	{
+		SetTargeting(false);
+
 		if (TargetingAbilitySystemComponent.IsValid()) { TargetingAbilitySystemComponent->TargetCancel(); }
 		if (APlayerCharacterBase * PlayerCharacter{ Cast<APlayerCharacterBase>(GetCharacter()) })
 		{
 			PlayerCharacter->SetTargetingState(ETargetingState::Cancel);
 		}
-
-		SetTargeting(false);
 	}
 }
 

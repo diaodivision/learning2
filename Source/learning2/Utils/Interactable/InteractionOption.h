@@ -6,6 +6,12 @@
 #include "InteractionOption.generated.h"
 
 class UTexture2D;
+class UGameplayAbility;
+
+namespace InteractionOptionTypes
+{
+	using OptionGroupIDType = int32;
+}
 
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnInteractiveOptionStateChangedDelegate, const bool, bIsActivating);
 
@@ -56,10 +62,15 @@ public:
 	virtual FORCEINLINE bool IsActivating() const { return bWillBeActivate; }
 
 	UFUNCTION(BlueprintPure)
+	FORCEINLINE int32 GetGroupID() const { return GroupID; }
+
+	UFUNCTION(BlueprintPure)
 	virtual TSoftObjectPtr<UTexture2D> GetIcon() const { return nullptr; }
 
 	UFUNCTION(BlueprintPure)
 	virtual FORCEINLINE bool IsValid() const { return bIsAlive; }
+
+	virtual FORCEINLINE bool CanDestroy() { return true; }
 
 	virtual FORCEINLINE void Destroy()
 	{
@@ -70,6 +81,25 @@ public:
 
 		if (!HasAnyFlags(RF_BeginDestroyed)) { MarkAsGarbage(); }
 	}
+
+	virtual FORCEINLINE void BeginDestroy() override
+	{
+		Super::BeginDestroy();
+	}
+	//virtual FORCEINLINE void Destroy()
+	//{
+	//	if (!bIsAlive) { return; }
+
+	//	bWillBeActivate = false;
+	//	bIsAlive = false;
+
+	//	if (!HasAnyFlags(RF_BeginDestroyed)) { MarkAsGarbage(); }
+	//}
+
+	//virtual FORCEINLINE void BeginDestroy() override
+	//{
+	//	Super::BeginDestroy();
+	//}
 
 	UFUNCTION(BlueprintPure, meta = (DisplayName = "Equal (InteractionOptionBase)", CompactNodeTitle = "==", Keywords = "== equal"))
 	static FORCEINLINE bool EqualEqual_InteractionOptionBaseInteractionOptionBase(const UInteractionOptionBase* A, const UInteractionOptionBase* B)
@@ -84,9 +114,38 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Delegate")
 	FOnInteractiveOptionStateChangedDelegate OnInteractiveOptionStateChangedDelegate;
 
+protected:
+	int32 GroupID{ INDEX_NONE };
+	static_assert(std::is_same_v<InteractionOptionTypes::OptionGroupIDType, decltype(GroupID)>);
+
 private:
 	bool bWillBeActivate{ false };
 	bool bIsAlive{ true };
+};
+
+USTRUCT(BlueprintType)
+struct FOptionInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	TSubclassOf<UGameplayAbility> AbilityClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	int32 GroupID{ INDEX_NONE };
+
+	FORCEINLINE bool IsValid() const { return operator bool(); }
+
+	bool operator==(const FOptionInfo& Other) const;
+
+	operator bool() const;
+
+	friend uint32 GetTypeHash(const FOptionInfo& Request)
+	{
+		return GetTypeHash(Request.AbilityClass);
+	}
+
+	static_assert(std::is_same_v<InteractionOptionTypes::OptionGroupIDType, decltype(GroupID)>);
 };
 
 //USTRUCT(BlueprintType)

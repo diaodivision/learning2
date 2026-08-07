@@ -84,6 +84,7 @@ void UDoorDeploymentAbilityBase::OnPreview(const bool bIsPreview, const IRecorde
 		{
 			const FRecordedGrenadeFireAbilityDataPayload& Payload = Data->Payload;
 			Door->ShowPredictionLineStatic({ Payload.GrenadeActor->GetWeaponBulletClass(), Payload.WeaponOwner.Get() }, Payload.TargetLocation);
+			Door->NotifyOptionActivate();
 		}
 		else { Door->HidePredictionLine(); }
 	}

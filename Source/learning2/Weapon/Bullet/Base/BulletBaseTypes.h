@@ -28,7 +28,7 @@ public:
 	bool bEnableGravity{ false };
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TSubclassOf<UGameplayEffect> DamageClass;
+	TSubclassOf<UGameplayEffect> EffectClass;
 };
 
 UCLASS(Blueprintable, BlueprintType)

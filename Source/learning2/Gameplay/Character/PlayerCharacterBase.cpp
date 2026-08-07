@@ -19,6 +19,7 @@
 #include "BehaviorTree/BehaviorTreeStatics.h"
 #include "Battle/BattleSubsystem.h"
 #include "PredictionLineProvider/PredictionLineProviderInterface.h"
+#include "Targeting/TargetingInstigatorTypes.h"
 
 APlayerCharacterBase::APlayerCharacterBase() : Super()
 {
@@ -150,6 +151,8 @@ void APlayerCharacterBase::SetTargetingState(ETargetingState TargetingState)
 		}
 		break;
 	}
+
+	//OnTargetingStateChangedDelegate.Broadcast(TargetingState);
 }
 
 void APlayerCharacterBase::InitializeDelegates()

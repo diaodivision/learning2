@@ -44,7 +44,8 @@ public class FogOfWar : ModuleRules
             {
                 "CoreUObject",
                 "Engine",
-                "Renderer"       // SetComputePipelineState, SetShaderParameters, GetGlobalShaderMap
+                "Renderer",         // SetComputePipelineState, SetShaderParameters, GetGlobalShaderMap
+                "TopDownCameraSystem"
             }
         );
 

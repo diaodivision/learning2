@@ -39,7 +39,6 @@ void UInteractiveTraceComponent::OnHoveredActorChanged(AActor* OldActor, AActor*
 		HoveredStartSeconds = GetWorld()->GetTimeSeconds();
 		HoveredActor = NewActor;
 
-
 		if (OldActor)
 		{
 			if (OldActor->Implements<UHighLightInterface>()) { IHighLightInterface::Execute_UnhighLightActor(OldActor); }
@@ -93,7 +92,6 @@ void UInteractiveTraceComponent::TickComponent(float DeltaTime, ELevelTick TickT
 	{
 		//if (LastHoveredActor) { IHighLightInterface::Execute_UnhighLightActor(LastHoveredActor); }
 		//if (HitActor) { IHighLightInterface::Execute_HighLightActor(HitActor); }
-
 		OnHoveredActorChanged(HoveredActor.Get(), HitActor);
 		HoveredActor = HitActor;
 

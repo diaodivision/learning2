@@ -2,12 +2,12 @@
 
 
 #include "GrenadeActorBase.h"
-#include "Bullet/GrenadeBulletBase.h"
+#include "Bullet/Base/GrenadeBulletBase.h"
 #include "BlueprintFunctionLibrary/WeaponActorBlueprintLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerController.h"
-#include "Bullet/BulletBaseTypes.h"
+#include "Bullet/Base/BulletBaseTypes.h"
 #include "Components/SplineComponent.h"
 #include "Components/SplineMeshComponent.h"
 #include "Ability/TargetActor/GrenadeTargetActor.h"
@@ -38,7 +38,7 @@ void AGrenadeActorBase::BeginPlay()
 		GrenadeTargetActor->AttachToActor(GetOwner(), AttachRules);
 
 		GrenadeTargetActor->OnStartLocationUpdatedDelegate.BindUObject(this, &AGrenadeActorBase::OnStartLocationUpdated);
-		if (const AGrenadeBulletBase * BulletCDO{ Cast<AGrenadeBulletBase>(BulletClass.GetDefaultObject())})
+		if (const AGrenadeBulletBase * BulletCDO{ Cast<AGrenadeBulletBase>(BulletClass.GetDefaultObject()) })
 		{
 			FGrenadeBulletAttributeData Data;
 			if (UWeaponActorBlueprintLibrary::GetGrenadeBulletAttributeFromDataTable(Data, BulletCDO))
@@ -85,13 +85,14 @@ void AGrenadeActorBase::OnControl_Implementation(UObject* InOwner)
 {
 	Super::OnControl_Implementation(InOwner);
 
-	ShowPredictionLine({ GetWeaponBulletClass(), Cast<APawn>(InOwner)});
+	ShowPredictionLine({ GetWeaponBulletClass(), Cast<APawn>(InOwner) });
 }
 
 void AGrenadeActorBase::OnControlReleased_Implementation()
 {
 	Super::OnControlReleased_Implementation();
 	HidePredictionLine();
+	APlayerController* PlayerController{ GetWorld()->GetFirstPlayerController() };
 }
 
 //void AGrenadeActorBase::BeginPlay()

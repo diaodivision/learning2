@@ -14,6 +14,7 @@
 #include "Character/CharacterWidgetControllableInterface.h"
 #include "HoverReactive/HoverReactiveInterface.h"
 #include "InputRecordedDataTypes/RecordedDataDelegates.h"
+#include "Ability/Tags/PlayerResponseGameplayTags.h"
 #include "MyCharacterBase.generated.h"
 
 struct FOnAttributeChangeData;
@@ -166,6 +167,16 @@ protected:
 	UFUNCTION()
 	void OnSenseUpdated(AActor* Enemy, FAIStimulus Stimulus);
 
+	virtual void OnResponseTagCountChanged(const FGameplayTag Tag, const int32 NewCount);
+
+	virtual void OnStunTagCountChanged(const ETagCountChangeType TagCountChangeType);
+	UFUNCTION(BlueprintImplementableEvent, Category = "Character Response")
+	void K2_OnStunTagCountChanged(const ETagCountChangeType TagCountChangeType);
+
+	virtual void OnBlindTagCountChanged(const ETagCountChangeType TagCountChangeType);
+	UFUNCTION(BlueprintImplementableEvent, Category = "Character Response")
+	void K2_OnBlindTagCountChanged(const ETagCountChangeType TagCountChangeType);
+
 private:
 	void CreateAndSetupComponents();
 
@@ -213,6 +224,8 @@ protected:
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UCharacterWidgetComponent> CharacterWidgetComponent;
+
+	TMap<FGameplayTag, int32> ResponseTagCountMap;
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Team|ID", meta = (AllowPrivateAccess = true))

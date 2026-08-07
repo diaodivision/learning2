@@ -28,6 +28,12 @@ public:
 		Options.Add(TStrongObjectPtr<UInteractionOptionBase>{Option});
 	}
 
+	template <typename PREDICATE_CLASS>
+	FORCEINLINE void Sort(const PREDICATE_CLASS& Predicate)
+	{
+		Options.Sort(Predicate);
+	}
+
 	//void AddInteractionOption(FCombinedAbilityHandle Handle)
 	//{
 	//	Handle.
@@ -37,7 +43,9 @@ public:
 	//	AddInteractionOption(MoveTemp(Option));
 	//}
 
-	inline int32 GetOptionsNum() { return Options.Num(); }
+	FORCEINLINE int32 GetOptionsNum() const { return Options.Num(); }
+
+	FORCEINLINE bool IsEmpty() const { return Options.IsEmpty(); }
 
 	inline UInteractionOptionBase* GetOption(int32 Index)
 	{
@@ -46,7 +54,7 @@ public:
 	}
 
 	/** Returns the list of all activatable abilities. */
-	/*inline*/FORCENOINLINE TArray<UInteractionOptionBase*> GetOptions() const
+	FORCEINLINE TArray<UInteractionOptionBase*> GetOptions() const
 	{
 		TArray<UInteractionOptionBase*> Result;
 		for (const TStrongObjectPtr<UInteractionOptionBase>& Option : Options)
@@ -75,11 +83,29 @@ public:
 	{
 		for (auto It{ Options.CreateIterator() }; It; ++It)
 		{
-			if (const TStrongObjectPtr<UInteractionOptionBase>& Option{ *It }; !Option.IsValid() || !Option->IsActivating())
+			if (const TStrongObjectPtr<UInteractionOptionBase>& Option{ *It }; !Option.IsValid() || (!Option->IsActivating() && Option->CanDestroy()))
 			{
 				if (Option.IsValid()) { Option->Destroy(); }
 				It.RemoveCurrent();
 			}
+		}
+	}
+
+	FORCEINLINE void ClearAllInvalidOption()
+	{
+		for (auto It{ Options.CreateIterator() }; It; ++It)
+		{
+			const TStrongObjectPtr<UInteractionOptionBase>& Option{ *It };
+			if (!Option.IsValid() || (!Option->IsValid() && Option->CanDestroy())) { It.RemoveCurrent(); }
+		}
+	}
+
+	FORCEINLINE void RemoveAllOptionByGroupID(const InteractionOptionTypes::OptionGroupIDType GroupID, const UInteractionOptionBase* Except)
+	{
+		for (auto It{ Options.CreateIterator() }; It; ++It)
+		{
+			const TStrongObjectPtr<UInteractionOptionBase>& Option{ *It };
+			if (Option->GetGroupID() == GroupID && !(Except && Option.Get() == Except)) { It.RemoveCurrent(); }
 		}
 	}
 
@@ -113,4 +139,7 @@ public:
 	/** 指向正在构建的选项数组的指针 */
 	//UPROPERTY(BlueprintReadOnly)
 	TArray<TStrongObjectPtr<UInteractionOptionBase>> Options;
+
+	FORCEINLINE decltype(Options)::TIterator CreateIterator() { return Options.CreateIterator(); }
+	FORCEINLINE decltype(Options)::TConstIterator CreateConstIterator() const { return Options.CreateConstIterator(); }
 };

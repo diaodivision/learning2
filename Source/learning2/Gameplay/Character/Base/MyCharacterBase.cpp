@@ -105,17 +105,6 @@ AWeaponActorBase* AMyCharacterBase::GetControlledWeapon() const
 	return Cast<AWeaponActorBase>(Weapons->GetControlledObject());
 }
 
-void AMyCharacterBase::CreateAndSetupComponents()
-{
-	AbilitySystemComponent = CreateDefaultSubobject<UMyAbilitySystemComponent>(FName("AbilitySystemComponent"));
-	AbilitySystemComponent->PrimaryComponentTick.bCanEverTick = false;
-	//AbilitySystemComponent->SetIsReplicated(true);
-	//AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
-
-	CharacterWidgetComponent = CreateDefaultSubobject<UCharacterWidgetComponent>(FName("CharacterWidgetComponent"));
-	CharacterWidgetComponent->SetupAttachment(RootComponent);
-}
-
 void AMyCharacterBase::GetActorEyesViewPoint(FVector& Location, FRotator& Rotation) const
 {
 	Location = GetActorLocation();
@@ -484,6 +473,8 @@ void AMyCharacterBase::InitializeDelegates()
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo3Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo4Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo5Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
+
+	AbilitySystemComponent->RegisterGameplayTagEvent(PlayerResponseTags::State_Debuff_Stun.GetTag(), EGameplayTagEventType::AnyCountChange).AddUObject(this, &AMyCharacterBase::OnResponseTagCountChanged);
 }
 
 void AMyCharacterBase::DeinitializeDelegates()
@@ -524,4 +515,40 @@ void AMyCharacterBase::OnSenseUpdated(AActor* Enemy, FAIStimulus Stimulus)
 	OnEnemySensed(EnemyCharacter);
 
 	OnSenseUpdatedDelegate.Broadcast(Stimulus.WasSuccessfullySensed(), this, EnemyCharacter);
+}
+
+void AMyCharacterBase::OnResponseTagCountChanged(const FGameplayTag Tag, const int32 NewCount)
+{
+	auto CalculateTagCountChangeType = [](const int32 OldCount, const int32 NewCount)
+		{
+			if (OldCount < NewCount) { return ETagCountChangeType::Increase; }
+			else if (OldCount > NewCount) { return ETagCountChangeType::Decrease; }
+			else { return ETagCountChangeType::NoChange; }
+		};
+
+	const ETagCountChangeType TagCountChangeType{ CalculateTagCountChangeType(ResponseTagCountMap.FindOrAdd(Tag, 0), NewCount) };
+
+	if (Tag == PlayerResponseTags::State_Debuff_Stun.GetTag()) { OnStunTagCountChanged(TagCountChangeType); }
+	else if (Tag == PlayerResponseTags::State_Debuff_Blind.GetTag()) { OnBlindTagCountChanged(TagCountChangeType); }
+}
+
+void AMyCharacterBase::OnStunTagCountChanged(const ETagCountChangeType TagCountChangeType)
+{
+	K2_OnStunTagCountChanged(TagCountChangeType);
+}
+
+void AMyCharacterBase::OnBlindTagCountChanged(const ETagCountChangeType TagCountChangeType)
+{
+	K2_OnBlindTagCountChanged(TagCountChangeType);
+}
+
+void AMyCharacterBase::CreateAndSetupComponents()
+{
+	AbilitySystemComponent = CreateDefaultSubobject<UMyAbilitySystemComponent>(FName("AbilitySystemComponent"));
+	AbilitySystemComponent->PrimaryComponentTick.bCanEverTick = false;
+	//AbilitySystemComponent->SetIsReplicated(true);
+	//AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
+
+	CharacterWidgetComponent = CreateDefaultSubobject<UCharacterWidgetComponent>(FName("CharacterWidgetComponent"));
+	CharacterWidgetComponent->SetupAttachment(RootComponent);
 }

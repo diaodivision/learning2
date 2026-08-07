@@ -5,6 +5,7 @@
 class UDataTable;
 class UCurveTable;
 class UTexture2D;
+class UGameplayAbility;
 
 USTRUCT(BlueprintType)
 struct FWeaponAttributeDataTable
@@ -116,4 +117,34 @@ struct FSpawnGrenadeParameters
 
 	UPROPERTY(BlueprintReadWrite)
 	FVector GrenadeTargetLocation;
+};
+
+UENUM(BlueprintType)
+enum class EWeaponAbilityInstancingPolicy : uint8
+{
+	InstancedOnAddition,
+	InstancedOnPossession
+};
+
+USTRUCT(BlueprintType)
+struct FWeaponAbilityInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	TSubclassOf<UGameplayAbility> AbilityClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	EWeaponAbilityInstancingPolicy InstancingPolicy{ EWeaponAbilityInstancingPolicy::InstancedOnPossession };
+
+	FORCEINLINE bool IsValid() const { return operator bool(); }
+
+	bool operator==(const FWeaponAbilityInfo& Other) const;
+
+	operator bool() const;
+
+	friend uint32 GetTypeHash(const FWeaponAbilityInfo& Request)
+	{
+		return GetTypeHash(Request.AbilityClass);
+	}
 };

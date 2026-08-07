@@ -9,7 +9,7 @@
 #include "Interactable/InteractionOptionsBuilder.h"
 #include <type_traits>
 #include <concepts>
-#include "Bullet/BulletBaseTypes.h"
+#include "Bullet/Base/BulletBaseTypes.h"
 #include "WeaponActorBlueprintLibrary.generated.h"
 
 struct FBulletAttributeData;

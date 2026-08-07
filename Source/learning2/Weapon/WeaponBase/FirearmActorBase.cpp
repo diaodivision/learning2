@@ -1,9 +1,10 @@
 #include "FirearmActorBase.h"
-#include "Bullet/FireArmBulletBase.h"
-#include "Bullet/BulletBaseTypes.h"
+#include "Bullet/Base/FireArmBulletBase.h"
+#include "Bullet/Base/BulletBaseTypes.h"
 #include "GameplayEffectTypes.h"
 #include "GameFramework/Character.h"
 #include "BlueprintFunctionLibrary/WeaponActorBlueprintLibrary.h"
+#include "AbilitySystemComponent.h"
 
 void AFirearmActorBase::OnControl_Implementation(UObject* InOwner)
 {
@@ -11,7 +12,10 @@ void AFirearmActorBase::OnControl_Implementation(UObject* InOwner)
 
 	if (!AvatarAbilitySystemComponent.IsValid()) { return; }
 
-	ReloadAbilityHandle = AvatarAbilitySystemComponent->K2_GiveAbility(ReloadAbilityClass, GetWeaponLevel());
+	if (ReloadAbilityClass.InstancingPolicy == EWeaponAbilityInstancingPolicy::InstancedOnPossession)
+	{
+		ReloadAbilityHandle = AvatarAbilitySystemComponent->K2_GiveAbility(ReloadAbilityClass.AbilityClass, GetWeaponLevel());
+	}
 }
 
 void AFirearmActorBase::OnControlReleased_Implementation()
@@ -42,11 +46,21 @@ AActor* AFirearmActorBase::SpawnBullet_Implementation() const
 	BulletInitData->Speed = GetMuzzleSpeed();
 	BulletInitData->Direction = RandomSpread();
 	BulletInitData->bEnableGravity = false;
-	BulletInitData->DamageClass = DamageClass;
+	BulletInitData->EffectClass = EffectClass;
 
 	Bullet->SetInstigator(Cast<APawn>(GetOwner()));
 	IBulletInterface::Execute_InitializeBulletData(Bullet, BulletInitData);
 	UWeaponActorBlueprintLibrary::FinishSpawningOfPoolingActor(Bullet);
 
 	return Bullet;
+}
+
+void AFirearmActorBase::InstantiateAbilityOnBeginPlay()
+{
+	Super::InstantiateAbilityOnBeginPlay();
+
+	if (ReloadAbilityClass.InstancingPolicy == EWeaponAbilityInstancingPolicy::InstancedOnAddition)
+	{
+		ReloadAbilityHandle = AvatarAbilitySystemComponent->K2_GiveAbility(ReloadAbilityClass.AbilityClass, GetWeaponLevel());
+	}
 }

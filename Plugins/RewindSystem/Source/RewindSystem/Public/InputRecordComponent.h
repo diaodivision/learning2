@@ -45,6 +45,12 @@ public:
 
 	IRecordedDataObjectInterface* GetRecordDataByHandle(const FRecordedDataObjectHandle& RecordedDataObjectHandle);
 
+	UFUNCTION(BlueprintCallable, Category = "RewindSystem|Handle")
+	FORCEINLINE bool IsRecordDataObjectExist(const FRecordedDataObjectHandle& RecordedDataObjectHandle) const
+	{
+		return !!const_cast<UInputRecordComponent*>(this)->GetRecordDataByHandle(RecordedDataObjectHandle);
+	}
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -67,12 +73,6 @@ protected:
 
 	void AdvanceCurrentTickOnRecordState();
 	virtual void OnStateChanged(const ERecordState OldState, const ERecordState NewState);
-
-	UFUNCTION(BlueprintCallable, Category = "RewindSystem|Handle")
-	inline bool IsRecordDataObjectExist(const FRecordedDataObjectHandle& RecordedDataObjectHandle) const
-	{
-		return !!const_cast<UInputRecordComponent*>(this)->GetRecordDataByHandle(RecordedDataObjectHandle);
-	}
 
 	TArrayView<TUniquePtr<IRecordedDataObjectInterface>> GetRecordDataByTick(RewindSystemTickType Tick);
 	TArrayView<TUniquePtr<IRecordedDataObjectInterface>> GetRecordDataByTickRange(RewindSystemTickType BeginTick, RewindSystemTickType EndTick);

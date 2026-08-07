@@ -2,8 +2,8 @@
 #include "InputRecordComponent.h"
 
 FRecordedDataObjectHandle::FRecordedDataObjectHandle(RewindSystemTickType Tick, UInputRecordComponent& InputRecordComponent) :
-	Tick(Tick),
-	InputRecordComponent(&InputRecordComponent)
+	InputRecordComponent(&InputRecordComponent),
+	Tick(Tick)
 {
 	GenerateNewHandle();
 }

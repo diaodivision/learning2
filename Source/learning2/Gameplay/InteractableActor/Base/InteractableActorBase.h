@@ -10,6 +10,7 @@
 #include "Misc/Optional.h"
 #include "Interactive/ActorWidgetControllableInterface.h"
 #include "Interface/FreezableInterface.h"
+#include <type_traits>
 #include "InteractableActorBase.generated.h"
 
 class UStaticMeshComponent;
@@ -78,6 +79,8 @@ protected:
 
 	virtual void BindAbility(UMyGameplayAbilityBase& GA1, UAbilitySystemComponent& ASC1, UMyGameplayAbilityBase& GA2, UAbilitySystemComponent& ASC2, const FInteractionQuery& InteractQuery);
 
+	virtual void OnInteractionOptionsUpdated();
+
 	UFUNCTION()
 	virtual void OnAbilityStateChanged(EActionState OldState, EActionState NewState);
 
@@ -86,11 +89,48 @@ protected:
 	virtual void PostAbilityOptionRecorded(UInteractionOptionBase* Option, const FRecordedDataObjectHandle Handle);
 
 protected:
+	InteractionOptionTypes::OptionGroupIDType GetOptionGroupIDByAbilityInstance(const UGameplayAbility* AbilityInstance) const;
+
+	FORCEINLINE void ClearInvalidDataInOptionToAbilityMap()
+	{
+		for (auto It{ OptionToAbilityIndexMap.CreateIterator() }; It; ++It)
+		{
+			if (!It.Key().IsValid()) { It.RemoveCurrent(); }
+		}
+	}
+
+	FORCEINLINE void RemoveOptionIfSameGroupActivating()
+	{
+		using GroupIDType = InteractionOptionTypes::OptionGroupIDType;
+		TMap<GroupIDType, const UInteractionOptionBase*> GroupIDToActivatingOptionMap;
+
+		for (auto It{ OptionsBuilder.CreateConstIterator() }; It; ++It)
+		{
+			const TStrongObjectPtr<UInteractionOptionBase>& Option{ (*It) };
+			if (Option.IsValid() && Option->IsActivating())
+			{
+				if (!ensureAlways(GroupIDToActivatingOptionMap.Contains(Option->GetGroupID()))) { return; }
+				GroupIDToActivatingOptionMap.Add(Option->GetGroupID(), Option.Get());
+			}
+		}
+
+		for (auto It{ GroupIDToActivatingOptionMap.CreateConstIterator() }; It; ++It)
+		{
+			OptionsBuilder.RemoveAllOptionByGroupID(It.Key(), It.Value());
+		}
+
+		OptionsBuilder.Sort([this](const TStrongObjectPtr<UInteractionOptionBase>& A, const TStrongObjectPtr<UInteractionOptionBase>& B)
+			{return OptionToAbilityIndexMap[A.Get()] < OptionToAbilityIndexMap[B.Get()]; });
+
+
+	}
+
+protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Interaction Options")
 	FInteractionOptionsBuilder OptionsBuilder;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Options")
-	TArray<TSubclassOf<UGameplayAbility>> OptionClasses;
+	TArray<FOptionInfo> OptionClasses;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI"/*, meta = (AllowPrivateAccess = "true")*/)
 	UActorWidgetComponent* WidgetComponent;
@@ -114,6 +154,8 @@ protected:
 	TObjectPtr<UMyAbilitySystemComponent> AbilitySystemComponent;
 
 	TMap<TWeakObjectPtr<UGameplayAbility>, TWeakObjectPtr<UInteractionOptionBase>> AbilityToOptionMap;
+
+	TMap<TWeakObjectPtr<UInteractionOptionBase>, int32> OptionToAbilityIndexMap;
 
 	bool bIsFreezing{ false };
 };
