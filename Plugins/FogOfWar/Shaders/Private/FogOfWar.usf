@@ -170,25 +170,34 @@ int GetGridHeight(int X, int Y)
 
 bool CheckLineOfSight(int2 Start, int2 End, int MaxSteps)
 {
-    int2 Delta = End - Start;
-    float Steps = max(abs(Delta.x), abs(Delta.y));
+    int2 d = abs(End - Start);
+    int2 s = int2(End.x > Start.x ? 1 : -1, End.y > Start.y ? 1 : -1);
+    int err = d.x - d.y;
+    int2 Current = Start;
     
-    if (Steps == 0)
-        return true;
+    int Steps = max(d.x, d.y);
     
-    float2 Step = float2(Delta.x, Delta.y) / Steps;
-    float2 Current = float2(Start.x, Start.y);
-    
-    for (int i = 0; i <= (int) Steps && i < MaxSteps; i++)
+    for (int i = 0; i <= Steps && i < MaxSteps; i++)
     {
-        int2 Pos = int2(round(Current.x), round(Current.y));
-        
-        if (GetGridHeight(Pos.x, Pos.y) != 0)
+        if (GetGridHeight(Current.x, Current.y) != 0)
         {
-            return false; // Óöµ½ÕÏ°­
+            return false;
         }
         
-        Current += Step;
+        if (Current.x == End.x && Current.y == End.y)
+            break;
+        
+        int e2 = 2 * err;
+        if (e2 > -d.y)
+        {
+            err -= d.y;
+            Current.x += s.x;
+        }
+        if (e2 < d.x)
+        {
+            err += d.x;
+            Current.y += s.y;
+        }
     }
     
     return true;

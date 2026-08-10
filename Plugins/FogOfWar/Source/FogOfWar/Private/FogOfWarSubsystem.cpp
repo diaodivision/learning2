@@ -101,10 +101,10 @@ void UFogOfWarSubsystem::Tick_Internal()
 
 	if (bViewportResized)
 	{
-		// ÊÍ·Å¾ÉµÄ¡¢¶Ï¿ª¾ÉµÄ RHI Á´Ìõ
+		// ï¿½Í·Å¾ÉµÄ¡ï¿½ï¿½Ï¿ï¿½ï¿½Éµï¿½ RHI ï¿½ï¿½ï¿½ï¿½
 		CachedOutputTexture.SafeRelease();
 
-		// ÖØÐÂÉú³ÉÕýÈ·³ß´çµÄ UTexture2D ×ÊÔ´
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È·ï¿½ß´ï¿½ï¿½ UTexture2D ï¿½ï¿½Ô´
 		CreateWorldHeightTexture();
 		CreateDynamicTexture();
 
@@ -144,7 +144,7 @@ void UFogOfWarSubsystem::Tick_Internal()
 
 
 			UpdateWorldHeightDataToTexture(RHICmdList);
-			// ´´½¨»òÖØÓÃÎÆÀí
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 			FFogOfWarComputeShader::FParameters* PassParameters = GraphBuilder.AllocParameters<FFogOfWarComputeShader::FParameters>();
 
@@ -181,7 +181,7 @@ void UFogOfWarSubsystem::Tick_Internal()
 					FTextureResource* RenderResource = DynamicTexture->GetResource();
 					if (!RenderResource || !RenderResource->TextureRHI) { return; }
 
-					// Ê¹ÓÃ¿½±´¶ø²»ÊÇÌæ»» RHI
+					// Ê¹ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ»» RHI
 					ENQUEUE_RENDER_COMMAND(CopyVisibilityTexture)(
 						[this, RenderResource](FRHICommandListImmediate& RHICmdList)
 						{
@@ -196,7 +196,7 @@ void UFogOfWarSubsystem::Tick_Internal()
 
 							GraphBuilder.Execute();
 
-							// ÔÚäÖÈ¾ÃüÁîÍê³Éºó»Øµ÷
+							// ï¿½ï¿½ï¿½ï¿½È¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Éºï¿½Øµï¿½
 							AsyncTask(ENamedThreads::GameThread, [this]()
 								{
 									if (!this || !DynamicTexture || !FogOfWarMaterial) { return; }
@@ -502,9 +502,9 @@ void UFogOfWarSubsystem::UpdateWorldHeightData()
 					{
 						WorldHeightData[Index] = It->Value > 0 ? 1 : 0;
 					}
-					for (int i = -2; i <= 2; i++)
+					for (int i = -5; i <= 5; i++)
 					{
-						for (int j = -2; j <= 2; j++)
+						for (int j = -5; j <= 5; j++)
 						{
 							FogOfWarTypes::GridIndexType NearIndex = Index + i * ScreenWidth + j;
 							if (WorldHeightData.IsValidIndex(NearIndex))
@@ -525,14 +525,14 @@ void UFogOfWarSubsystem::UpdateWorldHeightDataToTexture(FRHICommandListImmediate
 	GetScreenSize(ScreenWidth, ScreenHeight);
 	FUpdateTextureRegion2D Region(0, 0, 0, 0, ScreenWidth, ScreenHeight);
 
-	// 2. Ê¹ÓÃRHIÃüÁîÖ±½Ó¸üÐÂ
-	// ÕâÊÇ×îµ×²ã¡¢×î¸ßÐ§µÄµ÷ÓÃ·½·¨Ö®Ò»£¬Ö±½Ó´ÓÏµÍ³ÄÚ´æ¸üÐÂÎÆÀí
+	// 2. Ê¹ï¿½ï¿½RHIï¿½ï¿½ï¿½ï¿½Ö±ï¿½Ó¸ï¿½ï¿½ï¿½
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×²ã¡¢ï¿½ï¿½ï¿½Ð§ï¿½Äµï¿½ï¿½Ã·ï¿½ï¿½ï¿½Ö®Ò»ï¿½ï¿½Ö±ï¿½Ó´ï¿½ÏµÍ³ï¿½Ú´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	RHICmdList.UpdateTexture2D(
-		WorldHeightTexture->GetResource()->GetTextureRHI(),          // RHIÎÆÀí×ÊÔ´
-		0,                   // MipË÷Òý
-		Region,              // ¸üÐÂÇøÓò
-		WorldHeightData.GetTypeSize() * ScreenWidth,    // Êý¾ÝÐÐ¾à£¨Pitch£©
-		WorldHeightData.GetData()  // Ô´Êý¾ÝÖ¸Õë
+		WorldHeightTexture->GetResource()->GetTextureRHI(),          // RHIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô´
+		0,                   // Mipï¿½ï¿½ï¿½ï¿½
+		Region,              // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		WorldHeightData.GetTypeSize() * ScreenWidth,    // ï¿½ï¿½ï¿½ï¿½ï¿½Ð¾à£¨Pitchï¿½ï¿½
+		WorldHeightData.GetData()  // Ô´ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
 	);
 
 	//UE_LOG(LogTemp, Error, TEXT("UFogOfWarSubsystem::SetLandLocationAndSizeParameters WorldHeightTexture->GetSizeX() %d"), WorldHeightTexture->GetSizeX());
