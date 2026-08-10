@@ -22,7 +22,7 @@ StructuredBuffer<FHeightData> WorldHeightBuffer;
 
 RWTexture2D<float4> OutputTexture;
 
-bool IsGridInVision(int2 GridPos);
+bool IsGridInVision(int2 GridPos, uint Index);
 float GetNormalizedDistanceToBoundary(int2 GridPos, float2 StartPos, float2 Direction, float2 EdgeDirection);
 int GetGridHeight(int X, int Y);
 bool CheckLineOfSight(int2 Start, int2 End, int MaxSteps);
@@ -42,23 +42,50 @@ void MainCS(
         return;
     }
     
+    OutputTexture[DispatchThreadId.xy] = float4(GetGridHeight(x, y) == 0 ? 0 : 1, 0, 0, 1);
+    
+    return;
+    
     int2 GridPos = int2(x, y);
     int Index = y * TextureSize.x + x;
 
-
-    if (IsGridInVision(GridPos) && GetGridHeight(x, y) == 0)
+    OutputTexture[DispatchThreadId.xy] = float4(0, 0, 0, 1);
+    for (uint i = 0; i < NumVisionStart; i++)
     {
-        OutputTexture[DispatchThreadId.xy] = float4(1, 0, 0, 1);
-        
-        float2 StartPos = VisionStartPosBuffer[0];
-        int2 Start = int2(StartPos.x, StartPos.y);
-        int2 End = int2(x, y);
-
-        if (!CheckLineOfSight(Start, End, 1000))
+        if (GetGridHeight(x, y) == 0 && IsGridInVision(GridPos, i))
         {
-            OutputTexture[DispatchThreadId.xy] = float4(0, 1, 0, 1);
-            return;
-        }
+            float2 StartPos = VisionStartPosBuffer[i];
+            int2 Start = int2(StartPos.x, StartPos.y);
+            int2 End = int2(x, y);
+            
+            if (CheckLineOfSight(Start, End, 5000))
+            {
+                OutputTexture[DispatchThreadId.xy] = float4(1, 0, 0, 1);
+                break;
+            }
+            else
+            {
+                OutputTexture[DispatchThreadId.xy] = float4(0, 1, 0, 1);
+            }
+            
+            //bool bIsBlock = true;
+            //for (uint i = 0; i < NumVisionStart; i++)
+            //{
+            //    float2 StartPos = VisionStartPosBuffer[i];
+            //    int2 Start = int2(StartPos.x, StartPos.y);
+            //    int2 End = int2(x, y);
+            //
+            //    if (CheckLineOfSight(Start, End, 5000))
+            //    {
+            //        bIsBlock = false;
+            //        break;
+            //    }
+            //}
+            //
+            //if (bIsBlock)
+            //{
+            //    OutputTexture[DispatchThreadId.xy] = float4(0, 1, 0, 1);
+            //}
         
         //for (uint i = 0; i < NumVisionStart; i++)
         //{
@@ -79,10 +106,7 @@ void MainCS(
         //        Data = GetNextBresenhamAlgoDataPos(Data);
         //    }
         //}
-    }
-    else
-    {
-        OutputTexture[DispatchThreadId.xy] = float4(0, 0, 0, 1);
+        }
     }
     
     //for (uint i = 0; i < NumVisionStart; i++)
@@ -107,35 +131,35 @@ void MainCS(
     //OutputTexture[DispatchThreadId.xy] = float4(1, 0, 0, 1);
 }
 
-bool IsGridInVision(int2 GridPos)
+bool IsGridInVision(int2 GridPos, uint Index)
 {
     if (NumVisionStart * 2 != NumVision)
     {
         return false;
     }
 
-    for (uint i = 0; i < NumVisionStart; i++)
+    //for (uint i = 0; i < NumVisionStart; i++)
+    //{
+    float2 StartPos = VisionStartPosBuffer[Index];
+    float2 VisionLeft = VisionBuffer[Index * 2];
+    float2 VisionRight = VisionBuffer[Index * 2 + 1];
+    int RadiusSq = RadiusSqBuffer[Index];
+
+    float2 GridDirection = float2(GridPos.x - StartPos.x, GridPos.y - StartPos.y);
+
+    float CrossLeft = VisionLeft.x * GridDirection.y - VisionLeft.y * GridDirection.x;
+    float CrossRight = GridDirection.x * VisionRight.y - GridDirection.y * VisionRight.x;
+        
+    if (CrossLeft > 0 && CrossRight > 0)
     {
-        float2 StartPos = VisionStartPosBuffer[i];
-        float2 VisionLeft = VisionBuffer[i * 2];
-        float2 VisionRight = VisionBuffer[i * 2 + 1];
-        int RadiusSq = RadiusSqBuffer[i];
-
-        float2 GridDirection = float2(GridPos.x - StartPos.x, GridPos.y - StartPos.y);
-
-        float CrossLeft = VisionLeft.x * GridDirection.y - VisionLeft.y * GridDirection.x;
-        float CrossRight = GridDirection.x * VisionRight.y - GridDirection.y * VisionRight.x;
-        
-        if (CrossLeft > 0 && CrossRight > 0)
-        {
-            return true;
-        }
-        
-        if ((pow(StartPos.x - GridPos.x, 2) + pow(StartPos.y - GridPos.y, 2)) <= RadiusSq)
-        {
-            return true;
-        }
+        return true;
     }
+        
+    if ((pow(StartPos.x - GridPos.x, 2) + pow(StartPos.y - GridPos.y, 2)) <= RadiusSq)
+    {
+        return true;
+    }
+//}
 
     return false;
 }
@@ -176,13 +200,17 @@ bool CheckLineOfSight(int2 Start, int2 End, int MaxSteps)
     if (Steps == 0)
         return true;
     
-    float2 Step = float2(Delta.x, Delta.y) / Steps;
-    float2 Current = float2(Start.x, Start.y);
+    float2 Step = float2(Delta) / Steps;
+    
+    // 修正 1：加上 0.5 偏移，让射线从网格中心出发，避免边缘精度抖动
+    float2 Current = float2(Start) + 0.5f;
     
     for (int i = 0; i <= (int) Steps && i < MaxSteps; i++)
     {
-        int2 Pos = int2(round(Current.x), round(Current.y));
+        // 修正 2：使用 floor() 严格划分网格区间，彻底解决负数舍入断层
+        int2 Pos = int2(floor(Current));
         
+        // 修正 3：确保 GetGridHeight 内部有边界检查 (Pos.x >= 0 && Pos.x < Width 等)
         if (GetGridHeight(Pos.x, Pos.y) != 0)
         {
             return false; // 遇到障碍

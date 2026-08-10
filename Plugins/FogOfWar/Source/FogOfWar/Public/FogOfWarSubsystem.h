@@ -41,7 +41,11 @@ public:
 	void OnPostComponentInitialize(UFogOfWarComponent* Component);
 
 	UFUNCTION(BlueprintPure, Category = "Resolution")
-	bool GetScreenSize(int32& ScreenWidth, int32& ScreenHeight) const;
+	FORCEINLINE TOptional<FIntPoint> GetScreenSize() const
+	{
+		if (!bIsInitialScale) { return NullOpt; }
+		return FIntPoint{ FMath::FloorToInt32(kScreenBaseWidth * WidthScaleFactor), FMath::FloorToInt32(kScreenBaseHeight * HeightScaleFactor) };
+	}
 
 	bool IsCameraFOVChanged();
 
@@ -60,7 +64,8 @@ private:
 
 	void SetComputeShaderOutputTextureCache(FRDGTextureRef& ShaderOutputTexture, FFogOfWarComputeShader::FParameters& Parameter, FRDGBuilder& GraphBuilder, const bool bCreateNewOne);
 
-	bool ProjectWorldToLand(FIntPoint& Position, const FVector2f& WorldLocation, const FVector2f& LandLeftDownLocation, const FVector2f& LandSize) const;
+	TOptional<FIntPoint> ProjectWorldToLand(const FVector2D& WorldLocation, const FBox2D& LandBoundingBox) const;
+	//bool ProjectWorldToLand(FIntPoint& Position, const FVector2D& WorldLocation, const FBox2D& LandBoundingBox) const;
 
 	void SetupScaleFactor();
 

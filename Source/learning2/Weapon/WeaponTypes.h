@@ -113,10 +113,10 @@ struct FSpawnGrenadeParameters
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadWrite)
-	FVector GrenadeSpawnsLocation;
+	FVector GrenadeSpawnsLocation{ FVector::ZeroVector };
 
 	UPROPERTY(BlueprintReadWrite)
-	FVector GrenadeTargetLocation;
+	FVector GrenadeTargetLocation{ FVector::ZeroVector };
 };
 
 UENUM(BlueprintType)

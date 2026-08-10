@@ -354,10 +354,10 @@ bool UFogOfWarComponentStatics::GetGridSize(FVector2D& GridSize, const EGridType
 		PlayerController->GetViewportSize(ViewportSizeX, ViewportSizeY);
 
 		const UFogOfWarSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UFogOfWarSubsystem>(World->GetFirstLocalPlayerFromController());
-		int32 ScreenWidth, ScreenHeight;
-		if (!Subsystem->GetScreenSize(ScreenWidth, ScreenHeight)) { return false; }
+		const TOptional<FIntPoint> ScreenSize{ Subsystem->GetScreenSize() };
+		if (!ScreenSize.IsSet()) { return false; }
 
-		GridSize = { static_cast<double>(ViewportSizeX / ScreenWidth), static_cast<double>(ViewportSizeY / ScreenHeight) };
+		GridSize = { static_cast<double>(ViewportSizeX / ScreenSize.GetValue().X), static_cast<double>(ViewportSizeY / ScreenSize.GetValue().Y) };
 	}
 	else { return false; }
 

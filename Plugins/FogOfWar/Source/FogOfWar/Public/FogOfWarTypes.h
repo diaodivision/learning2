@@ -146,6 +146,7 @@ struct FGridBoundsDataType
 	bool IsInsideXY(const FVector2f& Location) const;
 
 	FogOfWarTypes::GridIndexType GetGridIndexOnScreen(const FVector& Location, const FIntPoint& ScreenSize);
+	TOptional<FVector> GetGridLocationByIndex(const FogOfWarTypes::GridIndexType Index, const FIntPoint& ScreenSize);
 
 	FBox Box{ FogOfWarConst::kInvalidBox };
 
@@ -302,33 +303,39 @@ struct FWorldHeightData
 };
 
 USTRUCT()
-struct FGridBounds
+struct FGridBounds : public FBox
 {
 	GENERATED_BODY()
 
 	FGridBounds() = default;
-	FGridBounds(FVector LandMinPosition, FVector LandMaxPosition);
+	explicit FGridBounds(const FBox& InBox) : FBox(InBox) {}
 
-	bool IsValid() const;
+	using FBox::FBox;
 
-	inline bool HasDirtyBounds() const { return DirtyBounds.IsValid(); }
+	//FORCEINLINE TOptional<FVector> GetCorner(const FVector& VectorToCorner) const
+	//{
+	//	if (GetSize().IsNearlyZero()) { return NullOpt; }
+	//	if (VectorToCorner.GetMin() == VectorToCorner.GetMax() == 1) { return GetCenter() + VectorToCorner * GetExtent(); }
 
-	bool IsPointInBox(const FVector& Point) const;
+	//	return NullOpt;
+	//}
 
-	//void ExpandRectangleToBounds(const FGridBoundsDataType& OtherGridBounds);
-	void AddDirtyBounds(const FGridBoundsDataType& OtherGridBoundsData);
+	//FORCEINLINE TOptional<FVector> GetEdge(const FVector& VectorToEdge) const
+	//{
+	//	if (GetSize().IsNearlyZero()) { return NullOpt; }
+	//	if (VectorToEdge.GetMin() != 0/* || VectorToEdge.GetMax() != 1*/ || VectorToEdge.Length() != 1) { return NullOpt; }
 
-	void FixGridSize();
+	//	return GetCenter() + VectorToEdge * GetExtent();
+	//}
 
-	//bool GetBoundsDataXYMin(double& X, double& Y) const;
-	//bool GetBoundsDataXYMax(double& X, double& Y) const;
-	//bool GetBoundsMaxXYMin(double& X, double& Y) const;
-	//bool GetBoundsMaxXYMax(double& X, double& Y) const;
-	bool GetDirtyBounds(FVector& Center, FVector& BoxExtent) const;
-	bool GetLandBounds(FVector& Center, FVector& BoxExtent) const;
+	//FogOfWarTypes::GridIndexType GetGridIndexOnScreen(const FVector& Location, const FIntPoint& ScreenSize);
 
-	FGridBoundsDataType DirtyBounds;
-	FGridBoundsDataType LandBounds;
+	//inline const static FVector BoxForward{ 1, 0, 0 };
+	//inline const static FVector BoxBack{ -BoxForward };
+	//inline const static FVector BoxRight{ 0, 1, 0 };
+	//inline const static FVector BoxLeft{ -BoxRight };
+	//inline const static FVector BoxUp{ 0, 0, 1 };
+	//inline const static FVector BoxDown{ -BoxUp };
 };
 
 UINTERFACE(Blueprintable, MinimalAPI)

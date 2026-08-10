@@ -63,7 +63,12 @@ public:
 	inline const FWorldHeightData::FWorldHeightMapType& GetWorldHeightMap() const { return WorldHeightData.WorldHeightMap; };
 	inline uint32 GetWorldHeightDataVersion() const { return WorldHeightDataVersion; };
 
-	bool GetLandBounds(FVector& Origin, FVector& BoxExtent);
+	FORCEINLINE TOptional<FBox2D> GetLandBoundingBox()
+	{
+		if (!LandBounds.IsSet()) { return NullOpt; }
+
+		return FBox2D{ FVector2D{ LandBounds.GetValue().Min }, FVector2D{ LandBounds.GetValue().Max } };
+	}
 
 	static bool CanAddActor(const AActor& Actor);
 
@@ -93,6 +98,8 @@ protected:
 	virtual void OnActorRegistered(AActor* Actor);
 	virtual void OnActorUnregistered(AActor* Actor);
 #endif
+
+	UFUNCTION()
 	virtual void OnActorDestroyed(AActor* Actor);
 
 	void OnGridSizeUpdated();
@@ -109,8 +116,6 @@ public:
 	UPROPERTY()
 	TArray<FWorldHeightBoundsUpdateRequest> PendingWorldHeightBoundsUpdates;
 
-	FGridBounds GridBounds;
-
 	UPROPERTY(EditAnywhere, Category = Rendering, meta = (UIMin = "0", ClampMin = "0"))
 	float BoxDefaultHeight{ 100.f };
 
@@ -120,6 +125,7 @@ public:
 private:
 	UPROPERTY()
 	TWeakObjectPtr<AActor> Land;
+	TOptional<FGridBounds> LandBounds;
 
 	FogOfWarTypes::GridNumType GridNumX{ FogOfWarConst::kTextureWidth };
 	FogOfWarTypes::GridNumType GridNumY{ FogOfWarConst::kTextureHeight };

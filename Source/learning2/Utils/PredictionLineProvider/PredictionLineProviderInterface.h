@@ -19,7 +19,7 @@ struct FPredictionLineParams
 	TSubclassOf<ABulletBase> BulletClass;
 
 	UPROPERTY(BlueprintReadWrite)
-	APawn* Instigator;
+	TObjectPtr<APawn> Instigator{ nullptr };
 };
 
 // This class does not need to be modified.

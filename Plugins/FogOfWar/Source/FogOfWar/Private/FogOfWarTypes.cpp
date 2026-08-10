@@ -130,11 +130,26 @@ FogOfWarTypes::GridIndexType FGridBoundsDataType::GetGridIndexOnScreen(const FVe
 
 	// 3. 计算离散的网格行列号 (Column 和 Row)
 	// 使用 FloorToInt 转换为整数，并用 Min 严格防止边缘处的越界
-	const int32 GridX = FMath::Min(FMath::FloorToInt(RatioX * ScreenSize.X), ScreenSize.X - 1);
-	const int32 GridY = FMath::Min(FMath::FloorToInt(RatioY * ScreenSize.Y), ScreenSize.Y - 1);
+	//const int32 GridX = FMath::Min(FMath::FloorToInt(RatioX * ScreenSize.X), ScreenSize.X - 1);
+	//const int32 GridY = FMath::Min(FMath::FloorToInt(RatioY * ScreenSize.Y), ScreenSize.Y - 1);
+	const int32 GridX = FMath::Min(FMath::FloorToInt(RatioX * ScreenSize.X), ScreenSize.X);
+	const int32 GridY = FMath::Min(FMath::FloorToInt(RatioY * ScreenSize.Y), ScreenSize.Y);
 
 	// 4. 标准一维化公式：Row * Width + Column
 	return GridY * ScreenSize.X + GridX;
+}
+
+TOptional<FVector> FGridBoundsDataType::GetGridLocationByIndex(const FogOfWarTypes::GridIndexType Index, const FIntPoint& ScreenSize)
+{
+	if (!IsValid()) { return NullOpt; }
+
+	const int32 GridX{ Index % ScreenSize.X };
+	const int32 GridY{ Index / ScreenSize.X };
+
+	const double NormalizedX = static_cast<double>(GridX) / ScreenSize.X;
+	const double NormalizedY = static_cast<double>(GridY) / ScreenSize.Y;
+
+	return FVector{ Box.Min.X + Box.GetSize().X * NormalizedX,Box.Min.Y + Box.GetSize().Y * NormalizedY,Box.GetCenter().Z };
 }
 
 FGridIndexIterator::FGridIndexIterator(FBox Box, const UWorldHeightSubsystem* WorldHeightSubsystem, FOrientedBox OrientedBox, EGridType GridType)
@@ -148,6 +163,7 @@ FGridIndexIterator::FGridIndexIterator(FBox Box, const UWorldHeightSubsystem* Wo
 		UFogOfWarComponentStatics::GetGridSize(GridSize, GridType, WorldHeightSubsystem);
 		bIsValid = GridSize.GetMin() >= 0 && !GridSize.ContainsNaN();
 
+		if (!bIsValid) { return; }
 		X = Box.Min.X + GridSize.X * .5f;
 		Y = Box.Min.Y + GridSize.Y * .5f;
 		if (!IsInBound()) { operator++(); }
@@ -505,54 +521,4 @@ void FWorldHeightData::CleanInvalidWorldHeightEffectiveActorData_Internal(const 
 			It.RemoveCurrent();
 		}
 	}
-}
-
-FGridBounds::FGridBounds(FVector LandMinPosition, FVector LandMaxPosition)
-	:DirtyBounds(FVector::ZeroVector, FVector::ZeroVector), LandBounds(LandMinPosition, LandMaxPosition)
-{
-}
-
-bool FGridBounds::IsValid() const
-{
-	return LandBounds.IsValid();
-}
-
-bool FGridBounds::IsPointInBox(const FVector& Point) const
-{
-	return LandBounds.IsValid() && LandBounds.Box.IsInsideOrOn(Point);
-}
-
-void FGridBounds::AddDirtyBounds(const FGridBoundsDataType& OtherGridBounds)
-{
-	DirtyBounds.Box += OtherGridBounds.Box;
-
-	FixGridSize();
-}
-
-void FGridBounds::FixGridSize()
-{
-	DirtyBounds.Box.Min.X = FMath::Max(DirtyBounds.Box.Min.X, LandBounds.Box.Min.X);
-	DirtyBounds.Box.Min.Y = FMath::Max(DirtyBounds.Box.Min.Y, LandBounds.Box.Min.Y);
-	//DirtyBounds.Box.Min.Z = FMath::Max(DirtyBounds.Box.Min.Z, LandBounds.Box.Min.Z);
-	DirtyBounds.Box.Max.X = FMath::Min(DirtyBounds.Box.Max.X, LandBounds.Box.Max.X);
-	DirtyBounds.Box.Max.Y = FMath::Min(DirtyBounds.Box.Max.Y, LandBounds.Box.Max.Y);
-	//DirtyBounds.Box.Max.Z = FMath::Min(DirtyBounds.Box.Max.Y, LandBounds.Box.Max.Z);
-}
-
-bool FGridBounds::GetDirtyBounds(FVector& Center, FVector& BoxExtent) const
-{
-	if (!HasDirtyBounds()) { return false; }
-
-	Center = DirtyBounds.Box.GetCenter();
-	BoxExtent = DirtyBounds.Box.GetExtent();
-	return true;
-}
-
-bool FGridBounds::GetLandBounds(FVector& Center, FVector& BoxExtent) const
-{
-	if (!LandBounds.IsValid()) { return false; }
-
-	Center = LandBounds.Box.GetCenter();
-	BoxExtent = LandBounds.Box.GetExtent();
-	return true;
 }
