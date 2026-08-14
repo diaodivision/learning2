@@ -1,12 +1,12 @@
 #include "WorldHeightSubsystem.h"
 #include "WorldHeightVolume.h"
 #include "GameFramework/Actor.h"
-#include "Landscape.h"
+// #include "Landscape.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/OverlapResult.h"
 #include "DrawDebugHelpers.h"
 #include "Components/ActorComponent.h"
-#include "EngineUtils.h"
+// #include "EngineUtils.h"
 #include "Engine/StaticMeshActor.h"
 #include "WorldHeightEffectiveActorInterface.h"
 
@@ -82,13 +82,14 @@ void UWorldHeightSubsystem::RequestUpdateWorldHeightData(const AActor& OtherActo
 //	return GridIndexType();
 //}
 
-bool UWorldHeightSubsystem::GetGridSize(FVector2D& GridSize) const
+TOptional<FVector> UWorldHeightSubsystem::GetGridSize() const
 {
-	if (GridNumX < 0 || GridNumY < 0 || !LandBounds.IsSet()) { return false; }
+	if (GridNumX < 0 || GridNumY < 0 || !LandBounds.IsSet()) { return NullOpt; }
 
 	const FBox& LandBox = LandBounds.GetValue();
-	GridSize = { (LandBox.Max.X - LandBox.Min.X) / GridNumX , (LandBox.Max.Y - LandBox.Min.Y) / GridNumY };
-	return true;
+	FVector Result{LandBox.GetSize().X / GridNumX, LandBox.GetSize().Y / GridNumY, 0.};
+	Result.Z = FMath::Max(Result.X, Result.Y);
+	return Result;
 }
 
 //FogOfWarTypes::GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector2D& Location2D) const
@@ -118,22 +119,24 @@ FogOfWarTypes::GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector2D
 
 	const FBox& LandBox{ LandBounds.GetValue() };
 
-	// 1. »ñµÃ 0.0 ~ 1.0 µÄ±ÈÀı
+	// 1. è·å¾— 0.0 ~ 1.0 çš„æ¯”ä¾‹
 	double RatioX = (Location2D.X - LandBox.Min.X) / (LandBox.GetExtent().X * 2.0);
 	double RatioY = (Location2D.Y - LandBox.Min.Y) / (LandBox.GetExtent().Y * 2.0);
 
-	// 2. ×ª»»ÎªÀëÉ¢µÄÕûÊıĞĞÁĞºÅ£¬²¢ÑÏ¸ñ·ÀÖ¹Ô½½ç
-	//int32 GridX = FMath::Min(FMath::FloorToInt(RatioX * GridNumX), GridNumX - 1); // ÁĞ (Column)
-	//int32 GridY = FMath::Min(FMath::FloorToInt(RatioY * GridNumY), GridNumY - 1); // ĞĞ (Row)
-	int32 GridX = FMath::Min(FMath::FloorToInt(RatioX * GridNumX), GridNumX); // ÁĞ (Column)
-	int32 GridY = FMath::Min(FMath::FloorToInt(RatioY * GridNumY), GridNumY); // ĞĞ (Row)
+	// 2. è½¬æ¢ä¸ºç¦»æ•£çš„æ•´æ•°è¡Œåˆ—å·ï¼Œå¹¶ä¸¥æ ¼é˜²æ­¢è¶Šç•Œ
+	//int32 GridX = FMath::Min(FMath::FloorToInt(RatioX * GridNumX), GridNumX - 1); // åˆ— (Column)
+	//int32 GridY = FMath::Min(FMath::FloorToInt(RatioY * GridNumY), GridNumY - 1); // è¡Œ (Row)
+	int32 GridX = FMath::Min(FMath::FloorToInt(RatioX * GridNumX), GridNumX); // åˆ— (Column)
+	int32 GridY = FMath::Min(FMath::FloorToInt(RatioY * GridNumY), GridNumY); // è¡Œ (Row)
 
-	// 3. ±ê×¼Ò»Î¬»¯¹«Ê½£ºRow * Width + Column
+	// 3. æ ‡å‡†ä¸€ç»´åŒ–å…¬å¼ï¼šRow * Width + Column
 	return GridY * GridNumX + GridX;
 }
 
 FogOfWarTypes::GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector& Location) const
 {
+	if (Location.Z < LandBounds.GetValue().Max.Z) { return INDEX_NONE; }
+
 	return GetGridIndex(FVector2D{ Location.X, Location.Y });
 }
 
@@ -144,18 +147,18 @@ bool UWorldHeightSubsystem::GetGridLocationByIndex(FVector& Location, const FogO
 		return false;
 	}
 
-	// ĞŞÕı£ºIndex / Width µÃµ½µÄÊÇ Row (Y)£¬Index % Width µÃµ½µÄÊÇ Column (X)
+	// ä¿®æ­£ï¼šIndex / Width å¾—åˆ°çš„æ˜¯ Row (Y)ï¼ŒIndex % Width å¾—åˆ°çš„æ˜¯ Column (X)
 	const int32 GridY = static_cast<int32>(Index / GridNumX);
 	const int32 GridX = static_cast<int32>(Index % GridNumX);
 
 	const FBox& LandBox{ LandBounds.GetValue() };
 
-	FVector2D GridSize;
-	GetGridSize(GridSize);
+	const TOptional<FVector> GridSize{GetGridSize()};
+	if (!GridSize.IsSet()) {return false;}
 
-	// Ê¹ÓÃÕıÈ·µÄ GridX ºÍ GridY ¼ÆËãÊÀ½ç×ø±êÖĞĞÄµã (+0.5f)
-	Location.X = LandBox.Min.X + (GridX + 0.5f) * GridSize.X;
-	Location.Y = LandBox.Min.Y + (GridY + 0.5f) * GridSize.Y;
+	// ä½¿ç”¨æ­£ç¡®çš„ GridX å’Œ GridY è®¡ç®—ä¸–ç•Œåæ ‡ä¸­å¿ƒç‚¹ (+0.5f)
+	Location.X = LandBox.Min.X + (GridX + 0.5f) * GridSize.GetValue().X;
+	Location.Y = LandBox.Min.Y + (GridY + 0.5f) * GridSize.GetValue().Y;
 	Location.Z = LandBounds.GetValue().GetSize().Z;
 
 	return true;
@@ -195,12 +198,12 @@ void UWorldHeightSubsystem::DrawVisualization() const
 {
 	//if (true) { return; }
 
-	UWorld* World = GetWorld();
+	const UWorld* World = GetWorld();
 	FlushPersistentDebugLines(World);
 	if (!LandBounds.IsSet()) { return; }
 
-	FVector2D GridSize;
-	GetGridSize(GridSize);
+	const TOptional<FVector> GridSize{GetGridSize()};
+	if (!GridSize.IsSet()) {return;}
 
 	int32 ValidData{ 0 };
 	TArray<TWeakObjectPtr<const AActor>> EffectiveActor;
@@ -234,26 +237,20 @@ void UWorldHeightSubsystem::DrawVisualization() const
 
 		//FVector Origin, BoxExtent;
 		//Actor->GetActorBounds(false, Origin, BoxExtent);
-		FOrientedBox Box{ IWorldHeightEffectiveActorInterface::Execute_GetBounds(Actor) };
+		// FBox Box{ EForceInit::ForceInit };
+		// FQuat Quat;
+		// UFogOfWarComponentStatics::GetOrientedBoxAABB(Box, Quat,  IWorldHeightEffectiveActorInterface::Execute_GetBounds(Actor));
+		// DrawDebugSolidBox(World, Box.GetCenter(), Box.GetExtent(), Quat, FColor::Green, true);
+		
+		FBox Box{ EForceInit::ForceInit };
+		FOrientedBoxAABBAndTransform BoxAABBAndTransform{UFogOfWarComponentStatics::GetOrientedBoxAABBAndTransform(IWorldHeightEffectiveActorInterface::Execute_GetBounds(Actor))};
+		const double DistanceToLand{ BoxAABBAndTransform.Box.GetCenter().Z - LandBounds.GetValue().Max.Z };
+		const double FixedBoxZ {DistanceToLand > 0 ? DistanceToLand : DistanceToLand - (LandBounds.GetValue().GetExtent().Z * 2)};
+		BoxAABBAndTransform.Box.Min.Z = FixedBoxZ - BoxAABBAndTransform.Box.GetExtent().Z;
+		BoxAABBAndTransform.Box.Max.Z = FixedBoxZ + BoxAABBAndTransform.Box.GetExtent().Z;
 
-		const double DistanceToLand{ Box.Center.Z - LandBounds.GetValue().Max.Z };
-		Box.Center.Z -= DistanceToLand > 0 ? DistanceToLand : DistanceToLand - (LandBounds.GetValue().GetExtent().Z * 2);
-
-		// 1. ÌáÈ¡¹éÒ»»¯ºóµÄÈı¸ö¾Ö²¿ÖáÏò
-		FVector AxisX = Box.AxisX.GetSafeNormal();
-		FVector AxisY = Box.AxisY.GetSafeNormal();
-		FVector AxisZ = Box.AxisZ.GetSafeNormal();
-
-		// 2. ¹¹ÔìĞı×ª¾ØÕóÓëËÄÔªÊı
-		FMatrix RotationMatrix;
-		RotationMatrix.SetAxes(&AxisX, &AxisY, &AxisZ);
-		FQuat BoxQuat = RotationMatrix.ToQuat();
-
-		// 3. Ö±½ÓÊ¹ÓÃ FOrientedBox ×Ô´øµÄ¾Ö²¿¿Õ¼ä Extent£¨°ë³¤£©
-		FVector LocalExtent{ (float)Box.ExtentX, (float)Box.ExtentY, (float)Box.ExtentZ };
-
-		// 4. »æÖÆ Debug Box
-		DrawDebugSolidBox(World, Box.Center, LocalExtent, BoxQuat, FColor::Green, true);
+		// 4. ç»˜åˆ¶ Debug Box
+		DrawDebugSolidBox(World, BoxAABBAndTransform.Box, FColor::Green, BoxAABBAndTransform.Transform, true);
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("Valid Data: %d"), ValidData);

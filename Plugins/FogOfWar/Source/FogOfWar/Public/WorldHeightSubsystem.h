@@ -46,7 +46,8 @@ public:
 		OutGridY = GridNumY;
 	}
 
-	bool GetGridSize(FVector2D& GridSize) const;
+	TOptional<FVector> GetGridSize() const;
+
 	FogOfWarTypes::GridIndexType GetGridIndex(const FVector2D& Location2D) const;
 	FogOfWarTypes::GridIndexType GetGridIndex(const FVector& Location) const;
 	bool GetGridLocationByIndex(FVector& Location, const FogOfWarTypes::GridIndexType Index) const;

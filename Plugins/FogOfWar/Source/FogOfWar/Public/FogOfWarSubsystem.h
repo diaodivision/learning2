@@ -6,10 +6,11 @@
 #include "Subsystems/LocalPlayerSubsystem.h"
 #include "FogOfWarTypes.h"
 #include "FogOfWarComputeShader.h"
-#include "Engine/EngineBaseTypes.h" // ±ÿ–Î∞¸∫¨¥ÀÕ∑Œƒº˛“‘ π”√ FTickFunction
+#include "Engine/EngineBaseTypes.h" // ÂøÖÈ°ªÂåÖÂê´Ê≠§Â§¥Êñá‰ª∂‰ª•‰ΩøÁî® FTickFunction
+#include "Tickable.h"
 #include "FogOfWarSubsystem.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnVisibilityTextureUpdated, UTexture2D*, Texture);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnVisibilityTextureUpdated, UTexture2D *, Texture);
 DECLARE_MULTICAST_DELEGATE(FOnViewportSizeChangedDelegate);
 
 class APlayerCameraManager;
@@ -22,95 +23,127 @@ class USceneComponent;
 UCLASS()
 class FOGOFWAR_API UFogOfWarSubsystem : public ULocalPlayerSubsystem, public FTickableGameObject
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	UFogOfWarSubsystem();
+    UFogOfWarSubsystem();
 
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+    virtual void Initialize(FSubsystemCollectionBase &Collection) override;
 
-	virtual void Deinitialize() override;
+    virtual void Deinitialize() override;
 
-	virtual void Tick(float DeltaTime) override;
-	virtual void Tick_Internal();
+    virtual void Tick(float DeltaTime) override;
+    virtual void Tick_Internal();
 
-	virtual bool IsTickable() const override { return !IsTemplate(); }//≤ª «CDO≤≈Tick
-	virtual TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(UFogOfWarSubsystem, STATGROUP_Tickables); }
+    virtual bool IsTickable() const override { return !IsTemplate(); } // ‰∏çÊòØCDOÊâçTick
+    virtual TStatId GetStatId() const override
+    {
+        RETURN_QUICK_DECLARE_CYCLE_STAT(UFogOfWarSubsystem, STATGROUP_Tickables);
+    }
 
-	UFUNCTION(BlueprintCallable, Category = "FogOfWar")
-	void OnPostComponentInitialize(UFogOfWarComponent* Component);
+    UFUNCTION(BlueprintCallable, Category = "FogOfWar")
+    void OnPostComponentInitialize(UFogOfWarComponent *Component);
 
-	UFUNCTION(BlueprintPure, Category = "Resolution")
-	FORCEINLINE TOptional<FIntPoint> GetScreenSize() const
-	{
-		if (!bIsInitialScale) { return NullOpt; }
-		return FIntPoint{ FMath::FloorToInt32(kScreenBaseWidth * WidthScaleFactor), FMath::FloorToInt32(kScreenBaseHeight * HeightScaleFactor) };
-	}
+    UFUNCTION(BlueprintPure, Category = "Resolution")
+    FORCEINLINE TOptional<FIntPoint> GetScreenSize() const
+    {
+        if (!bIsInitialScale)
+        {
+            return NullOpt;
+        }
+        // return FIntPoint{ FMath::FloorToInt32(kScreenBaseWidth * WidthScaleFactor),
+        // FMath::FloorToInt32(kScreenBaseHeight * HeightScaleFactor) };
+        return FIntPoint{874, 256};
+        // return FIntPoint{256, 256};
+    }
 
-	bool IsCameraFOVChanged();
+    TOptional<FVector2D> GetGridSize() const;
+
+    bool IsCameraFOVChanged();
 
 private:
-	void CreateDynamicTexture();
-	void SetLandLocationAndSizeParameters() const;
+    void CreateDynamicTexture();
+    void SetLandLocationAndSizeParameters() const;
 
-	void CreateWorldHeightTexture();
+    void CreateWorldHeightTexture();
 
-	void GetFogOfWarActorData(TArray<FIntPoint>& ActorPositions, TArray<FVector2f>& ActorVision, TArray<int32>& RadiusSqList) const;
-	void UpdateWorldHeightData();
-	void UpdateWorldHeightDataToTexture(FRHICommandListImmediate& RHICmdList);
+    void GetFogOfWarActorData(TArray<FIntPoint> &ActorPositions, TArray<FVector2f> &ActorVision,
+                              TArray<int32> &RadiusSqList) const;
+    void UpdateWorldHeightData();
+    void UpdateWorldHeightDataToTexture(FRHICommandListImmediate &RHICmdList);
 
-	void UploadFogOfWarActorData(const TArray<FIntPoint>& ActorPositions, const TArray<FVector2f>& ActorVision, const TArray<int32>& RadiusSqList, FFogOfWarComputeShader::FParameters& Parameter, FRDGBuilder& GraphBuilder) const;
-	void UploadFogOfWarWorldHeightData(FFogOfWarComputeShader::FParameters& Parameter, FRDGBuilder& GraphBuilder, const TCHAR* DebugName) const;
+    void UploadFogOfWarActorData(const TArray<FIntPoint> &ActorPositions, const TArray<FVector2f> &ActorVision,
+                                 const TArray<int32> &RadiusSqList, FFogOfWarComputeShader::FParameters &Parameter,
+                                 FRDGBuilder &GraphBuilder) const;
+    void UploadFogOfWarWorldHeightData(FFogOfWarComputeShader::FParameters &Parameter, FRDGBuilder &GraphBuilder,
+                                       const TCHAR *DebugName) const;
 
-	void SetComputeShaderOutputTextureCache(FRDGTextureRef& ShaderOutputTexture, FFogOfWarComputeShader::FParameters& Parameter, FRDGBuilder& GraphBuilder, const bool bCreateNewOne);
+    void SetComputeShaderOutputTextureCache(FRDGTextureRef &ShaderOutputTexture,
+                                            FFogOfWarComputeShader::FParameters &Parameter, FRDGBuilder &GraphBuilder,
+                                            const bool bCreateNewOne);
 
-	TOptional<FIntPoint> ProjectWorldToLand(const FVector2D& WorldLocation, const FBox2D& LandBoundingBox) const;
-	//bool ProjectWorldToLand(FIntPoint& Position, const FVector2D& WorldLocation, const FBox2D& LandBoundingBox) const;
+    TOptional<FIntPoint> ProjectWorldToLand(const FVector2D &WorldLocation, const FBox2D &LandBoundingBox) const;
+    // bool ProjectWorldToLand(FIntPoint& Position, const FVector2D& WorldLocation, const FBox2D& LandBoundingBox)
+    // const;
 
-	void SetupScaleFactor();
+    void SetupScaleFactor();
 
-	void OnViewportResized(FViewport* Viewport, uint32 Unused);
+    void OnViewportResized(FViewport *Viewport, uint32 Unused);
 
-	void SetUpPlayerCameraManager();
+    void SetUpPlayerCameraManager();
 
-	void OnFogOfWarComponentOwnerOrCameraTransformUpdated(USceneComponent* SceneComponent, EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport);
+    void OnFogOfWarComponentOwnerOrCameraTransformUpdated(USceneComponent *SceneComponent,
+                                                          EUpdateTransformFlags UpdateTransformFlags,
+                                                          ETeleportType Teleport);
+
+    void OnPreRender(FRDGBuilder& GraphBuilder);
+    void OnPostRender(FRDGBuilder& GraphBuilder);
+    void OnPostActorTick(UWorld* World, ELevelTick TickType, float DeltaSeconds);
 
 public:
-	FOnViewportSizeChangedDelegate OnViewportSizeChangedDelegate;
+    FOnViewportSizeChangedDelegate OnViewportSizeChangedDelegate;
 
-	UPROPERTY(BlueprintAssignable, Category = "FogOfWar")
-	FOnVisibilityTextureUpdated OnVisibilityTextureUpdated;
+    UPROPERTY(BlueprintAssignable, Category = "FogOfWar")
+    FOnVisibilityTextureUpdated OnVisibilityTextureUpdated;
 
 private:
-	UPROPERTY()
-	TObjectPtr<UMaterialInstanceDynamic> FogOfWarMaterial;
+    UPROPERTY()
+    TObjectPtr<UMaterialInstanceDynamic> FogOfWarMaterial;
 
-	UPROPERTY()
-	TObjectPtr<UTexture2D> DynamicTexture;
+    UPROPERTY()
+    TObjectPtr<UTexture2D> DynamicTexture;
 
-	UPROPERTY()
-	TArray<uint8> WorldHeightData;
-	uint32 CachedWorldHeightDataVersion{ 0 };
+    UPROPERTY()
+    TArray<uint8> WorldHeightData;
+    uint32 CachedWorldHeightDataVersion{0};
 
-	UPROPERTY()
-	TObjectPtr<UTexture2D> WorldHeightTexture;
+    UPROPERTY()
+    TObjectPtr<UTexture2D> WorldHeightTexture;
 
-	// ª∫¥Ê GPU Œ∆¿Ì£®”√”⁄ RDG Ã·»°£©
-	TRefCountPtr<IPooledRenderTarget> CachedOutputTexture;
+    // ÁºìÂ≠ò GPU Á∫πÁêÜÔºàÁî®‰∫é RDG ÊèêÂèñÔºâ
+    TRefCountPtr<IPooledRenderTarget> CachedOutputTexture;
 
-	UPROPERTY()
-	TArray<TWeakObjectPtr<UFogOfWarComponent>> FogOfWarComponents;
-	mutable bool bHasInvalidComponents{ false };
+    UPROPERTY()
+    TArray<TWeakObjectPtr<UFogOfWarComponent>> FogOfWarComponents;
+    mutable bool bHasInvalidComponents{false};
 
-	bool bIsInitialScale{ false };
-	constexpr static int16 kScreenBaseWidth{ 256 };
-	constexpr static int16 kScreenBaseHeight{ 256 };
-	float WidthScaleFactor{ 1 };
-	float HeightScaleFactor{ 1 };
-	bool bViewportResized{ false };
+    bool bIsInitialScale{false};
+    constexpr static int16 kScreenBaseWidth{256};
+    constexpr static int16 kScreenBaseHeight{256};
+    float WidthScaleFactor{1};
+    float HeightScaleFactor{1};
+    bool bViewportResized{false};
 
-	TWeakObjectPtr<APlayerCameraManager> PlayerCameraManager;
-	float LastFOVAngle{ 0.f };
+    TWeakObjectPtr<APlayerCameraManager> PlayerCameraManager;
+    float LastFOVAngle{0.f};
 
-	TMap<TWeakObjectPtr<USceneComponent>, FTransform> LastComponentOwnerOrCameraTransformMap;
+    TMap<TWeakObjectPtr<USceneComponent>, FTransform> LastComponentOwnerOrCameraTransformMap;
+
+    TArray<FVector> Corners;
+
+    mutable TArray<FIntPoint> CachedActorPositions;
+	mutable TArray<FVector2f> CachedActorVision;
+	mutable TArray<int32> CachedRadiusSqList;
+
+    FBox2D CalculateSnappedScreenAABB(const TArray<FVector>& GroundCorners, FIntPoint ScreenSize) const;
 };

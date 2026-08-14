@@ -27,6 +27,9 @@ float GetNormalizedDistanceToBoundary(int2 GridPos, float2 StartPos, float2 Dire
 int GetGridHeight(int X, int Y);
 bool CheckLineOfSight(int2 Start, int2 End, int MaxSteps);
 
+// åœ¨åå¤„ç†æè´¨é‡‡æ ·æ—¶, åº”è¯¥æŠŠ Sampler Source è®¾ç½®ä¸º Shared: Clamp
+// å¦åˆ™å½“æœ‰éšœç¢ç‰©è·¨è¿‡å±å¹•ä¸Šè¾¹ç•Œæ—¶, å¯èƒ½ä¼šå¯¼è‡´åŸæœ¬æ²¡æœ‰éšœç¢ç‰©çš„ä¸‹è¾¹ç•Œä¹Ÿè¢«é”™è¯¯åœ°è®¤ä¸ºæœ‰éšœç¢ç‰©
+// todo åŸå› å¾…æŸ¥
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void MainCS(
     uint3 DispatchThreadId : SV_DispatchThreadID,
@@ -42,9 +45,10 @@ void MainCS(
         return;
     }
     
-    OutputTexture[DispatchThreadId.xy] = float4(GetGridHeight(x, y) == 0 ? 0 : 1, 0, 0, 1);
-    
-    return;
+    //OutputTexture[DispatchThreadId.xy] = float4(x > TextureSize.x * .3f && x < TextureSize.x * 1.f && y > TextureSize.y * .3f && y < TextureSize.y * 1.f ? 1 : 0, 0, 0, 1);
+    //return;
+    //OutputTexture[DispatchThreadId.xy] = float4(GetGridHeight(x, y) > 0 ? 1: 0, 0, 0, 1);
+    //return;
     
     int2 GridPos = int2(x, y);
     int Index = y * TextureSize.x + x;
@@ -202,18 +206,18 @@ bool CheckLineOfSight(int2 Start, int2 End, int MaxSteps)
     
     float2 Step = float2(Delta) / Steps;
     
-    // ĞŞÕı 1£º¼ÓÉÏ 0.5 Æ«ÒÆ£¬ÈÃÉäÏß´ÓÍø¸ñÖĞĞÄ³ö·¢£¬±ÜÃâ±ßÔµ¾«¶È¶¶¶¯
+    // ä¿®æ­£ 1ï¼šåŠ ä¸Š 0.5 åç§»ï¼Œè®©å°„çº¿ä»ç½‘æ ¼ä¸­å¿ƒå‡ºå‘ï¼Œé¿å…è¾¹ç¼˜ç²¾åº¦æŠ–åŠ¨
     float2 Current = float2(Start) + 0.5f;
     
     for (int i = 0; i <= (int) Steps && i < MaxSteps; i++)
     {
-        // ĞŞÕı 2£ºÊ¹ÓÃ floor() ÑÏ¸ñ»®·ÖÍø¸ñÇø¼ä£¬³¹µ×½â¾ö¸ºÊıÉáÈë¶Ï²ã
+        // ä¿®æ­£ 2ï¼šä½¿ç”¨ floor() ä¸¥æ ¼åˆ’åˆ†ç½‘æ ¼åŒºé—´ï¼Œå½»åº•è§£å†³è´Ÿæ•°èˆå…¥æ–­å±‚
         int2 Pos = int2(floor(Current));
         
-        // ĞŞÕı 3£ºÈ·±£ GetGridHeight ÄÚ²¿ÓĞ±ß½ç¼ì²é (Pos.x >= 0 && Pos.x < Width µÈ)
+        // ä¿®æ­£ 3ï¼šç¡®ä¿ GetGridHeight å†…éƒ¨æœ‰è¾¹ç•Œæ£€æŸ¥ (Pos.x >= 0 && Pos.x < Width ç­‰)
         if (GetGridHeight(Pos.x, Pos.y) != 0)
         {
-            return false; // Óöµ½ÕÏ°­
+            return false; // é‡åˆ°éšœç¢
         }
         
         Current += Step;

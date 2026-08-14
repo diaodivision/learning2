@@ -1,7 +1,6 @@
 #include "FogOfWarTypes.h"
 #include "WorldHeightSubsystem.h"
 #include "GameFramework/Actor.h"
-#include "Engine/StaticMeshActor.h"
 #include "WorldHeightEffectiveActorInterface.h"
 
 FWorldLocationOnScreen2::FWorldLocationOnScreen2(FVector2D MinPosition, FVector2D MaxPosition)
@@ -117,25 +116,25 @@ bool FGridBoundsDataType::IsInsideXY(const FVector2f& Location) const
 //}
 FogOfWarTypes::GridIndexType FGridBoundsDataType::GetGridIndexOnScreen(const FVector& Location, const FIntPoint& ScreenSize)
 {
-	// 1. ∞≤»´¿πΩÿ£∫≤ª‘⁄∞¸Œß∫–ƒ⁄÷±Ω”∑µªÿ INDEX_NONE
+	// 1. ÂÆâÂÖ®Êã¶Êà™Ôºö‰∏çÂú®ÂåÖÂõ¥ÁõíÂÜÖÁõ¥Êé•ËøîÂõû INDEX_NONE
 	if (!IsValid() || !Box.IsInsideXY(Location))
 	{
 		return INDEX_NONE;
 	}
 
-	// 2. ªÒµ√µ±«∞Œª÷√‘⁄ Box ƒ⁄µƒ 0.0 ~ 1.0 µƒπÈ“ªªØ±»¿˝
-	// º»»ª“—æ≠Õ®π˝ IsInsideXY –£—È£¨≤Ó÷µ±ÿ»ªŒ™’˝£¨Œﬁ–Ë Abs
+	// 2. Ëé∑ÂæóÂΩìÂâç‰ΩçÁΩÆÂú® Box ÂÜÖÁöÑ 0.0 ~ 1.0 ÁöÑÂΩí‰∏ÄÂåñÊØî‰æã
+	// Êó¢ÁÑ∂Â∑≤ÁªèÈÄöËøá IsInsideXY Ê†°È™åÔºåÂ∑ÆÂÄºÂøÖÁÑ∂‰∏∫Ê≠£ÔºåÊó†ÈúÄ Abs
 	const double RatioX = (Location.X - Box.Min.X) / (Box.GetExtent().X * 2.0);
 	const double RatioY = (Location.Y - Box.Min.Y) / (Box.GetExtent().Y * 2.0);
 
-	// 3. º∆À„¿Î…¢µƒÕ¯∏Ò––¡–∫≈ (Column ∫Õ Row)
-	//  π”√ FloorToInt ◊™ªªŒ™’˚ ˝£¨≤¢”√ Min —œ∏Ò∑¿÷π±ﬂ‘µ¥¶µƒ‘ΩΩÁ
+	// 3. ËÆ°ÁÆóÁ¶ªÊï£ÁöÑÁΩëÊ†ºË°åÂàóÂè∑ (Column Âíå Row)
+	// ‰ΩøÁî® FloorToInt ËΩ¨Êç¢‰∏∫Êï¥Êï∞ÔºåÂπ∂Áî® Min ‰∏•Ê†ºÈò≤Ê≠¢ËæπÁºòÂ§ÑÁöÑË∂äÁïå
 	//const int32 GridX = FMath::Min(FMath::FloorToInt(RatioX * ScreenSize.X), ScreenSize.X - 1);
 	//const int32 GridY = FMath::Min(FMath::FloorToInt(RatioY * ScreenSize.Y), ScreenSize.Y - 1);
 	const int32 GridX = FMath::Min(FMath::FloorToInt(RatioX * ScreenSize.X), ScreenSize.X);
 	const int32 GridY = FMath::Min(FMath::FloorToInt(RatioY * ScreenSize.Y), ScreenSize.Y);
 
-	// 4. ±Í◊º“ªŒ¨ªØπ´ Ω£∫Row * Width + Column
+	// 4. Ê†áÂáÜ‰∏ÄÁª¥ÂåñÂÖ¨ÂºèÔºöRow * Width + Column
 	return GridY * ScreenSize.X + GridX;
 }
 
@@ -152,22 +151,14 @@ TOptional<FVector> FGridBoundsDataType::GetGridLocationByIndex(const FogOfWarTyp
 	return FVector{ Box.Min.X + Box.GetSize().X * NormalizedX,Box.Min.Y + Box.GetSize().Y * NormalizedY,Box.GetCenter().Z };
 }
 
-FGridIndexIterator::FGridIndexIterator(FBox Box, const UWorldHeightSubsystem* WorldHeightSubsystem, FOrientedBox OrientedBox, EGridType GridType)
-	:Box(Box), OrientedBox(OrientedBox), WorldHeightSubsystem(WorldHeightSubsystem)
+FGridIndexIterator::FGridIndexIterator(const FBox& Box, const FVector& GridSize, const TFunctionRef<GridIndexType(const FVector&)> GetGridIndexFunction, const FQuat& BoxQuat)
+	: BoxExtent(Box.GetExtent()), BoxTransform(FTransform{ BoxQuat, Box.GetCenter() }), GridSize(GridSize), GetGridIndexFunction(GetGridIndexFunction)
 {
-	if (WorldHeightSubsystem)
-	{
-		//if (GridType == EGridType::World) { WorldHeightSubsystem->GetGridSize(GridSize); }
-		//else ()
+	bIsValid = !FMath::IsNearlyZero(BoxExtent.Size2D()) && GridSize.X > 0.;
+	if (!bIsValid) { return; }
 
-		UFogOfWarComponentStatics::GetGridSize(GridSize, GridType, WorldHeightSubsystem);
-		bIsValid = GridSize.GetMin() >= 0 && !GridSize.ContainsNaN();
-
-		if (!bIsValid) { return; }
-		X = Box.Min.X + GridSize.X * .5f;
-		Y = Box.Min.Y + GridSize.Y * .5f;
-		if (!IsInBound()) { operator++(); }
-	}
+	CurrentPosition = FVector{ -BoxExtent.X + GridSize.X * .5, -BoxExtent.Y + GridSize.Y * .5, -BoxExtent.Z + GridSize.Z * .5 };
+	if (operator bool() == false) { operator++(); }
 
 #if !UE_BUILD_SHIPPING
 	id = ids++;
@@ -178,82 +169,31 @@ void FGridIndexIterator::operator++()
 {
 	do
 	{
-#if !UE_BUILD_SHIPPING
-		if (Step++ > StepMax) { return; }
-#endif
-		Y += GridSize.Y;
-		if (Box.Max.Y <= Y)
-		{
-			Y = Box.Min.Y;
-			X += GridSize.X;
-		}
+		CurrentPosition.X += GridSize.X;
+		if (CurrentPosition.X < BoxExtent.X || FMath::IsNearlyEqual(GridSize.X, BoxExtent.X)) { continue; }
 
-		if (IsInBound()) { break; }
-		//if (Actor)
-		//{
-		//	FOrientedBox ActorObb;
-		//	{
-		//		ActorObb.Center = Actor->GetActorLocation();
-		//		ActorObb.AxisX = Actor->GetActorForwardVector();
-		//		ActorObb.AxisY = Actor->GetActorRightVector();
-		//		ActorObb.AxisZ = Actor->GetActorUpVector();
+		if (FMath::IsNearlyZero(GridSize.Y)) { return; }
+		CurrentPosition.Y += GridSize.Y;
+		CurrentPosition.X = -BoxExtent.X + GridSize.X * .5;
 
-		//		FVector ActorOrigin, ActorExtent;
-		//		Actor->GetActorBounds(false, ActorOrigin, ActorExtent);
-		//		ActorObb.Center = ActorOrigin;
+		if (CurrentPosition.Y < BoxExtent.Y || FMath::IsNearlyEqual(GridSize.Y, BoxExtent.Y)) { continue; }
 
-		//		USceneComponent* RootComp = Actor->GetRootComponent();
-		//		// 1. ªÒ»°◊Èº˛‘⁄°∞Œ¥”¶”√»Œ∫Œ ¿ΩÁ±‰ªª£®º¥æ÷≤øø’º‰£©°±œ¬µƒ‘≠ º Bounding Box
-		//		// ∫‹∂‡µ◊≤„◊Èº˛£®»Á Mesh, Shape£©∂ºª·÷ÿ–¥’‚∏ˆ∫Ø ˝¿¥∑µªÿ◊‘º∫◊Ó‘≠ ºµƒ∫–ÃÂ¥Û–°
-		//		FTransform Transform{ FTransform::Identity };
-		//		Transform.SetScale3D(Actor->GetActorScale3D());
-		//		FBox LocalBox = RootComp->CalcBounds(Transform).GetBox();
-
-
-		//		ActorObb.ExtentX = FMath::Abs(LocalBox.GetExtent().X);
-		//		ActorObb.ExtentY = FMath::Abs(LocalBox.GetExtent().Y);
-		//		ActorObb.ExtentZ = FMath::Abs(LocalBox.GetExtent().Z);
-		//	}
-
-		//	const FVector Direction{ FVector{X, Y, 0} - ActorObb.Center };
-		//	const bool bConditionX{ FMath::Abs(FVector::DotProduct(Direction, ActorObb.AxisX)) <= ActorObb.ExtentX };
-		//	const bool bConditionY{ FMath::Abs(FVector::DotProduct(Direction, ActorObb.AxisY)) <= ActorObb.ExtentY };
-		//	const bool bConditionZ{ FMath::Abs(FVector::DotProduct(Direction, ActorObb.AxisZ)) <= ActorObb.ExtentZ };
-
-		//	//if (/*Step < 1000 && */ActorObb.AxisX != FVector::ForwardVector && FMath::Abs(X - Actor->GetActorLocation().X) < 100 && FMath::Abs(Y - Actor->GetActorLocation().Y) < 100)
-		//	//{
-		//	//	UE_LOG(LogTemp, Error, TEXT("UFogOfWarComponentStatics::IsActorInsideCube X %f"), X);
-		//	//	UE_LOG(LogTemp, Error, TEXT("UFogOfWarComponentStatics::IsActorInsideCube Y %f"), Y);
-		//	//	UE_LOG(LogTemp, Error, TEXT("UFogOfWarComponentStatics::IsActorInsideCube Actor %s"), *GetNameSafe(Actor));
-		//	//	UE_LOG(LogTemp, Error, TEXT("UFogOfWarComponentStatics::IsActorInsideCube Direction %s"), *Direction.ToString());
-		//	//	UE_LOG(LogTemp, Error, TEXT("UFogOfWarComponentStatics::IsActorInsideCube ActorObb.AxisX %s"), *ActorObb.AxisX.ToString());
-		//	//	UE_LOG(LogTemp, Error, TEXT("UFogOfWarComponentStatics::IsActorInsideCube ActorObb.AxisY %s"), *ActorObb.AxisY.ToString());
-		//	//	UE_LOG(LogTemp, Error, TEXT("UFogOfWarComponentStatics::IsActorInsideCube ActorObb.AxisZ %s"), *ActorObb.AxisZ.ToString());
-		//	//	UE_LOG(LogTemp, Error, TEXT("UFogOfWarComponentStatics::IsActorInsideCube FVector::DotProduct(Direction, ActorObb.AxisX) %f"), FVector::DotProduct(Direction, ActorObb.AxisX));
-		//	//	UE_LOG(LogTemp, Error, TEXT("UFogOfWarComponentStatics::IsActorInsideCube FVector::DotProduct(Direction, ActorObb.AxisY) %f"), FVector::DotProduct(Direction, ActorObb.AxisY));
-		//	//	UE_LOG(LogTemp, Error, TEXT("UFogOfWarComponentStatics::IsActorInsideCube FVector::DotProduct(Direction, ActorObb.AxisZ) %f"), FVector::DotProduct(Direction, ActorObb.AxisZ));
-		//	//	UE_LOG(LogTemp, Error, TEXT("UFogOfWarComponentStatics::IsActorInsideCube ActorObb.ExtentX %f"), ActorObb.ExtentX);
-		//	//	UE_LOG(LogTemp, Error, TEXT("UFogOfWarComponentStatics::IsActorInsideCube ActorObb.ExtentY %f"), ActorObb.ExtentY);
-		//	//	UE_LOG(LogTemp, Error, TEXT("UFogOfWarComponentStatics::IsActorInsideCube ActorObb.ExtentZ %f"), ActorObb.ExtentZ);
-		//	//}
-
-		//	if (bConditionX && bConditionY && bConditionZ) { break; }
-		//}
-	} while (operator bool());
+		if (FMath::IsNearlyZero(GridSize.Z)) { return; }
+		CurrentPosition.Z += GridSize.Z;
+		CurrentPosition.Y = -BoxExtent.Y + GridSize.Y * .5;
+	} while (bIsValid && IsInsideOrOn() && operator*() == INDEX_NONE);
 }
 
 FogOfWarTypes::GridIndexType FGridIndexIterator::operator*() const
 {
-	return WorldHeightSubsystem->GetGridIndex(FVector2D{ X, Y });
+	return GetGridIndexFunction(BoxTransform.TransformPosition(CurrentPosition));
 }
 
 FGridIndexIterator::operator bool() const
 {
 	//const FBox& BoundsBox{ Bounds.Box };
-	if (!bIsValid) { return false; }
-	if (X == FogOfWarConst::kInfinity || Y == FogOfWarConst::kInfinity) { return false; }
-	if (X < Box.Min.X || Box.Max.X < X || Y < Box.Min.Y || Box.Max.Y < Y) { return false; }
-	//if (OrientedBox.ExtentX > 0 && OrientedBox.ExtentY > 0) { return false; }
+	if (!bIsValid) {return false;}
+	if (!IsInsideOrOn()) { return false; }
 	if (operator*() == INDEX_NONE) { return false; }
 
 #if !UE_BUILD_SHIPPING
@@ -268,63 +208,104 @@ FGridIndexIterator::operator bool() const
 	return true;
 }
 
-bool FGridIndexIterator::IsInBound() const
+bool FGridIndexIterator::IsInsideOrOn() const
 {
-
-
-
-
-	//{
-	//	ActorObb.Center = Actor->GetActorLocation();
-	//	ActorObb.AxisX = Actor->GetActorForwardVector();
-	//	ActorObb.AxisY = Actor->GetActorRightVector();
-	//	ActorObb.AxisZ = Actor->GetActorUpVector();
-
-	//	FVector ActorOrigin, ActorExtent;
-	//	Actor->GetActorBounds(false, ActorOrigin, ActorExtent);
-	//	ActorObb.Center = ActorOrigin;
-
-	//	USceneComponent* RootComp = Actor->GetRootComponent();
-	//	// 1. ªÒ»°◊Èº˛‘⁄°∞Œ¥”¶”√»Œ∫Œ ¿ΩÁ±‰ªª£®º¥æ÷≤øø’º‰£©°±œ¬µƒ‘≠ º Bounding Box
-	//	// ∫‹∂‡µ◊≤„◊Èº˛£®»Á Mesh, Shape£©∂ºª·÷ÿ–¥’‚∏ˆ∫Ø ˝¿¥∑µªÿ◊‘º∫◊Ó‘≠ ºµƒ∫–ÃÂ¥Û–°
-	//	FTransform Transform{ FTransform::Identity };
-	//	Transform.SetScale3D(Actor->GetActorScale3D());
-	//	FBox LocalBox = RootComp->CalcBounds(Transform).GetBox();
-
-
-	//	ActorObb.ExtentX = FMath::Abs(LocalBox.GetExtent().X);
-	//	ActorObb.ExtentY = FMath::Abs(LocalBox.GetExtent().Y);
-	//	ActorObb.ExtentZ = FMath::Abs(LocalBox.GetExtent().Z);
-	//}
-	//const FOrientedBox ActorObb = IWorldHeightEffectiveActorInterface::Execute_GetBounds(Actor);
-
-	//Actor->GetRootComponent()->GetLocalBounds();
-	//FTransform Transform{ FTransform::Identity };
-	//Transform.SetScale3D(Actor->GetActorScale3D());
-
-	const FVector Direction{ FVector{X, Y, OrientedBox.Center.Z} - OrientedBox.Center };
-	const bool bConditionX{ FMath::Abs(FVector::DotProduct(Direction, OrientedBox.AxisX)) <= OrientedBox.ExtentX };
-	const bool bConditionY{ FMath::Abs(FVector::DotProduct(Direction, OrientedBox.AxisY)) <= OrientedBox.ExtentY };
-	const bool bConditionZ{ FMath::Abs(FVector::DotProduct(Direction, OrientedBox.AxisZ)) <= OrientedBox.ExtentZ };
-
-	//if (GetNameSafe(Actor).StartsWith("BP_DestructibleDoor"))
-	//{
-	//	UE_LOG(LogTemp, Error, TEXT("BP_DestructibleDoor bConditionX %d"), bConditionX);
-	//	UE_LOG(LogTemp, Error, TEXT("BP_DestructibleDoor bConditionY %d"), bConditionY);
-	//	UE_LOG(LogTemp, Error, TEXT("BP_DestructibleDoor bConditionZ %d"), bConditionZ);
-	//	UE_LOG(LogTemp, Error, TEXT("BP_DestructibleDoor X %f"), X);
-	//	UE_LOG(LogTemp, Error, TEXT("BP_DestructibleDoor Y %f"), Y);
-	//	UE_LOG(LogTemp, Error, TEXT("BP_DestructibleDoor ActorObb.Center %s"), *ActorObb.Center.ToString());
-	//	UE_LOG(LogTemp, Error, TEXT("BP_DestructibleDoor ActorObb.AxisX %s"), *ActorObb.AxisX.ToString());
-	//	UE_LOG(LogTemp, Error, TEXT("BP_DestructibleDoor ActorObb.AxisY %s"), *ActorObb.AxisY.ToString());
-	//	UE_LOG(LogTemp, Error, TEXT("BP_DestructibleDoor ActorObb.AxisZ %s"), *ActorObb.AxisZ.ToString());
-	//	UE_LOG(LogTemp, Error, TEXT("BP_DestructibleDoor ActorObb.ExtentX %f"), ActorObb.ExtentX);
-	//	UE_LOG(LogTemp, Error, TEXT("BP_DestructibleDoor ActorObb.ExtentY %f"), ActorObb.ExtentY);
-	//	UE_LOG(LogTemp, Error, TEXT("BP_DestructibleDoor ActorObb.ExtentZ %f"), ActorObb.ExtentZ);
-	//}
-
-	return bConditionX && bConditionY && bConditionZ;
+	return FMath::Abs(CurrentPosition.X) <= BoxExtent.X && FMath::Abs(CurrentPosition.Y) <= BoxExtent.Y && FMath::Abs(CurrentPosition.Z) <= BoxExtent.Z;
 }
+
+// FGridIndexIterator::FGridIndexIterator(
+//     const FBox& Box, 
+//     const FVector2D& GridSize, 
+//     const TFunctionRef<FogOfWarTypes::GridIndexType(const FVector2D&)> GetGridIndexFunction, // Êîπ‰∏∫ TFunction
+//     const FQuat& BoxQuat)
+//     : BoxExtent(Box.GetExtent())
+//     , BoxTransform(FTransform{ BoxQuat, Box.GetCenter() })
+//     , GridSize(GridSize)
+//     , GetGridIndexFunction(GetGridIndexFunction)
+// {
+// 	// UE_LOG(LogTemp, Error, TEXT("FGridIndexIterator 111"));
+//     bIsValid = !FMath::IsNearlyZero(BoxExtent.Size2D()) && !FMath::IsNearlyZero(GridSize.SizeSquared());
+// 	if (!bIsValid){ return; }
+// 	// UE_LOG(LogTemp, Error, TEXT("FGridIndexIterator 222"));
+	
+//     // 1. ËÆæÁΩÆËµ∑ÁÇπ (Â∑¶‰∏ãËßíÁΩëÊ†º‰∏≠ÂøÉ)
+//     CurrentPosition = FVector{ -BoxExtent.X + GridSize.X * 0.5, -BoxExtent.Y + GridSize.Y * 0.5, -BoxExtent.Z };
+	
+//     // 2. Â¶ÇÊûúÂàùÂßã‰ΩçÁΩÆÂàöÂ•ΩËêΩÂú® INDEX_NONE Âå∫ÂüüÔºåËá™Âä®Êé®ËøõÂà∞Á¨¨‰∏Ä‰∏™ÊúâÊïàÁΩëÊ†ºÔºÅ
+//     if (IsInsideOrOnXY() && operator*() == INDEX_NONE)
+//     {
+// 		// UE_LOG(LogTemp, Error, TEXT("FGridIndexIterator 333"));
+//         operator++();
+//     }
+	
+// #if !UE_BUILD_SHIPPING
+// id = ids++;
+// #endif
+// }
+
+// void FGridIndexIterator::operator++()
+// {
+// 	// UE_LOG(LogTemp, Error, TEXT("FGridIndexIterator 444"));
+//     if (!bIsValid) return;
+	
+// 	// UE_LOG(LogTemp, Error, TEXT("FGridIndexIterator 555"));
+//     // do-while ‰øùËØÅ„ÄêËá≥Â∞ëÂêëÂâçÊé®Ëøõ‰∏ÄÊ≠•„ÄëÔºåÁÑ∂ÂêéË∑≥ËøáÂêéÁª≠ÊâÄÊúâÁöÑ INDEX_NONE
+//     do
+//     {
+//         CurrentPosition.X += GridSize.X;
+        
+//         // ÂΩì X Ê≠•ËøõË∂ÖÂá∫Âè≥ËæπÁïåÊó∂ÔºåÊç¢Ë°åÈáçÁΩÆ X Âπ∂Â¢ûÂä† Y
+//         if (CurrentPosition.X > BoxExtent.X)
+//         {
+//             CurrentPosition.X = -BoxExtent.X + GridSize.X * 0.5;
+//             CurrentPosition.Y += GridSize.Y;
+//         }
+
+// #if !UE_BUILD_SHIPPING
+//         if (Step++ > StepMax) { break; }
+// #endif
+
+// } while (IsInsideOrOnXY() && operator*() == INDEX_NONE); // ÈÅáÂà∞ INDEX_NONE Ëá™Âä®Âú®ÂÜÖÈÉ®Âæ™ÁéØË∑≥Ëøá
+// // UE_LOG(LogTemp, Error, TEXT("FGridIndexIterator 666, Step: %d"), Step);
+// }
+
+// FogOfWarTypes::GridIndexType FGridIndexIterator::operator*() const
+// {
+// 	// UE_LOG(LogTemp, Error, TEXT("FGridIndexIterator 777, Index: %d"), GetGridIndexFunction(FVector2D{ BoxTransform.TransformPosition(CurrentPosition) }));
+//     return GetGridIndexFunction(FVector2D{ BoxTransform.TransformPosition(CurrentPosition) });
+// }
+
+// FGridIndexIterator::operator bool() const
+// {
+// 	// UE_LOG(LogTemp, Error, TEXT("FGridIndexIterator 888"));
+//     if (!bIsValid) { return false; }
+// 	// UE_LOG(LogTemp, Error, TEXT("FGridIndexIterator 999"));
+	
+//     // ÂÖ≥ÈîÆ‰øÆÊ≠£ÔºöÂè™Âà§Êñ≠ÊòØÂê¶ËøòÂú®ÂåÖÂõ¥ÁõíËåÉÂõ¥ÂÜÖÔºÅÁªùÂØπ‰∏çËÉΩÂú®ËøôÈáåÂà§Êñ≠ operator*() == INDEX_NONE
+//     if (!IsInsideOrOnXY()) { return false; }
+// 	// UE_LOG(LogTemp, Error, TEXT("FGridIndexIterator 10 10 10"));
+	
+// 	#if !UE_BUILD_SHIPPING
+//     if (Step > StepMax)
+//     {
+// 		// UE_LOG(LogTemp, Error, TEXT("FGridIndexIterator 11 11 11"));
+//         // UE_LOG(LogTemp, Error, TEXT("id: %d\tIterator num larger than %d"), id, StepMax);
+//         return false;
+//     }
+// 	#endif
+// 	// UE_LOG(LogTemp, Error, TEXT("FGridIndexIterator 12 12 12"));
+	
+//     return true;
+// }
+
+// bool FGridIndexIterator::IsInsideOrOnXY() const
+// {
+// 	// UE_LOG(LogTemp, Error, TEXT("FGridIndexIterator 13 13 13, Result: %d"), FMath::Abs(CurrentPosition.X) <= (BoxExtent.X + KINDA_SMALL_NUMBER) && 
+//     //        FMath::Abs(CurrentPosition.Y) <= (BoxExtent.Y + KINDA_SMALL_NUMBER));
+//     // Âä†‰∏ä 1e-4 ÁöÑ Epsilon ÂÆπÂ∑ÆÔºåÈò≤Ê≠¢ÊµÆÁÇπÊï∞Á¥ØÂä†ÂæÆÂ∞èËØØÂ∑ÆÂØºËá¥ËæπÁïåÊµãËØïÊèêÂâçÂ§±Êïà
+//     return FMath::Abs(CurrentPosition.X) <= (BoxExtent.X + KINDA_SMALL_NUMBER) && 
+//            FMath::Abs(CurrentPosition.Y) <= (BoxExtent.Y + KINDA_SMALL_NUMBER);
+// }
 
 FWorldHeightEffectiveActorData* FWorldHeightData::FindWorldHeightEffectiveActor(const AActor& Actor)
 {
@@ -345,19 +326,27 @@ void FWorldHeightData::AddHeightEffectiveActor(const AActor& Actor, const UWorld
 	//const FBox NewEffectiveArea = Actor.GetComponentsBoundingBox(true);
 	FOrientedBox OrientedBox;
 	ensure(UFogOfWarComponentStatics::GetActorOrientBox(OrientedBox, &Actor));
-	const FBox AABBBox{ UFogOfWarComponentStatics::GetOrientedBoxAABB(OrientedBox) };
+	const FOrientedBoxAABBAndQuat OrientedBoxAABBAndQuat{ UFogOfWarComponentStatics::GetOrientedBoxAABBAndQuat(OrientedBox) };
 
-	const FBox OldAABBBox{ UFogOfWarComponentStatics::GetOrientedBoxAABB(Data->OrientedBox) };
+	const FOrientedBoxAABBAndQuat OldOrientedBoxAABBAndQuat{ UFogOfWarComponentStatics::GetOrientedBoxAABBAndQuat(Data->OrientedBox) };
 
-	if (bMapElementAdded && bMapElementRemoved && Data != nullptr && OldAABBBox.Intersect(AABBBox))
+	if (bMapElementAdded && bMapElementRemoved && Data != nullptr && OldOrientedBoxAABBAndQuat.Box.Intersect(OrientedBoxAABBAndQuat.Box))
 	{
+		const TOptional<FVector> GridSize {UFogOfWarComponentStatics::GetGridSize(EGridType::World, &WorldHeightSubsystem)};
+		if (!GridSize.IsSet()) { return; }
+
+		auto GetGridIndexFunction = [StrongPtr = TStrongObjectPtr(&WorldHeightSubsystem)](const FVector& Location) -> FogOfWarTypes::GridIndexType
+		{
+			return StrongPtr ? StrongPtr->GetGridIndex(Location) : INDEX_NONE;
+		};
+
 		TSet<FogOfWarTypes::GridIndexType> OverlapArea;
-		for (FGridIndexIterator It{ AABBBox , &WorldHeightSubsystem ,OrientedBox }; It; ++It)
+		for (FGridIndexIterator It{ OrientedBoxAABBAndQuat.Box, GridSize.GetValue(), GetGridIndexFunction, OrientedBoxAABBAndQuat.Quat }; It; ++It)
 		{
 			OverlapArea.Add(*It);
 		}
 
-		for (FGridIndexIterator It{ OldAABBBox , &WorldHeightSubsystem, Data->OrientedBox }; It; ++It)
+		for (FGridIndexIterator It{ OldOrientedBoxAABBAndQuat.Box, GridSize.GetValue(), GetGridIndexFunction, OldOrientedBoxAABBAndQuat.Quat }; It; ++It)
 		{
 			if (OverlapArea.Find(*It) == nullptr && WorldHeightMap.Find(*It) == nullptr)
 			{
@@ -367,7 +356,7 @@ void FWorldHeightData::AddHeightEffectiveActor(const AActor& Actor, const UWorld
 		}
 
 		bool bNotifyAdded{ false };
-		for (FGridIndexIterator It{ AABBBox , &WorldHeightSubsystem, OrientedBox }; It; ++It)
+		for (FGridIndexIterator It{ OrientedBoxAABBAndQuat.Box, GridSize.GetValue(), GetGridIndexFunction, OrientedBoxAABBAndQuat.Quat }; It; ++It)
 		{
 			if (OverlapArea.Find(*It) == nullptr)
 			{
@@ -399,9 +388,15 @@ bool FWorldHeightData::AddHeightEffectiveActor_Internal(const AActor& Actor, con
 	if (!Actor.Implements<UWorldHeightEffectiveActorInterface>()) { return bMapChange; }
 
 	const FOrientedBox OrientedBox{ IWorldHeightEffectiveActorInterface::Execute_GetBounds(&Actor) };
-	UFogOfWarComponentStatics::GetOrientedBoxAABB(OrientedBox);
+	const FOrientedBoxAABBAndQuat OrientedBoxAABBAndQuat{ UFogOfWarComponentStatics::GetOrientedBoxAABBAndQuat(OrientedBox) };
+	const TOptional<FVector> GridSize {UFogOfWarComponentStatics::GetGridSize(EGridType::World, &WorldHeightSubsystem)};
+	if (!GridSize.IsSet()) { return bMapChange; }
+	auto GetGridIndexFunction = [StrongPtr = TStrongObjectPtr(&WorldHeightSubsystem)](const FVector& Location) -> FogOfWarTypes::GridIndexType
+	{
+		return StrongPtr ? StrongPtr->GetGridIndex(Location) : INDEX_NONE;
+	};
 
-	for (FGridIndexIterator It{ UFogOfWarComponentStatics::GetOrientedBoxAABB(OrientedBox), &WorldHeightSubsystem, OrientedBox }; It; ++It)
+	for (FGridIndexIterator It{ OrientedBoxAABBAndQuat.Box, GridSize.GetValue(), GetGridIndexFunction, OrientedBoxAABBAndQuat.Quat }; It; ++It)
 	{
 		if (FogOfWarTypes::HeightEffectiveNumType* EffectiveNumPtr = WorldHeightMap.Find(*It))
 		{
@@ -453,8 +448,16 @@ bool FWorldHeightData::RemoveHeightEffectiveActor_Internal(const AActor& Actor, 
 		bool bMapChange{ false };
 		if (!Actor.Implements<UWorldHeightEffectiveActorInterface>()) { return bMapChange; }
 		//const FOrientedBox OrientedBox{ IWorldHeightEffectiveActorInterface::Execute_GetBounds(&Actor) };
+		const FOrientedBoxAABBAndQuat OrientedBoxAABBAndQuat{UFogOfWarComponentStatics::GetOrientedBoxAABBAndQuat(Data->OrientedBox)};
+		const TOptional<FVector> GridSize {UFogOfWarComponentStatics::GetGridSize(EGridType::World, &WorldHeightSubsystem)};
+		if (!GridSize.IsSet()) { return bMapChange; }
 
-		for (FGridIndexIterator It{ UFogOfWarComponentStatics::GetOrientedBoxAABB(Data->OrientedBox) , &WorldHeightSubsystem, Data->OrientedBox }; It; ++It)
+		auto GetGridIndexFunction = [StrongPtr = TStrongObjectPtr(&WorldHeightSubsystem)](const FVector& Location) -> FogOfWarTypes::GridIndexType
+		{
+			return StrongPtr ? StrongPtr->GetGridIndex(Location) : INDEX_NONE;
+		};
+
+		for (FGridIndexIterator It{ OrientedBoxAABBAndQuat.Box, GridSize.GetValue(), GetGridIndexFunction, OrientedBoxAABBAndQuat.Quat }; It; ++It)
 		{
 			if (FogOfWarTypes::HeightEffectiveNumType* EffectiveNumPtr = WorldHeightMap.Find(*It))
 			{
@@ -483,7 +486,16 @@ bool FWorldHeightData::RemoveHeightEffectiveActor_Internal(const FWorldHeightEff
 {
 	bool bMapChange{ false };
 
-	for (FGridIndexIterator It{ UFogOfWarComponentStatics::GetOrientedBoxAABB(Data.OrientedBox) , &WorldHeightSubsystem, Data.OrientedBox }; It; ++It)
+	const FOrientedBoxAABBAndQuat OrientedBoxAABBAndQuat{UFogOfWarComponentStatics::GetOrientedBoxAABBAndQuat(Data.OrientedBox)};
+	const TOptional<FVector> GridSize {UFogOfWarComponentStatics::GetGridSize(EGridType::World, &WorldHeightSubsystem)};
+	if (!GridSize.IsSet()) { return bMapChange; }
+
+	auto GetGridIndexFunction = [StrongPtr = TStrongObjectPtr(&WorldHeightSubsystem)](const FVector& Location) -> FogOfWarTypes::GridIndexType
+	{
+		return StrongPtr ? StrongPtr->GetGridIndex(Location) : INDEX_NONE;
+	};
+
+	for (FGridIndexIterator It{ OrientedBoxAABBAndQuat.Box, GridSize.GetValue(), GetGridIndexFunction, OrientedBoxAABBAndQuat.Quat }; It; ++It)
 	{
 		if (FogOfWarTypes::HeightEffectiveNumType* EffectiveNumPtr = WorldHeightMap.Find(*It))
 		{

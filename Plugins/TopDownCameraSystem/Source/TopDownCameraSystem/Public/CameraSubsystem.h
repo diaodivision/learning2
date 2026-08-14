@@ -40,7 +40,7 @@ protected:
 
 
 	virtual void Tick(float DeltaTime) override;
-	virtual FORCEINLINE bool IsTickable() const override { return !IsTemplate(); }//≤ª «CDO≤≈Tick
+	virtual FORCEINLINE bool IsTickable() const override { return !IsTemplate(); }//‰∏çÊòØCDOÊâçTick
 	virtual TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(UCameraSubsystem, STATGROUP_Tickables); }
 
 private:
@@ -50,7 +50,8 @@ private:
 	UPROPERTY()
 	TWeakObjectPtr<ACameraBoundsVolume> CameraBoundsVolume;
 
-	inline static constexpr float kSpeed{ 2000.f };
+	inline static constexpr float kSpeed{ 1000.f };
+	// inline static constexpr float kSpeed{ 100.f };
 	inline static constexpr float kThreshold{ .95f };
 
 private:

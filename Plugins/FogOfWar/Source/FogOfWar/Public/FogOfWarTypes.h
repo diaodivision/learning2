@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 #include <concepts>
+#include "Engine/TextureDefines.h"
 #include "UObject/Interface.h"
 #include "FogOfWarShaderTypes.ush"
 #include "RenderGraphUtils.h"
-#include "Engine/CurveTable.h"
 #include "FogOfWarTypes.generated.h"
 
 class UWorldHeightSubsystem;
@@ -51,6 +51,18 @@ enum class EGridType : uint8
 {
 	World,
 	Screen
+};
+
+struct FOrientedBoxAABBAndQuat
+{
+	FBox Box;
+	FQuat Quat;
+};
+
+struct FOrientedBoxAABBAndTransform
+{
+	FBox Box;
+	FTransform Transform;
 };
 
 USTRUCT(BlueprintType)
@@ -161,31 +173,28 @@ struct FGridBoundsDataType
 
 class FGridIndexIterator
 {
-public:
-	explicit FGridIndexIterator(FBox Box, const UWorldHeightSubsystem* WorldHeightSubsystem, FOrientedBox OrientedBox, EGridType GridType = EGridType::World);
+	using GridIndexType = FogOfWarTypes::GridIndexType;
 
-	void operator++();
-	FogOfWarTypes::GridIndexType operator*() const;
-	explicit operator bool() const;
+public:
+	explicit FGridIndexIterator(const FBox& Box, const FVector& GridSize, const TFunctionRef<GridIndexType(const FVector&)> GetGridIndexFunction, const FQuat& BoxQuat = FQuat::Identity);
+
+	FORCENOINLINE void operator++();
+	FORCENOINLINE GridIndexType operator*() const;
+	FORCENOINLINE explicit operator bool() const;
 
 	//bool IsValid() const;
 
 private:
-	bool IsInBound() const;
+ 	FORCENOINLINE bool IsInsideOrOn() const;
 
 private:
-	//const FGridBoundsDataType OrientedBox{ FogOfWarConst::kInvalidBox };
-	const FBox Box;
-	const FOrientedBox OrientedBox;
-
-	TStrongObjectPtr<const UWorldHeightSubsystem> WorldHeightSubsystem{ nullptr };
-
-	double X{ FogOfWarConst::kInfinity };
-	double Y{ FogOfWarConst::kInfinity };
-	FVector2D GridSize{ FogOfWarConst::kInvalidVector2D };
-
+	const FVector BoxExtent;
+	const FTransform BoxTransform;
+	const FVector GridSize{ FVector::ZeroVector };
+	const TFunctionRef<GridIndexType(const FVector&)> GetGridIndexFunction;
+	
 	bool bIsValid{ false };
-	EGridType GridType{ EGridType::World };
+	FVector CurrentPosition;
 
 #if !UE_BUILD_SHIPPING
 	inline static int32 ids{ 1 };
@@ -207,7 +216,7 @@ private:
 			//	while (left <= right)
 			//	{
 			//		int32 mid = left + (right - left) / 2;
-			//		if (mid > Squared / mid) { right = mid - 1; }// ·ÀÖ¹Òç³ö
+			//		if (mid > Squared / mid) { right = mid - 1; }// é˜²æ­¢æº¢å‡º
 			//		else if (mid + 1 > Squared / (mid + 1))
 			//		{
 			//			Result = mid + 10;
@@ -409,20 +418,20 @@ inline const TArrayMap<KeyType, ValueType>::ArrayMapElementType* TArrayMap<KeyTy
 	return MapData.GetData();
 }
 
-template <class KeyType, class ValueType> requires std::is_integral_v<KeyType>
-inline void TArrayMap<KeyType, ValueType>::SetNum(const KeyType NewNum)
-{
-	KeyType OldDataNum{ MapData.Num() };
+// template <class KeyType, class ValueType> requires std::is_integral_v<KeyType>
+// inline void TArrayMap<KeyType, ValueType>::SetNum(const KeyType NewNum)
+// {
+// 	KeyType OldDataNum{ MapData.Num() };
 
-	KeyType NewNumPrime{ NewNum };
-	while (UFogOfWarComponentStatics::IsPrimeMillerRabinTest(NewNumPrime) == false)
-	{
-		NewNumPrime++;
-	}
+// 	KeyType NewNumPrime{ NewNum };
+// 	while (UFogOfWarComponentStatics::IsPrimeMillerRabinTest(NewNumPrime) == false)
+// 	{
+// 		NewNumPrime++;
+// 	}
 
-	MapData.SetNum(NewNumPrime);
-	ReorderData_Internal(OldDataNum);
-}
+// 	MapData.SetNum(NewNumPrime);
+// 	ReorderData_Internal(OldDataNum);
+// }
 
 template <class KeyType, class ValueType> requires std::is_integral_v<KeyType>
 inline KeyType TArrayMap<KeyType, ValueType>::Num() const
