@@ -3,68 +3,49 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "FogOfWarComponentStatics.h"
 #include "FogOfWarTypes.h"
-#include "Tickable.h"
+// #include "RenderGraphFwd.h"
 #include "WorldHeightSubsystem.generated.h"
 
 class AWorldHeightVolume;
 class AActor;
 class UWorld;
 class ALandscape;
+class UTexture2D;
 
 UCLASS()
 class FOGOFWAR_API UWorldHeightSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
-public:
-	UWorldHeightSubsystem();
-
-	virtual bool ShouldCreateSubsystem(UObject* Outer) const override { return true; };
-
-	/**
-	* Initializes the world subsystem.
-	* Will execute PostInitialize if the world has already been Initialize
-	* Will execute OnWorldBeginPlay if the world has already begun play*/
+protected:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 	virtual void Deinitialize() override;
 
+public:
+	virtual FORCEINLINE bool ShouldCreateSubsystem(UObject* Outer) const override { return true; };
+
 	void RequestUpdateWorldHeightData(const AWorldHeightVolume& Volume);
 	void RequestUpdateWorldHeightData(const AActor& OtherActor, FWorldHeightBoundsUpdateRequest::Type RequestType);
 
-	inline void SetGridNum(FogOfWarTypes::GridNumType InGridX, FogOfWarTypes::GridNumType InGridY)
-	{
-		GridNumX = InGridX;
-		GridNumY = InGridY;
-
-		OnGridSizeUpdated();
-	};
-
-	inline void GetGridNum(FogOfWarTypes::GridNumType& OutGridX, FogOfWarTypes::GridNumType& OutGridY) const
-	{
-		OutGridX = GridNumX;
-		OutGridY = GridNumY;
-	}
-
-	TOptional<FVector> GetGridSize() const;
+	TOptional<FGridSizeType> GetGridSize() const;
 
 	FogOfWarTypes::GridIndexType GetGridIndex(const FVector2D& Location2D) const;
 	FogOfWarTypes::GridIndexType GetGridIndex(const FVector& Location) const;
-	bool GetGridLocationByIndex(FVector& Location, const FogOfWarTypes::GridIndexType Index) const;
+	TOptional<FIntPoint> IndexToGridPosition(const FogOfWarTypes::GridIndexType Index) const;
+	TOptional<FIntPoint> GetGridPosition(const FVector& WorldLocation) const { return IndexToGridPosition(GetGridIndex(WorldLocation)); }
+	TOptional<FIntPoint> GetGridPosition(const FVector2D& WorldLocation) const { return IndexToGridPosition(GetGridIndex(WorldLocation)); }
+	TOptional<FVector> GetGridLocationByIndex(const FogOfWarTypes::GridIndexType Index) const;
 
 	bool IsWorldHeightVolumeOverlapWithGround(const AWorldHeightVolume& Volume) const;
 
 	virtual void OnWorlHeightVolumeRegisteredComponents(AWorldHeightVolume& Volume);
 	virtual void OnWorlHeightVolumeUnregisteredComponents(AWorldHeightVolume& Volume);
 
-private:
-	FWorldHeightData::FWorldHeightMapType& GetWorldHeightMap(const UWorldHeightSubsystem* self);
+	FORCEINLINE const FWorldHeightData::FWorldHeightMapType& GetWorldHeightMap() const { return WorldHeightData.WorldHeightMap; };
+	FORCEINLINE uint32 GetWorldHeightDataVersion() const { return WorldHeightDataVersion; };
 
-public:
-	inline const FWorldHeightData::FWorldHeightMapType& GetWorldHeightMap() const { return WorldHeightData.WorldHeightMap; };
-	inline uint32 GetWorldHeightDataVersion() const { return WorldHeightDataVersion; };
-
-	FORCEINLINE TOptional<FBox2D> GetLandBoundingBox()
+	FORCEINLINE TOptional<FBox2D> GetLandBoundingBox() const
 	{
 		if (!LandBounds.IsSet()) { return NullOpt; }
 
@@ -73,11 +54,13 @@ public:
 
 	static bool CanAddActor(const AActor& Actor);
 
-protected:
-#if WITH_EDITOR
-	void DrawVisualization() const;
-	void DrawVisualization(const FogOfWarTypes::GridIndexType Index) const;
-#endif
+	const UTexture2D* GetWorldHeightTexture() 
+	{ 
+		UpdateWorldHeightTexture();
+		return WorldHeightTexture;
+	}
+
+	const FTextureRHIRef* GetWorldHeightTextureRef();
 
 protected:
 	void HandleWorldHeightVolumeInUpdateRequest();
@@ -93,26 +76,27 @@ protected:
 	virtual void InitializeDelegates();
 	virtual void DeinitializeDelegates();
 
+	UFUNCTION()
+	virtual void OnActorDestroyed(AActor* Actor);
+
+	void UpdateWorldHeightTexture();
+
+private:
+	void CreateWorldHeightTexture();
+
 #if WITH_EDITOR
+protected:
+	void DrawVisualization() const;
+
 	virtual void OnActorMoved(AActor* Actor);
 
 	virtual void OnActorRegistered(AActor* Actor);
 	virtual void OnActorUnregistered(AActor* Actor);
 #endif
 
-	UFUNCTION()
-	virtual void OnActorDestroyed(AActor* Actor);
-
-	void OnGridSizeUpdated();
-
-	//protected:
 public:
 	UPROPERTY()
 	TArray<TWeakObjectPtr<const AWorldHeightVolume>> WorldHeightVolumes;
-
-	UPROPERTY();
-	FWorldHeightData WorldHeightData;
-	uint32 WorldHeightDataVersion{ 0 };
 
 	UPROPERTY()
 	TArray<FWorldHeightBoundsUpdateRequest> PendingWorldHeightBoundsUpdates;
@@ -124,12 +108,21 @@ public:
 	float BoxDefaultSize{ .5f };
 
 private:
+	UPROPERTY();
+	FWorldHeightData WorldHeightData;
+	uint32 WorldHeightDataVersion{ 0 };
+
 	UPROPERTY()
 	TWeakObjectPtr<AActor> Land;
 	TOptional<FGridBounds> LandBounds;
 
 	FogOfWarTypes::GridNumType GridNumX{ FogOfWarConst::kTextureWidth };
 	FogOfWarTypes::GridNumType GridNumY{ FogOfWarConst::kTextureHeight };
+
+    UPROPERTY()
+    TObjectPtr<UTexture2D> WorldHeightTexture;
+	uint32 WorldHeightTextureVersion{ 0 };
+
 	FTimerHandle TimerHandle;
 	FTimerHandle CleanInvalidDataTimerHandle;
 

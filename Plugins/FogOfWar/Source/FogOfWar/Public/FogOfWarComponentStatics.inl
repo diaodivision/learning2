@@ -79,24 +79,24 @@ FOrientedBox UFogOfWarComponentStatics::GetAABBBoxOriented(const FBox& AABB)
 }
 
 FOGOFWAR_INLINE
-TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnScreen(const FVector& WorldLocation, const FIntPoint& ScreenSize, const FBox2D& ScreenBoundingBox)
-{
-	const double NormalizedU{ (WorldLocation.Y - ScreenBoundingBox.Min.Y) / ScreenBoundingBox.GetSize().Y };
-	const double NormalizedV{ (ScreenBoundingBox.Max.X - WorldLocation.X) / ScreenBoundingBox.GetSize().X };
-
-	if (NormalizedU >= 0.0 && NormalizedU <= 1.0 && NormalizedV >= 0.0 && NormalizedV <= 1.0) 
-	{
-		return FIntPoint{ FMath::FloorToInt32(NormalizedU * ScreenSize.X), FMath::FloorToInt32(NormalizedV * ScreenSize.Y) };
-	}
-	return NullOpt;
-}
-
-FOGOFWAR_INLINE
 FogOfWarTypes::GridIndexType UFogOfWarComponentStatics::GetGridIndexOnScreen(const FVector& WorldLocation, const FIntPoint& ScreenSize, const FBox2D& ScreenBoundingBox)
 {
 	const TOptional<FIntPoint> Position{ GetGridPositionOnScreen(WorldLocation, ScreenSize, ScreenBoundingBox) };
 	if (Position.IsSet()) { return Position.GetValue().Y * ScreenSize.X + Position.GetValue().X; }
 	return INDEX_NONE;
+}
+
+FOGOFWAR_INLINE
+TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnScreen(const FVector& WorldLocation, const FIntPoint& ScreenSize, const FBox2D& ScreenBoundingBox, const EAllowMinusPosition AllowMinusPosition)
+{
+	const double NormalizedU{ (WorldLocation.Y - ScreenBoundingBox.Min.Y) / ScreenBoundingBox.GetSize().Y };
+	const double NormalizedV{ (ScreenBoundingBox.Max.X - WorldLocation.X) / ScreenBoundingBox.GetSize().X };
+
+	if (AllowMinusPosition == EAllowMinusPosition::Yes || (NormalizedU >= 0.0 && NormalizedU <= 1.0 && NormalizedV >= 0.0 && NormalizedV <= 1.0)) 
+	{
+		return FIntPoint{ FMath::FloorToInt32(NormalizedU * ScreenSize.X), FMath::FloorToInt32(NormalizedV * ScreenSize.Y) };
+	}
+	return NullOpt;
 }
 
 FOGOFWAR_INLINE

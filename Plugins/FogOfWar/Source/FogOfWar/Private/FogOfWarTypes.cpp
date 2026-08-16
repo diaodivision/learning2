@@ -1,7 +1,36 @@
 #include "FogOfWarTypes.h"
-#include "WorldHeightSubsystem.h"
+// #include "WorldHeightSubsystem.h"
+#include "FogOfWarComponentStatics.h"
 #include "GameFramework/Actor.h"
 #include "WorldHeightEffectiveActorInterface.h"
+
+FGridSizeType::FGridSizeType(const double X, const double Y, const FGridSizeType::EGridSizeCoordinate GridSizeCoordinate) : FGridSizeType(X, Y, 0., GridSizeCoordinate)
+{
+}
+
+FGridSizeType::FGridSizeType(const double X, const double Y, const double Z, const FGridSizeType::EGridSizeCoordinate GridSizeCoordinate) : FGridSizeType(FVector{X, Y, Z}, GridSizeCoordinate)
+{
+}
+
+FGridSizeType::FGridSizeType(const FVector2D& GridSizeValue, const FGridSizeType::EGridSizeCoordinate GridSizeCoordinate) 
+	: FGridSizeType(FVector{GridSizeValue, 0.}, GridSizeCoordinate)
+{
+}
+
+FGridSizeType::FGridSizeType(const FVector& GridSizeValue, const FGridSizeType::EGridSizeCoordinate GridSizeCoordinate)
+	: GridSizeValue(GridSizeCoordinate == EGridSizeCoordinate::World ? GridSizeValue : FVector{GridSizeValue.Y, GridSizeValue.X, GridSizeValue.Z})
+{
+}
+
+FVector FGridSizeType::GetGridSizeOnWorldCoordinate() const
+{
+	return GridSizeValue;
+}
+
+FVector FGridSizeType::GetGridSizeOnScreenCoordinate() const
+{
+	return FVector{ GridSizeValue.Y, GridSizeValue.X, GridSizeValue.Z };
+}
 
 FWorldLocationOnScreen2::FWorldLocationOnScreen2(FVector2D MinPosition, FVector2D MaxPosition)
 	:Rectangle(MinPosition, MaxPosition)
@@ -151,8 +180,11 @@ TOptional<FVector> FGridBoundsDataType::GetGridLocationByIndex(const FogOfWarTyp
 	return FVector{ Box.Min.X + Box.GetSize().X * NormalizedX,Box.Min.Y + Box.GetSize().Y * NormalizedY,Box.GetCenter().Z };
 }
 
-FGridIndexIterator::FGridIndexIterator(const FBox& Box, const FVector& GridSize, const TFunctionRef<GridIndexType(const FVector&)> GetGridIndexFunction, const FQuat& BoxQuat)
-	: BoxExtent(Box.GetExtent()), BoxTransform(FTransform{ BoxQuat, Box.GetCenter() }), GridSize(GridSize), GetGridIndexFunction(GetGridIndexFunction)
+FGridIndexIterator::FGridIndexIterator(const FBox& Box, const FGridSizeType& InGridSize, const TFunctionRef<GridIndexType(const FVector&)> GetGridIndexFunction, const FQuat& BoxQuat)
+	: BoxExtent(Box.GetExtent()), 
+	BoxTransform(FTransform{ BoxQuat, Box.GetCenter() }), 
+	GridSize(InGridSize.GetGridSizeOnWorldCoordinate()), 
+	GetGridIndexFunction(GetGridIndexFunction)
 {
 	bIsValid = !FMath::IsNearlyZero(BoxExtent.Size2D()) && GridSize.X > 0.;
 	if (!bIsValid) { return; }
@@ -238,12 +270,13 @@ void FWorldHeightData::AddHeightEffectiveActor(const AActor& Actor, const UWorld
 
 	if (bMapElementAdded && bMapElementRemoved && Data != nullptr && OldOrientedBoxAABBAndQuat.Box.Intersect(OrientedBoxAABBAndQuat.Box))
 	{
-		const TOptional<FVector> GridSize {UFogOfWarComponentStatics::GetGridSize(EGridType::World, &WorldHeightSubsystem)};
+		const TOptional<FGridSizeType> GridSize {UFogOfWarComponentStatics::GetGridSize(EGridType::World, &WorldHeightSubsystem)};
 		if (!GridSize.IsSet()) { return; }
 
 		auto GetGridIndexFunction = [StrongPtr = TStrongObjectPtr(&WorldHeightSubsystem)](const FVector& Location) -> FogOfWarTypes::GridIndexType
 		{
-			return StrongPtr ? StrongPtr->GetGridIndex(Location) : INDEX_NONE;
+			// return StrongPtr ? StrongPtr->GetGridIndex(Location) : INDEX_NONE;
+			return StrongPtr ? UFogOfWarComponentStatics::GetGridIndexOnWorld(Location, *StrongPtr) : INDEX_NONE;
 		};
 
 		TSet<FogOfWarTypes::GridIndexType> OverlapArea;
@@ -295,11 +328,12 @@ bool FWorldHeightData::AddHeightEffectiveActor_Internal(const AActor& Actor, con
 
 	const FOrientedBox OrientedBox{ IWorldHeightEffectiveActorInterface::Execute_GetBounds(&Actor) };
 	const FOrientedBoxAABBAndQuat OrientedBoxAABBAndQuat{ UFogOfWarComponentStatics::GetOrientedBoxAABBAndQuat(OrientedBox) };
-	const TOptional<FVector> GridSize {UFogOfWarComponentStatics::GetGridSize(EGridType::World, &WorldHeightSubsystem)};
+	const TOptional<FGridSizeType> GridSize {UFogOfWarComponentStatics::GetGridSize(EGridType::World, &WorldHeightSubsystem)};
 	if (!GridSize.IsSet()) { return bMapChange; }
 	auto GetGridIndexFunction = [StrongPtr = TStrongObjectPtr(&WorldHeightSubsystem)](const FVector& Location) -> FogOfWarTypes::GridIndexType
 	{
-		return StrongPtr ? StrongPtr->GetGridIndex(Location) : INDEX_NONE;
+		// return StrongPtr ? StrongPtr->GetGridIndex(Location) : INDEX_NONE;
+		return StrongPtr ? UFogOfWarComponentStatics::GetGridIndexOnWorld(Location, *StrongPtr) : INDEX_NONE;
 	};
 
 	for (FGridIndexIterator It{ OrientedBoxAABBAndQuat.Box, GridSize.GetValue(), GetGridIndexFunction, OrientedBoxAABBAndQuat.Quat }; It; ++It)
@@ -355,12 +389,13 @@ bool FWorldHeightData::RemoveHeightEffectiveActor_Internal(const AActor& Actor, 
 		if (!Actor.Implements<UWorldHeightEffectiveActorInterface>()) { return bMapChange; }
 		//const FOrientedBox OrientedBox{ IWorldHeightEffectiveActorInterface::Execute_GetBounds(&Actor) };
 		const FOrientedBoxAABBAndQuat OrientedBoxAABBAndQuat{UFogOfWarComponentStatics::GetOrientedBoxAABBAndQuat(Data->OrientedBox)};
-		const TOptional<FVector> GridSize {UFogOfWarComponentStatics::GetGridSize(EGridType::World, &WorldHeightSubsystem)};
+		const TOptional<FGridSizeType> GridSize {UFogOfWarComponentStatics::GetGridSize(EGridType::World, &WorldHeightSubsystem)};
 		if (!GridSize.IsSet()) { return bMapChange; }
 
 		auto GetGridIndexFunction = [StrongPtr = TStrongObjectPtr(&WorldHeightSubsystem)](const FVector& Location) -> FogOfWarTypes::GridIndexType
 		{
-			return StrongPtr ? StrongPtr->GetGridIndex(Location) : INDEX_NONE;
+			// return StrongPtr ? StrongPtr->GetGridIndex(Location) : INDEX_NONE;
+			return StrongPtr ? UFogOfWarComponentStatics::GetGridIndexOnWorld(Location, *StrongPtr) : INDEX_NONE;
 		};
 
 		for (FGridIndexIterator It{ OrientedBoxAABBAndQuat.Box, GridSize.GetValue(), GetGridIndexFunction, OrientedBoxAABBAndQuat.Quat }; It; ++It)
@@ -393,12 +428,13 @@ bool FWorldHeightData::RemoveHeightEffectiveActor_Internal(const FWorldHeightEff
 	bool bMapChange{ false };
 
 	const FOrientedBoxAABBAndQuat OrientedBoxAABBAndQuat{UFogOfWarComponentStatics::GetOrientedBoxAABBAndQuat(Data.OrientedBox)};
-	const TOptional<FVector> GridSize {UFogOfWarComponentStatics::GetGridSize(EGridType::World, &WorldHeightSubsystem)};
+	const TOptional<FGridSizeType> GridSize {UFogOfWarComponentStatics::GetGridSize(EGridType::World, &WorldHeightSubsystem)};
 	if (!GridSize.IsSet()) { return bMapChange; }
 
 	auto GetGridIndexFunction = [StrongPtr = TStrongObjectPtr(&WorldHeightSubsystem)](const FVector& Location) -> FogOfWarTypes::GridIndexType
 	{
-		return StrongPtr ? StrongPtr->GetGridIndex(Location) : INDEX_NONE;
+		// return StrongPtr ? StrongPtr->GetGridIndex(Location) : INDEX_NONE;
+		return StrongPtr ? UFogOfWarComponentStatics::GetGridIndexOnWorld(Location, *StrongPtr) : INDEX_NONE;
 	};
 
 	for (FGridIndexIterator It{ OrientedBoxAABBAndQuat.Box, GridSize.GetValue(), GetGridIndexFunction, OrientedBoxAABBAndQuat.Quat }; It; ++It)

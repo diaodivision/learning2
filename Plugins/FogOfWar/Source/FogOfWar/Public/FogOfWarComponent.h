@@ -18,10 +18,7 @@ public:
 
 	virtual void BeginPlay() override;
 
-	UFUNCTION(BlueprintCallable, Category = "Initialize")
-	void InitializeComputeShader(int32 InTextureWidth, int32 InTextureHeight);
-
-	bool GetFogOfWarData(FFogOfWarData& Data) const;
+	TOptional<FFogOfWarData> GetFogOfWarData() const;
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true, UIMin = "0", UIMax = "180", ClampMin = "0", ClampMax = "180"))
@@ -29,7 +26,4 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true, UIMin = "0", ClampMin = "0"))
 	float VisionRadius{ 0.f };
-
-	int16 TextureWidth{ 512 };
-	int16 TextureHeight{ 512 };
 };

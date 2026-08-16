@@ -1,4 +1,5 @@
 #include "WorldHeightSubsystem.h"
+#include "FogOfWarTypes.h"
 #include "WorldHeightVolume.h"
 #include "GameFramework/Actor.h"
 // #include "Landscape.h"
@@ -9,30 +10,15 @@
 // #include "EngineUtils.h"
 #include "Engine/StaticMeshActor.h"
 #include "WorldHeightEffectiveActorInterface.h"
-
-UWorldHeightSubsystem::UWorldHeightSubsystem() : UWorldSubsystem()
-{
-	UE_LOG(LogTemp, Warning, TEXT("UWorldHeightSubsystem::UWorldHeightSubsystem"));
-}
+#include "RenderGraphUtils.h"
 
 void UWorldHeightSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	//FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &UWorldHeightSubsystem::OnPostLoadMapWithWorld);
-	//FWorldDelegates::OnPostWorldInitialization.AddUObject(this, &UWorldHeightSubsystem::OnPostWorldInitialization);
-	//FWorldDelegates::OnWorldInitializedActors.AddUObject(this, &UWorldHeightSubsystem::OnWorldInitializedActors);
-
-
-#if WITH_EDITOR
-	//if (GIsEditor)
-	//{
-	//	GEngine->OnActorMoved().AddUObject(this, &UNavigationSystemV1::OnActorMoved);
-	//}
-#endif
 	InitializeDelegates();
 
-	UE_LOG(LogTemp, Warning, TEXT("UWorldHeightSubsystem::Initialize"));
+	CreateWorldHeightTexture();
 }
 
 void UWorldHeightSubsystem::Deinitialize()
@@ -40,8 +26,6 @@ void UWorldHeightSubsystem::Deinitialize()
 	Super::Deinitialize();
 
 	DeinitializeDelegates();
-
-	UE_LOG(LogTemp, Warning, TEXT("UWorldHeightSubsystem::Deinitialize"));
 }
 
 void UWorldHeightSubsystem::RequestUpdateWorldHeightData(const AWorldHeightVolume& Volume)
@@ -72,43 +56,17 @@ void UWorldHeightSubsystem::RequestUpdateWorldHeightData(const AActor& OtherActo
 	{
 		TimerHandle = GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UWorldHeightSubsystem::UpdateWorldHeightData);
 	}
-
-	//RequestUpdateWorldHeightData(Bounds);
-	//UpdateWorldHeightData(OtherActor);
 }
 
-//GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector2D& Location2D) const
-//{
-//	return GridIndexType();
-//}
-
-TOptional<FVector> UWorldHeightSubsystem::GetGridSize() const
+TOptional<FGridSizeType> UWorldHeightSubsystem::GetGridSize() const
 {
 	if (GridNumX < 0 || GridNumY < 0 || !LandBounds.IsSet()) { return NullOpt; }
 
 	const FBox& LandBox = LandBounds.GetValue();
-	FVector Result{LandBox.GetSize().X / GridNumX, LandBox.GetSize().Y / GridNumY, 0.};
+	FVector Result{LandBox.GetSize().X / GridNumY, LandBox.GetSize().Y / GridNumX, 0.};
 	Result.Z = FMath::Max(Result.X, Result.Y);
-	return Result;
+	return FGridSizeType{ Result, FGridSizeType::EGridSizeCoordinate::Screen };
 }
-
-//FogOfWarTypes::GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector2D& Location2D) const
-//{
-//	const FGridBoundsDataType& GridBoundsData = LandBounds.LandBounds;
-//
-//	if (!GridBoundsData.IsValid() || !GridBoundsData.Box.IsInsideOrOnXY(FVector{ Location2D.X, Location2D.Y, 0 })) { return INDEX_NONE; }
-//
-//	const FBox& LandBox{ GridBoundsData.Box };
-//
-//	//const double OffsetX{ FMath::Abs(Location2D.X - LandBox.Min.X) / (LandBox.GetExtent().X * 2) };
-//	//const double OffsetY{ FMath::Abs(Location2D.Y - LandBox.Min.Y) / (LandBox.GetExtent().Y * 2) };
-//
-//	double X{ FMath::Abs((Location2D.X - LandBox.Min.X) / (LandBox.GetExtent().X * 2)) };
-//	double Y{ FMath::Abs((Location2D.Y - LandBox.Min.Y) / (LandBox.GetExtent().Y * 2)) };
-//
-//	//return FMath::Min(FMath::Floor(Y * GridNumY), GridNumY - 1) * GridNumX + FMath::Min(X * GridNumX, GridNumX - 1);
-//	return FMath::Floor(Y * GridNumY) * GridNumX + X * GridNumX;
-//}
 
 FogOfWarTypes::GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector2D& Location2D) const
 {
@@ -119,49 +77,54 @@ FogOfWarTypes::GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector2D
 
 	const FBox& LandBox{ LandBounds.GetValue() };
 
-	// 1. 获得 0.0 ~ 1.0 的比例
-	double RatioX = (Location2D.X - LandBox.Min.X) / (LandBox.GetExtent().X * 2.0);
-	double RatioY = (Location2D.Y - LandBox.Min.Y) / (LandBox.GetExtent().Y * 2.0);
+	// // 1. 获得 0.0 ~ 1.0 的比例
+	// double RatioX = (Location2D.X - LandBox.Min.X) / (LandBox.GetExtent().X * 2.0);
+	// double RatioY = (Location2D.Y - LandBox.Min.Y) / (LandBox.GetExtent().Y * 2.0);
 
-	// 2. 转换为离散的整数行列号，并严格防止越界
-	//int32 GridX = FMath::Min(FMath::FloorToInt(RatioX * GridNumX), GridNumX - 1); // 列 (Column)
-	//int32 GridY = FMath::Min(FMath::FloorToInt(RatioY * GridNumY), GridNumY - 1); // 行 (Row)
-	int32 GridX = FMath::Min(FMath::FloorToInt(RatioX * GridNumX), GridNumX); // 列 (Column)
-	int32 GridY = FMath::Min(FMath::FloorToInt(RatioY * GridNumY), GridNumY); // 行 (Row)
+	// // 2. 转换为离散的整数行列号，并严格防止越界
+	// int32 GridX = FMath::Min(FMath::FloorToInt(RatioX * GridNumX), GridNumX); // 列 (Column)
+	// int32 GridY = FMath::Min(FMath::FloorToInt(RatioY * GridNumY), GridNumY); // 行 (Row)
 
-	// 3. 标准一维化公式：Row * Width + Column
-	return GridY * GridNumX + GridX;
+	// // 3. 标准一维化公式：Row * Width + Column
+	// return GridY * GridNumX + GridX;
+
+	const FVector2D NormalizedPosition{(Location2D.Y - LandBox.Min.Y) / LandBox.GetSize().Y, (LandBox.Max.X - Location2D.X) / LandBox.GetSize().X};
+	if (NormalizedPosition.GetMin() >= 0. && NormalizedPosition.GetMax() <= 1.)
+	{
+		return FMath::FloorToInt32(NormalizedPosition.X * GridNumX) + FMath::FloorToInt32(NormalizedPosition.Y * GridNumY) * GridNumX;
+	}
+	return INDEX_NONE;
 }
 
 FogOfWarTypes::GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector& Location) const
 {
 	if (Location.Z < LandBounds.GetValue().Max.Z) { return INDEX_NONE; }
-
+	
 	return GetGridIndex(FVector2D{ Location.X, Location.Y });
 }
 
-bool UWorldHeightSubsystem::GetGridLocationByIndex(FVector& Location, const FogOfWarTypes::GridIndexType Index) const
+TOptional<FIntPoint> UWorldHeightSubsystem::IndexToGridPosition(const FogOfWarTypes::GridIndexType Index) const
 {
-	if (Index < 0 || Index >= (GridNumX * GridNumY) || !LandBounds.IsSet())
+	if (Index < 0 || Index >= (GridNumX * GridNumY)) { return NullOpt; }
+
+	return FIntPoint{ static_cast<int32>(Index % GridNumX), static_cast<int32>(Index / GridNumX) };
+}
+
+TOptional<FVector> UWorldHeightSubsystem::GetGridLocationByIndex(const FogOfWarTypes::GridIndexType Index) const
+{
+	if (const TOptional<FGridSizeType> GridSize{ GetGridSize() }; Index >= 0 && Index < (GridNumX * GridNumY) && Land.IsValid() && GridSize.IsSet())
 	{
-		return false;
+		const TOptional<FIntPoint> GridPosition{IndexToGridPosition(Index)};
+		if (!GridPosition.IsSet()) {return NullOpt;}
+		// const int32 GridX = static_cast<int32>(Index % GridNumX);
+		// const int32 GridY = static_cast<int32>(Index / GridNumX);
+
+		const FVector GridSizeOnWorld{ GridSize->GetGridSizeOnWorldCoordinate() };
+		const FBox& LandBox{ LandBounds.GetValue() };
+		return FVector{ LandBox.Max.X - (GridPosition.GetValue().Y + 0.5f) * GridSizeOnWorld.X, LandBox.Min.Y + (GridPosition.GetValue().X + 0.5f) * GridSizeOnWorld.Y, LandBox.Max.Z };
 	}
 
-	// 修正：Index / Width 得到的是 Row (Y)，Index % Width 得到的是 Column (X)
-	const int32 GridY = static_cast<int32>(Index / GridNumX);
-	const int32 GridX = static_cast<int32>(Index % GridNumX);
-
-	const FBox& LandBox{ LandBounds.GetValue() };
-
-	const TOptional<FVector> GridSize{GetGridSize()};
-	if (!GridSize.IsSet()) {return false;}
-
-	// 使用正确的 GridX 和 GridY 计算世界坐标中心点 (+0.5f)
-	Location.X = LandBox.Min.X + (GridX + 0.5f) * GridSize.GetValue().X;
-	Location.Y = LandBox.Min.Y + (GridY + 0.5f) * GridSize.GetValue().Y;
-	Location.Z = LandBounds.GetValue().GetSize().Z;
-
-	return true;
+	return NullOpt;
 }
 
 bool UWorldHeightSubsystem::IsWorldHeightVolumeOverlapWithGround(const AWorldHeightVolume& Volume) const
@@ -183,98 +146,15 @@ void UWorldHeightSubsystem::OnWorlHeightVolumeUnregisteredComponents(AWorldHeigh
 	CleanInvalidData_Internal();
 }
 
-FWorldHeightData::FWorldHeightMapType& UWorldHeightSubsystem::GetWorldHeightMap(const UWorldHeightSubsystem* self)
-{
-	return const_cast<FWorldHeightData::FWorldHeightMapType&>(const_cast<const UWorldHeightSubsystem*>(this)->GetWorldHeightMap());
-}
-
 bool UWorldHeightSubsystem::CanAddActor(const AActor& Actor)
 {
 	return Actor.Implements<UWorldHeightEffectiveActorInterface>();
 }
 
-#if WITH_EDITOR
-void UWorldHeightSubsystem::DrawVisualization() const
+const FTextureRHIRef* UWorldHeightSubsystem::GetWorldHeightTextureRef()
 {
-	//if (true) { return; }
-
-	const UWorld* World = GetWorld();
-	FlushPersistentDebugLines(World);
-	if (!LandBounds.IsSet()) { return; }
-
-	const TOptional<FVector> GridSize{GetGridSize()};
-	if (!GridSize.IsSet()) {return;}
-
-	int32 ValidData{ 0 };
-	TArray<TWeakObjectPtr<const AActor>> EffectiveActor;
-	WorldHeightData.WorldHeightEffectiveActor.GetKeys(EffectiveActor);
-	//{
-	//	FString Name;
-	//	for (auto A : EffectiveActor)
-	//	{
-	//		if (Name.Len() > 0)
-	//		{
-	//			Name += ", ";
-	//		}
-	//		Name += GetNameSafe(A);
-	//	}
-
-	//	UE_LOG(LogTemp, Warning, TEXT("WorldHeightEffectiveActor: %s"), *Name);
-	//}
-
-	for (const TWeakObjectPtr<const AActor>& ActorWeakPtr : EffectiveActor)
-	{
-		const AActor* Actor = ActorWeakPtr.Get();
-		if (!Actor)
-		{
-			using NonConstThisTypePtr = std::remove_const_t<std::remove_pointer_t<decltype(this)>>*;
-			const_cast<NonConstThisTypePtr>(this)->NotifyCleanInvalidData_Internal();
-
-			continue;
-		}
-
-		ValidData++;
-
-		//FVector Origin, BoxExtent;
-		//Actor->GetActorBounds(false, Origin, BoxExtent);
-		// FBox Box{ EForceInit::ForceInit };
-		// FQuat Quat;
-		// UFogOfWarComponentStatics::GetOrientedBoxAABB(Box, Quat,  IWorldHeightEffectiveActorInterface::Execute_GetBounds(Actor));
-		// DrawDebugSolidBox(World, Box.GetCenter(), Box.GetExtent(), Quat, FColor::Green, true);
-		
-		FBox Box{ EForceInit::ForceInit };
-		FOrientedBoxAABBAndTransform BoxAABBAndTransform{UFogOfWarComponentStatics::GetOrientedBoxAABBAndTransform(IWorldHeightEffectiveActorInterface::Execute_GetBounds(Actor))};
-		const double DistanceToLand{ BoxAABBAndTransform.Box.GetCenter().Z - LandBounds.GetValue().Max.Z };
-		const double FixedBoxZ {DistanceToLand > 0 ? DistanceToLand : DistanceToLand - (LandBounds.GetValue().GetExtent().Z * 2)};
-		BoxAABBAndTransform.Box.Min.Z = FixedBoxZ - BoxAABBAndTransform.Box.GetExtent().Z;
-		BoxAABBAndTransform.Box.Max.Z = FixedBoxZ + BoxAABBAndTransform.Box.GetExtent().Z;
-
-		// 4. 绘制 Debug Box
-		DrawDebugSolidBox(World, BoxAABBAndTransform.Box, FColor::Green, BoxAABBAndTransform.Transform, true);
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("Valid Data: %d"), ValidData);
+	return GetWorldHeightTexture() ? &const_cast<UTexture2D*>(GetWorldHeightTexture())->GetResource()->GetTextureRHI() : nullptr;
 }
-
-void UWorldHeightSubsystem::DrawVisualization(const FogOfWarTypes::GridIndexType Index) const
-{
-	if (true) { return; }
-
-	if (!LandBounds.IsSet()) { return; }
-	const FBox& LandBox = LandBounds.GetValue();
-	const FVector2D GridSize{ (LandBox.Max.X - LandBox.Min.X) / GridNumX , (LandBox.Max.Y - LandBox.Min.Y) / GridNumY };
-	FVector BoxLocation;
-
-	if (!GetGridLocationByIndex(BoxLocation, Index)) { return; }
-
-	const FVector BoxCenter{ BoxLocation + BoxDefaultHeight / 2.f * FVector::UpVector };
-
-
-	UE_LOG(LogTemp, Warning, TEXT("DrawDebugSolidBox, Center: %s\tExtent: %s"), *BoxCenter.ToString(), *FVector{ GridSize.X * BoxDefaultSize, GridSize.Y * BoxDefaultSize, BoxDefaultHeight * .5f }.ToString());
-	DrawDebugSolidBox(GetWorld(), BoxCenter, FVector{ GridSize.X * BoxDefaultSize, GridSize.Y * BoxDefaultSize, BoxDefaultHeight * .5f }, FColor::Green, true);
-	//DrawDebugSolidPlane
-}
-#endif
 
 void UWorldHeightSubsystem::HandleWorldHeightVolumeInUpdateRequest()
 {
@@ -332,22 +212,6 @@ void UWorldHeightSubsystem::UpdateWorldHeightData_Internal(const AWorldHeightVol
 	TArray<FOverlapResult> Result;
 	FBox VolumeBox = Volume.GetComponentsBoundingBox(true);
 
-	//if (GetWorld()->OverlapMultiByObjectType(Result, VolumeBox.GetCenter(), FQuat{ FRotator::ZeroRotator }, FCollisionObjectQueryParams::AllStaticObjects, FCollisionShape::MakeBox(VolumeBox.GetExtent()), QueryParams))
-	//{
-	//	for (const FOverlapResult& R : Result)
-	//	{
-	//		AActor* OverlapActor = R.GetActor();
-
-	//		if (OverlapActor->IsRootComponentStatic() && WorldHeightData.FindWorldHeightEffectiveActor(*OverlapActor))
-	//		{
-	//			uint32 UniqueID{ OverlapActor->GetUniqueID() };
-	//			FBox Box{ OverlapActor->GetComponentsBoundingBox(true) };
-
-	//			PendingWorldHeightBoundsUpdates.Add(FWorldHeightBoundsUpdateRequest{ UniqueID, Box, FWorldHeightBoundsUpdateRequest::Type::Added, OverlapActor });
-	//		}
-	//	}
-	//}
-
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
 	UClass* ActorClassFilter = AStaticMeshActor::StaticClass();
@@ -374,9 +238,6 @@ void UWorldHeightSubsystem::UpdateWorldHeightData_Internal(const AWorldHeightVol
 			if (CanAddActor(*OverlapActor) /*&& OverlapActor->IsRootComponentStatic()*/ /*&& WorldHeightData.FindWorldHeightEffectiveActor(*OverlapActor)*/)
 			{
 				uint32 UniqueID{ OverlapActor->GetUniqueID() };
-				//FBox Box{ OverlapActor->GetComponentsBoundingBox(true) };
-				//FVector ActorOrigin, ActorExtent;
-				//OverlapActor->GetActorBounds(false, ActorOrigin, ActorExtent);
 
 				FBox Box;
 				{
@@ -393,22 +254,15 @@ void UWorldHeightSubsystem::UpdateWorldHeightData_Internal(const AWorldHeightVol
 
 void UWorldHeightSubsystem::UpdateWorldHeightData_Internal(const AActor& Actor, FWorldHeightBoundsUpdateRequest::Type RequestType)
 {
-	if (&Actor == Land.Get()) { return; }
+	if (&Actor == Land.Get() || !CanAddActor(Actor)) { return; }
 
-	//UE_LOG(LogTemp, Warning, TEXT("UpdateWorldHeightData_Internal: %s\t%d"), *GetNameSafe(&Actor), RequestType);
-
-	if (CanAddActor(Actor)/*Actor.IsRootComponentStatic()*/)
+	if (RequestType == FWorldHeightBoundsUpdateRequest::Type::Added)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UpdateWorldHeightData_Internal: %s\t%d"), *GetNameSafe(&Actor), RequestType);
-
-		if (RequestType == FWorldHeightBoundsUpdateRequest::Type::Added)
-		{
-			WorldHeightData.AddHeightEffectiveActor(Actor, *this);
-		}
-		else if (RequestType == FWorldHeightBoundsUpdateRequest::Type::Removed)
-		{
-			WorldHeightData.RemoveHeightEffectiveActor(Actor, *this);
-		}
+		WorldHeightData.AddHeightEffectiveActor(Actor, *this);
+	}
+	else if (RequestType == FWorldHeightBoundsUpdateRequest::Type::Removed)
+	{
+		WorldHeightData.RemoveHeightEffectiveActor(Actor, *this);
 	}
 }
 
@@ -429,6 +283,51 @@ void UWorldHeightSubsystem::CleanInvalidData_Internal()
 		});
 
 	WorldHeightData.NotifyCleanInvalidWorldHeightEffectiveActorData(*this);
+}
+
+void UWorldHeightSubsystem::OnActorRegisteredComponents(AActor* Actor)
+{
+	if (Actor->Implements<UWorldLandInterface>())
+	{
+		OnLandRegisteredComponents(*Actor);
+	}
+	else if (AWorldHeightVolume* Volume = Cast<AWorldHeightVolume>(Actor))
+	{
+		OnWorlHeightVolumeRegisteredComponents(*Volume);
+	}
+}
+
+void UWorldHeightSubsystem::OnLandRegisteredComponents(AActor& InLand)
+{
+	Land = &InLand;
+	Land->OnDestroyed.AddUniqueDynamic(this, &UWorldHeightSubsystem::OnActorDestroyed);
+	LandBounds = FGridBounds{ Land->GetComponentsBoundingBox(true) };
+
+	TArray<AActor*> Volumes;
+	UGameplayStatics::GetAllActorsOfClass(this, AWorldHeightVolume::StaticClass(), Volumes);
+
+	for (AActor* Volume : Volumes)
+	{
+		if (Volume->IsActorInitialized() && !WorldHeightVolumes.Contains(Volume))
+		{
+			if (AWorldHeightVolume* WorldHeightVolume = Cast<AWorldHeightVolume>(Volume))
+			{
+				WorldHeightVolumes.AddUnique(WorldHeightVolume);
+			}
+		}
+	}
+
+	for (const TWeakObjectPtr<const AWorldHeightVolume>& VolumeWeakPtr : WorldHeightVolumes)
+	{
+		if (const AWorldHeightVolume* Volume = VolumeWeakPtr.Get())
+		{
+			RequestUpdateWorldHeightData(*Volume);
+		}
+		else
+		{
+			NotifyCleanInvalidData_Internal();
+		}
+	}
 }
 
 void UWorldHeightSubsystem::InitializeDelegates()
@@ -483,35 +382,6 @@ void UWorldHeightSubsystem::DeinitializeDelegates()
 	}
 }
 
-#if WITH_EDITOR
-void UWorldHeightSubsystem::OnActorMoved(AActor* Actor)
-{
-	if (!Actor) { return; }
-
-	UE_LOG(LogTemp, Error, TEXT("UWorldHeightSubsystem::OnActorMoved: Land.IsValid(): %d"), Land.IsValid());
-
-	RequestUpdateWorldHeightData(*Actor, FWorldHeightBoundsUpdateRequest::Type::Added);
-	//UE_LOG(LogTemp, Warning, TEXT("UWorldHeightSubsystem::OnActorMoved: %s"), *GetNameSafe(Actor));
-}
-
-void UWorldHeightSubsystem::OnActorRegistered(AActor* Actor)
-{
-	if (!Actor) { return; }
-
-	RequestUpdateWorldHeightData(*Actor, FWorldHeightBoundsUpdateRequest::Type::Added);
-
-	UE_LOG(LogTemp, Warning, TEXT("UWorldHeightSubsystem::OnActorRegistered: %s"), *GetNameSafe(Actor));
-}
-
-void UWorldHeightSubsystem::OnActorUnregistered(AActor* Actor)
-{
-	if (!Actor) { return; }
-
-	RequestUpdateWorldHeightData(*Actor, FWorldHeightBoundsUpdateRequest::Type::Removed);
-	UE_LOG(LogTemp, Warning, TEXT("UWorldHeightSubsystem::OnActorUnregistered: %s"), *GetNameSafe(Actor));
-}
-#endif
-
 void UWorldHeightSubsystem::OnActorDestroyed(AActor* Actor)
 {
 	if (!Actor) { return; }
@@ -521,55 +391,180 @@ void UWorldHeightSubsystem::OnActorDestroyed(AActor* Actor)
 	if (Actor == Land.Get()) { LandBounds.Reset(); }
 }
 
-void UWorldHeightSubsystem::OnActorRegisteredComponents(AActor* Actor)
+void UWorldHeightSubsystem::UpdateWorldHeightTexture()
 {
-	if (Actor->Implements<UWorldLandInterface>())
+	if (WorldHeightDataVersion == WorldHeightTextureVersion) { return; }
+
+	// 1. 安全校验
+    if (FMath::Min(GridNumX, GridNumY) <= 0 || !WorldHeightTexture || !WorldHeightTexture->GetResource()) { return; }
+
+	#if WITH_EDITOR
+	struct FDebugInfo
 	{
-		OnLandRegisteredComponents(*Actor);
-	}
-	else if (AWorldHeightVolume* Volume = Cast<AWorldHeightVolume>(Actor))
+		FVector Location;
+		int32 Index;
+		FIntPoint GridPosition;
+		bool bIsSet = false;
+	};
+	#endif
+
+	FDebugInfo MinIndex;
+	FDebugInfo MaxIndex;
+	FDebugInfo MinX;
+	FDebugInfo MinY;
+	FDebugInfo MaxX;
+	FDebugInfo MaxY;
+
+    // 2. 将数据深拷贝一份交由渲染线程持有，防止主线程销毁/重分配该数组
+    TArray<uint8> WorldHeightDataArray;
+	WorldHeightDataArray.SetNumZeroed(GridNumX * GridNumY);
+	for (auto It = GetWorldHeightMap().CreateConstIterator(); It; ++It)
 	{
-		OnWorlHeightVolumeRegisteredComponents(*Volume);
+		const FogOfWarTypes::GridIndexType Index{It->Key};
+		if (!ensure(WorldHeightDataArray.IsValidIndex(It->Key))) { continue; }
+		
+		WorldHeightDataArray[Index] = 1;
+		
+		const TOptional<FIntPoint> GridPosition{ IndexToGridPosition(Index) };
+		if (!GridPosition.IsSet()) {continue;}		
+		auto SetDebugInfo = [this, Index, GridPosition](FDebugInfo& Info)
+		{
+			const TOptional<FVector> Location{GetGridLocationByIndex(Index)};
+ 			if (!Location.IsSet() || !GridPosition.IsSet()) {return;}		
+			
+			Info.Location = Location.GetValue();
+			Info.GridPosition = GridPosition.GetValue();
+			Info.Index = Index;
+			Info.bIsSet = true;
+		};
+		
+		if (!MinIndex.bIsSet || MinIndex.Index > Index) {SetDebugInfo(MinIndex);}
+		if (!MaxIndex.bIsSet || MaxIndex.Index < Index) {SetDebugInfo(MaxIndex);}
+		if (!MinX.bIsSet || MinX.GridPosition.X > GridPosition.GetValue().X) {SetDebugInfo(MinX);}
+		if (!MinY.bIsSet || MinY.GridPosition.Y > GridPosition.GetValue().Y) {SetDebugInfo(MinY);}
+		if (!MaxX.bIsSet || MaxX.GridPosition.X < GridPosition.GetValue().X) {SetDebugInfo(MaxX);}
+		if (!MaxY.bIsSet || MaxY.GridPosition.Y < GridPosition.GetValue().Y) {SetDebugInfo(MaxY);}
+		
+		// constexpr int32 Step{2};
+		// for (auto i{-Step}; i <= Step; i++)
+		// {
+			// for (auto j{-Step}; j <= Step; j++)
+			// {
+				// const FogOfWarTypes::GridIndexType NearIndex{ GridPosition.GetValue().X + i + (GridPosition.GetValue().Y + j) * GridNumX };
+				// if (WorldHeightDataArray.IsValidIndex(NearIndex)) { WorldHeightDataArray[NearIndex] = 1; }
+			// }
+		// }
 	}
+
+	static int32 Count{1};
+	auto PrintDebugInfo = [](const FDebugInfo& Info, const FString& Name)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Printing Debug Info, Name: %s"), *Name);
+		UE_LOG(LogTemp, Error, TEXT("Printing Debug Info, Location: %s"), *Info.Location.ToString());
+		UE_LOG(LogTemp, Error, TEXT("Printing Debug Info, Position: %s"), *Info.GridPosition.ToString());
+		UE_LOG(LogTemp, Error, TEXT("Printing Debug Info, Index: %d"), Info.Index);
+	};
+	UE_LOG(LogTemp, Error, TEXT("Printing Debug Info, Count: %d start------------------------"), Count);
+	if (MinIndex.bIsSet) {PrintDebugInfo(MinIndex, TEXT("MinIndex"));}
+	if (MaxIndex.bIsSet) {PrintDebugInfo(MaxIndex, TEXT("MaxIndex"));}
+	if (MinX.bIsSet) {PrintDebugInfo(MinX, TEXT("MinX"));}
+	if (MinY.bIsSet) {PrintDebugInfo(MinY, TEXT("MinY"));}
+	if (MaxX.bIsSet) {PrintDebugInfo(MaxX, TEXT("MaxX"));}
+	if (MaxY.bIsSet) {PrintDebugInfo(MaxY, TEXT("MaxY"));}
+	UE_LOG(LogTemp, Error, TEXT("Printing Debug Info, Count: %d end--------------------------"), Count++);
+
+    // 3. 投递渲染命令
+    ENQUEUE_RENDER_COMMAND(UpdateTextureCmd)(
+        [WeakThis = MakeWeakObjectPtr(this), WorldHeightDataArray = MoveTemp(WorldHeightDataArray), TargetVersion = WorldHeightDataVersion](FRHICommandListImmediate& RHICmdList)
+        {
+            FTextureResource* Resource = WeakThis.IsValid() ? WeakThis->WorldHeightTexture->GetResource() : nullptr;
+            if (!Resource || !Resource->TextureRHI.IsValid()){ return; }
+
+            FUpdateTextureRegion2D Region(0, 0, 0, 0, WeakThis->GridNumX, WeakThis->GridNumY);
+            const uint32 Pitch = WeakThis->GridNumX * sizeof(uint8); // Pitch = 单行字节数
+
+            RHICmdList.UpdateTexture2D(
+                Resource->TextureRHI,
+                0,                  // MipIndex
+                Region,             // Region
+                Pitch,              // Pitch (行距)
+                WorldHeightDataArray.GetData()  // Buffer
+            );
+
+			AsyncTask(ENamedThreads::GameThread, [WeakThis, TargetVersion]()
+				{
+					if (!WeakThis.IsValid() || WeakThis->WorldHeightTextureVersion > TargetVersion) { return; }			
+					//OnVisibilityTextureUpdated.Broadcast(OutputTexture);
+					WeakThis->WorldHeightTextureVersion = TargetVersion;
+				}
+			);
+        }
+    );
 }
 
-void UWorldHeightSubsystem::OnLandRegisteredComponents(AActor& InLand)
+void UWorldHeightSubsystem::CreateWorldHeightTexture()
 {
-	Land = &InLand;
-	Land->OnDestroyed.AddUniqueDynamic(this, &UWorldHeightSubsystem::OnActorDestroyed);
-	LandBounds = FGridBounds{ Land->GetComponentsBoundingBox(true) };
-
-	TArray<AActor*> Volumes;
-	UGameplayStatics::GetAllActorsOfClass(this, AWorldHeightVolume::StaticClass(), Volumes);
-
-	for (AActor* Volume : Volumes)
-	{
-		if (Volume->IsActorInitialized() && !WorldHeightVolumes.Contains(Volume))
-		{
-			if (AWorldHeightVolume* WorldHeightVolume = Cast<AWorldHeightVolume>(Volume))
-			{
-				WorldHeightVolumes.AddUnique(WorldHeightVolume);
-			}
-		}
-	}
-
-	for (const TWeakObjectPtr<const AWorldHeightVolume>& VolumeWeakPtr : WorldHeightVolumes)
-	{
-		if (const AWorldHeightVolume* Volume = VolumeWeakPtr.Get())
-		{
-			RequestUpdateWorldHeightData(*Volume);
-		}
-		else
-		{
-			NotifyCleanInvalidData_Internal();
-		}
-	}
+	WorldHeightTexture = UTexture2D::CreateTransient(GridNumX, GridNumY, FogOfWarConst::PixelFormat);
+	WorldHeightTexture->UpdateResource();
 }
 
-void UWorldHeightSubsystem::OnGridSizeUpdated()
+#if WITH_EDITOR
+void UWorldHeightSubsystem::DrawVisualization() const
 {
+	//if (true) { return; }
+
+	const UWorld* World{ GetWorld() };
+	FlushPersistentDebugLines(World);
+	if (!LandBounds.IsSet()) { return; }
+
+	int32 ValidData{ 0 };
+	TArray<TWeakObjectPtr<const AActor>> EffectiveActor;
+	WorldHeightData.WorldHeightEffectiveActor.GetKeys(EffectiveActor);
+
+	for (const TWeakObjectPtr<const AActor>& ActorWeakPtr : EffectiveActor)
+	{
+		const AActor* Actor = ActorWeakPtr.Get();
+		if (!Actor)
+		{
+			using NonConstThisTypePtr = std::remove_const_t<std::remove_pointer_t<decltype(this)>>*;
+			const_cast<NonConstThisTypePtr>(this)->NotifyCleanInvalidData_Internal();
+
+			continue;
+		}
+
+		ValidData++;
+		
+		FOrientedBoxAABBAndTransform BoxAABBAndTransform{UFogOfWarComponentStatics::GetOrientedBoxAABBAndTransform(IWorldHeightEffectiveActorInterface::Execute_GetBounds(Actor))};
+		const double DistanceToLand{ BoxAABBAndTransform.Box.GetCenter().Z - LandBounds.GetValue().Max.Z };
+		const double FixedBoxZ {DistanceToLand > 0 ? DistanceToLand : DistanceToLand - (LandBounds.GetValue().GetExtent().Z * 2)};
+		BoxAABBAndTransform.Box.Min.Z = FixedBoxZ - BoxAABBAndTransform.Box.GetExtent().Z;
+		BoxAABBAndTransform.Box.Max.Z = FixedBoxZ + BoxAABBAndTransform.Box.GetExtent().Z;
+
+		// 4. 绘制 Debug Box
+		DrawDebugSolidBox(World, BoxAABBAndTransform.Box, FColor::Green, BoxAABBAndTransform.Transform, true);
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Valid Data: %d"), ValidData);
 }
 
-//FGridBounds::FGridBounds(GridSizeType InWidth, GridSizeType InHeight) :Width(InWidth), Height(InHeight)
-//{
-//}
+void UWorldHeightSubsystem::OnActorMoved(AActor* Actor)
+{
+	if (!Actor) { return; }
+
+	RequestUpdateWorldHeightData(*Actor, FWorldHeightBoundsUpdateRequest::Type::Added);
+}
+
+void UWorldHeightSubsystem::OnActorRegistered(AActor* Actor)
+{
+	if (!Actor) { return; }
+
+	RequestUpdateWorldHeightData(*Actor, FWorldHeightBoundsUpdateRequest::Type::Added);
+}
+
+void UWorldHeightSubsystem::OnActorUnregistered(AActor* Actor)
+{
+	if (!Actor) { return; }
+
+	RequestUpdateWorldHeightData(*Actor, FWorldHeightBoundsUpdateRequest::Type::Removed);
+}
+#endif

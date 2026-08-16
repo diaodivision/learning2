@@ -1,8 +1,8 @@
 #include "FogOfWarComponent.h"
-#include "FogOfWarComputeShader.h"
-#include "WorldHeightSubsystem.h"
-#include "FogOfWarTypes.h"
+#include "GameFramework/Actor.h"
 #include "FogOfWarSubsystem.h"
+#include "FogOfWarComponentStatics.h"
+#include "FogOfWarShaderTypes.ush"
 
 UFogOfWarComponent::UFogOfWarComponent()
 {
@@ -13,27 +13,22 @@ void UFogOfWarComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UFogOfWarSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UFogOfWarSubsystem>(GetWorld()->GetFirstLocalPlayerFromController());
-	Subsystem->OnPostComponentInitialize(this);
+	UFogOfWarSubsystem* Subsystem{ UFogOfWarComponentStatics::GetFogOfWarSubsystem(this)};
+	if (ensure(Subsystem)) {Subsystem->OnPostComponentInitialize(this);}
 }
 
-void UFogOfWarComponent::InitializeComputeShader(int32 InTextureWidth, int32 InTextureHeight)
+TOptional<FFogOfWarData> UFogOfWarComponent::GetFogOfWarData() const
 {
-	TextureWidth = InTextureWidth;
-	TextureHeight = InTextureHeight;
-}
+	const AActor* Owner = GetOwner();
+	if (!Owner) { return NullOpt; }
 
-bool UFogOfWarComponent::GetFogOfWarData(FFogOfWarData& Data) const
-{
-	AActor* Owner = GetOwner();
-	if (!Owner) { return false; }
+	const FVector ForwardVector{ Owner->GetActorForwardVector() };
 
-	FVector ForwardVector{ Owner->GetActorForwardVector() };
+	FFogOfWarData Result;
+	Result.ActorLocation = Owner->GetActorLocation();
+	Result.ActorVisionLeft = ForwardVector.RotateAngleAxis(-VisionDegree, FVector::UpVector);
+	Result.ActorVisionRight = ForwardVector.RotateAngleAxis(VisionDegree, FVector::UpVector);
+	Result.Radius = VisionRadius;
 
-	Data.ActorLocation = Owner->GetActorLocation();
-	Data.ActorVisionLeft = ForwardVector.RotateAngleAxis(-VisionDegree, FVector::UpVector);
-	Data.ActorVisionRight = ForwardVector.RotateAngleAxis(VisionDegree, FVector::UpVector);
-	Data.Radius = VisionRadius;
-
-	return true;
+	return Result;
 }

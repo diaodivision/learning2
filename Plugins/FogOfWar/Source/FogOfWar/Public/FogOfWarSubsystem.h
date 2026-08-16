@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Math/UnrealMathUtility.h"
 #include "Subsystems/LocalPlayerSubsystem.h"
 #include "FogOfWarTypes.h"
 #include "FogOfWarComputeShader.h"
@@ -53,17 +54,17 @@ public:
         }
         // return FIntPoint{ FMath::FloorToInt32(kScreenBaseWidth * WidthScaleFactor),
         // FMath::FloorToInt32(kScreenBaseHeight * HeightScaleFactor) };
-        return FIntPoint{874, 256};
-        // return FIntPoint{256, 256};
+        // return FIntPoint{874, 256};
+        return FIntPoint{FMath::FloorToInt32(kScreenBaseWidth * WidthScaleFactor), FMath::FloorToInt32(kScreenBaseHeight * HeightScaleFactor)}; 
     }
 
-    TOptional<FVector2D> GetGridSize() const;
+    TOptional<FGridSizeType> GetGridSize() const;
 
     bool IsCameraFOVChanged();
 
 private:
     void CreateDynamicTexture();
-    void SetLandLocationAndSizeParameters() const;
+    void SetTextureParameter() const;
 
     void CreateWorldHeightTexture();
 
@@ -96,10 +97,6 @@ private:
                                                           EUpdateTransformFlags UpdateTransformFlags,
                                                           ETeleportType Teleport);
 
-    void OnPreRender(FRDGBuilder& GraphBuilder);
-    void OnPostRender(FRDGBuilder& GraphBuilder);
-    void OnPostActorTick(UWorld* World, ELevelTick TickType, float DeltaSeconds);
-
 public:
     FOnViewportSizeChangedDelegate OnViewportSizeChangedDelegate;
 
@@ -128,8 +125,8 @@ private:
     mutable bool bHasInvalidComponents{false};
 
     bool bIsInitialScale{false};
-    constexpr static int16 kScreenBaseWidth{256};
-    constexpr static int16 kScreenBaseHeight{256};
+    constexpr static int16 kScreenBaseWidth{512};
+    constexpr static int16 kScreenBaseHeight{512};
     float WidthScaleFactor{1};
     float HeightScaleFactor{1};
     bool bViewportResized{false};
@@ -138,12 +135,4 @@ private:
     float LastFOVAngle{0.f};
 
     TMap<TWeakObjectPtr<USceneComponent>, FTransform> LastComponentOwnerOrCameraTransformMap;
-
-    TArray<FVector> Corners;
-
-    mutable TArray<FIntPoint> CachedActorPositions;
-	mutable TArray<FVector2f> CachedActorVision;
-	mutable TArray<int32> CachedRadiusSqList;
-
-    FBox2D CalculateSnappedScreenAABB(const TArray<FVector>& GroundCorners, FIntPoint ScreenSize) const;
 };

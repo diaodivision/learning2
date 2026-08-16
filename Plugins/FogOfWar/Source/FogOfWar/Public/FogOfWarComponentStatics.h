@@ -12,6 +12,8 @@
 
 class AActor;
 class USceneComponent;
+class UFogOfWarSubsystem;
+class UWorldHeightSubsystem;
 
 // Whether to inline functions at all
 #define FOGOFWAR_INLINE_ENABLED	(!UE_BUILD_DEBUG)
@@ -36,7 +38,7 @@ public:
 public:
 	static FOGOFWAR_INL_API FGridBoundsDataType MakeGridBoundsTypeFromActor(const AActor& Actor);
 
-	static TOptional<FVector> GetGridSize(const EGridType GridType, const UObject* WorldContextObject);
+	static TOptional<FGridSizeType> GetGridSize(const EGridType GridType, const UObject* WorldContextObject);
 
 	// UFUNCTION(BlueprintPure, meta = (DefaultToSelf = WorldContextObject))
 	// static FVector GetIntersectionFromCameraToGround(const UObject* WorldContextObject);
@@ -54,11 +56,21 @@ public:
 	static FOrientedBoxAABBAndTransform GetOrientedBoxAABBAndTransform(const FOrientedBox& OrientedBox);
 	static FOrientedBox GetAABBBoxOriented(const FBox& AABB);
 
-	static TOptional<FIntPoint> GetGridPositionOnScreen(const FVector& WorldLocation, const FIntPoint& ScreenSize, const FBox2D& ScreenBoundingBox);
-
+	static TOptional<FIntPoint> GetGridPositionOnScreen(const FVector& WorldLocation, const FIntPoint& ScreenSize, const FBox2D& ScreenBoundingBox, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No);
 	static FogOfWarTypes::GridIndexType GetGridIndexOnScreen(const FVector& WorldLocation, const FIntPoint& ScreenSize, const FBox2D& ScreenBoundingBox);
+	
+	static FVector2D ProjectWorldDirectionToScreen(const FVector& WorldDirection);	
+	
+	static TOptional<FIntPoint> GetGridPosition(const FVector& WorldLocation, const UObject* WorldContextObject);
+	static FogOfWarTypes::GridIndexType GetGridIndexOnWorld(const FVector& WorldLocation, const UObject* WorldContextObject);
+	static FogOfWarTypes::GridIndexType GetGridIndexOnWorld(const FVector& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem);
+	static TOptional<FIntPoint> GetGridPositionOnWorld(const FVector& WorldLocation, const UObject* WorldContextObject);
+	static TOptional<FIntPoint> GetGridPositionOnWorld(const FVector& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem);
+	static TOptional<FIntPoint> GetGridPositionOnWorld(const FVector2D& WorldLocation, const UObject* WorldContextObject);
+	static TOptional<FIntPoint> GetGridPositionOnWorld(const FVector2D& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem);
 
-	static FVector2D ProjectWorldDirectionToScreen(const FVector& WorldDirection);
+	static UFogOfWarSubsystem* GetFogOfWarSubsystem(const UObject* WorldContextObject);
+	static UWorldHeightSubsystem* GetWorldHeightSubsystem(const UObject* WorldContextObject);
 
 public:
 	template<class ParameterMemberType, class ArrayElementType>

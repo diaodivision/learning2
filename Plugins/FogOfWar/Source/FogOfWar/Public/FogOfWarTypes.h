@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include <concepts>
 #include "Engine/TextureDefines.h"
+#include "HAL/Platform.h"
 #include "UObject/Interface.h"
 #include "FogOfWarShaderTypes.ush"
 #include "RenderGraphUtils.h"
@@ -53,6 +54,12 @@ enum class EGridType : uint8
 	Screen
 };
 
+enum class EAllowMinusPosition : uint8
+{
+	Yes,
+	No
+};
+
 struct FOrientedBoxAABBAndQuat
 {
 	FBox Box;
@@ -63,6 +70,27 @@ struct FOrientedBoxAABBAndTransform
 {
 	FBox Box;
 	FTransform Transform;
+};
+
+struct FGridSizeType
+{
+	enum class EGridSizeCoordinate : uint8
+	{
+		World,
+		Screen
+	};
+
+	FGridSizeType(const double X, const double Y, const EGridSizeCoordinate GridSizeCoordinate);
+	FGridSizeType(const double X, const double Y, const double Z, const EGridSizeCoordinate GridSizeCoordinate);
+	FGridSizeType(const FVector2D& GridSizeValue, const EGridSizeCoordinate GridSizeCoordinate);
+	FGridSizeType(const FVector& GridSizeValue, const EGridSizeCoordinate GridSizeCoordinate);
+
+	FVector GetGridSizeOnWorldCoordinate() const;
+
+	FVector GetGridSizeOnScreenCoordinate() const;
+
+private:
+	const FVector GridSizeValue;
 };
 
 USTRUCT(BlueprintType)
@@ -176,7 +204,7 @@ class FGridIndexIterator
 	using GridIndexType = FogOfWarTypes::GridIndexType;
 
 public:
-	explicit FGridIndexIterator(const FBox& Box, const FVector& GridSize, const TFunctionRef<GridIndexType(const FVector&)> GetGridIndexFunction, const FQuat& BoxQuat = FQuat::Identity);
+	explicit FGridIndexIterator(const FBox& Box, const FGridSizeType& InGridSize, const TFunctionRef<GridIndexType(const FVector&)> GetGridIndexFunction, const FQuat& BoxQuat = FQuat::Identity);
 
 	FORCENOINLINE void operator++();
 	FORCENOINLINE GridIndexType operator*() const;

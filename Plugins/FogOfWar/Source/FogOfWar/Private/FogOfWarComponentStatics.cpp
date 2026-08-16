@@ -1,5 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 #include "FogOfWarComponentStatics.h"
+#include "Engine/Engine.h"
+#include "Engine/LocalPlayer.h"
 #include "GameFramework/Actor.h"
 #include "Kismet/KismetMathLibrary.h"
 #include <cmath>
@@ -19,7 +21,7 @@ FGridBoundsDataType UFogOfWarComponentStatics::MakeGridBoundsTypeFromActor(const
 	return FGridBoundsDataType{ Actor.GetComponentsBoundingBox(true) };
 }
 
-TOptional<FVector> UFogOfWarComponentStatics::GetGridSize(const EGridType GridType, const UObject* WorldContextObject)
+TOptional<FGridSizeType> UFogOfWarComponentStatics::GetGridSize(const EGridType GridType, const UObject* WorldContextObject)
 {
 	const UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull);
 	if (!World) { return NullOpt; }
@@ -33,10 +35,8 @@ TOptional<FVector> UFogOfWarComponentStatics::GetGridSize(const EGridType GridTy
 	{
 		const ULocalPlayer* LocalPlayer{ World->GetFirstLocalPlayerFromController() };
 		const UFogOfWarSubsystem* FogOfWarSubsystem{ LocalPlayer ? LocalPlayer->GetSubsystem<UFogOfWarSubsystem>(): nullptr };
-		if (!FogOfWarSubsystem) { return NullOpt; }
 
-		const TOptional<FVector2D> GridSizeOfScreen{ FogOfWarSubsystem->GetGridSize() };
-		return GridSizeOfScreen.IsSet() ? TOptional<FVector>{ FVector{GridSizeOfScreen.GetValue(), 0.} } : NullOpt; 
+		return FogOfWarSubsystem ? FogOfWarSubsystem->GetGridSize() : NullOpt;
 	}
 
 	return NullOpt;
@@ -149,6 +149,54 @@ bool UFogOfWarComponentStatics::GetComponentOrientBox(FOrientedBox& OrientedBox,
 	OrientedBox.ExtentZ = FMath::Abs(LocalBox.GetExtent().Z);
 
 	return true;
+}
+
+TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPosition(const FVector& WorldLocation, const UObject* WorldContextObject)
+{
+	return GetWorldHeightSubsystem(WorldContextObject) ? GetWorldHeightSubsystem(WorldContextObject)->GetGridPosition(WorldLocation) : NullOpt;
+}
+
+FogOfWarTypes::GridIndexType UFogOfWarComponentStatics::GetGridIndexOnWorld(const FVector& WorldLocation, const UObject* WorldContextObject)
+{
+	return GetWorldHeightSubsystem(WorldContextObject) ? GetGridIndexOnWorld(WorldLocation, *GetWorldHeightSubsystem(WorldContextObject)) : INDEX_NONE;
+}
+
+FogOfWarTypes::GridIndexType UFogOfWarComponentStatics::GetGridIndexOnWorld(const FVector& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem)
+{
+	return WorldHeightSubsystem.GetGridIndex(WorldLocation);
+}
+
+TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnWorld(const FVector& WorldLocation, const UObject* WorldContextObject)
+{
+	return GetWorldHeightSubsystem(WorldContextObject) ? GetGridPositionOnWorld(WorldLocation, *GetWorldHeightSubsystem(WorldContextObject)) : NullOpt;
+}
+
+TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnWorld(const FVector& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem)
+{
+	return WorldHeightSubsystem.GetGridPosition(WorldLocation);
+}
+
+TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnWorld(const FVector2D& WorldLocation, const UObject* WorldContextObject)
+{
+	return GetWorldHeightSubsystem(WorldContextObject) ? GetGridPositionOnWorld(WorldLocation, *GetWorldHeightSubsystem(WorldContextObject)) : NullOpt;
+}
+
+TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnWorld(const FVector2D& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem)
+{
+	return WorldHeightSubsystem.GetGridPosition(WorldLocation);
+}
+
+UFogOfWarSubsystem* UFogOfWarComponentStatics::GetFogOfWarSubsystem(const UObject* WorldContextObject)
+{
+	const UWorld* World{GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull)};
+	const ULocalPlayer* LocalPlayer{ World ? World->GetFirstLocalPlayerFromController() : nullptr };
+	return LocalPlayer ? LocalPlayer->GetSubsystem<UFogOfWarSubsystem>() : nullptr;
+}
+
+UWorldHeightSubsystem* UFogOfWarComponentStatics::GetWorldHeightSubsystem(const UObject* WorldContextObject)
+{
+	const UWorld* World{GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull)};
+	return World ? World->GetSubsystem<UWorldHeightSubsystem>() : nullptr;
 }
 
 bool UFogOfWarComponentStatics::IsPrime(NumberType N)

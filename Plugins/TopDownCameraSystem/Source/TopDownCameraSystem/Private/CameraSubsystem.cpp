@@ -7,6 +7,9 @@
 #include "CameraBoundsVolume.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Engine/GameViewportClient.h"
+#include "Widgets/SViewport.h"
 
 void UCameraSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -97,15 +100,6 @@ void UCameraSubsystem::PlayerControllerChanged(APlayerController* NewPlayerContr
 		InitializeViewportInfo();
 		PlayerController->OnPossessedPawnChanged.AddUniqueDynamic(this, &UCameraSubsystem::OnPossessedPawnChanged);
 	}
-
-	//if (NewPlayerController && CameraActor)
-	//{
-	//	// 1. ´ËÊ± Controller ¾ø¶ÔÍêÈ«³õÊ¼»¯ºÃÁË£¬¹û¶ÏÇÐ¾µÍ·
-	//	NewPlayerController->SetViewTarget(CameraActor);
-
-	//	// 2. Ë³±ã°ó¶¨ÄãµÄ¸½Éí¸Ä±äÊÂ¼þ£¬·ÀÖ¹Î´À´ÇÐ»» Pawn Ê±¾µÍ·±»Ï´µô
-	//	NewPlayerController->OnPossessedPawnChanged.AddUniqueDynamic(this, &UCameraSubsystem::OnPossessedPawnChanged);
-	//}
 }
 
 void UCameraSubsystem::Tick(float DeltaTime)
@@ -115,54 +109,63 @@ void UCameraSubsystem::Tick(float DeltaTime)
 	const ACameraBoundsVolume* Volume{ GetCameraBoundsVolume() };
 	if (!Volume) { return; }
 
+	auto GameViewport{GEngine->GameViewport};
+	const TSharedPtr<SViewport> ViewportWidget = GameViewport? GameViewport->GetGameViewportWidget() : nullptr;
+	if (!ViewportWidget.IsValid()) { return;}
+	const FVector2D MousePos = FSlateApplication::Get().GetCursorPos();
+	// UE_LOG(LogTemp, Error, TEXT("UCameraSubsystem::Tick MousePos %s"), *MousePos.ToString());
+	// 2. ä½¿ç”¨ FGeometry è‡ªå¸¦çš„ IsUnderLocation åˆ¤å®šç»å¯¹åæ ‡æ˜¯å¦åœ¨ Widget å†…éƒ¨
+	if (!ViewportWidget->GetCachedGeometry().IsUnderLocation(MousePos)) {return;}
 
 	FVector2D MousePosition;
 	ViewportInfo.ViewportClient->GetMousePosition(MousePosition);
 
+	// UE_LOG(LogTemp, Error, TEXT("UCameraSubsystem::Tick MousePosition %s"), *MousePosition.ToString());
+
 	const FVector2D& ViewportSize{ ViewportInfo.ScreenSize.GetValue() };
 
-	// 1. ³õÊ¼»¯Ò»¸ö¶þÎ¬ÒÆ¶¯ÊäÈëÏòÁ¿ (X: Ç°ºó, Y: ×óÓÒ)
+	// // 1. åˆå§‹åŒ–ä¸€ä¸ªäºŒç»´ç§»åŠ¨è¾“å…¥å‘é‡ (X: å‰åŽ, Y: å·¦å³)
 	FVector2D MoveInput = FVector2D::ZeroVector;
 
-	// 2. ¾«È·ÅÐ¶ÏÊó±ê´¥·¢ÁËÄÄ¸ö±ßÔµ£¨Ö§³Ö¶Ô½ÇÏßÍ¬Ê±ÒÆ¶¯£©
-	// ¿¿½ü×ó±ßÔµ -> Ïò×ó
+	// 2. ç²¾ç¡®åˆ¤æ–­é¼ æ ‡è§¦å‘äº†å“ªä¸ªè¾¹ç¼˜ï¼ˆæ”¯æŒå¯¹è§’çº¿åŒæ—¶ç§»åŠ¨ï¼‰
+	// é è¿‘å·¦è¾¹ç¼˜ -> å‘å·¦
 	if (MousePosition.X > 0. && !FMath::IsNearlyEqual(MousePosition.X, 0.) && MousePosition.X < ViewportSize.X * (1.f - kThreshold))
 	{
 		MoveInput.Y = -1.f;
 	}
-	// ¿¿½üÓÒ±ßÔµ -> ÏòÓÒ (ÕâÀïÓÃ ViewportSize.X - MousePosition.X Ìæ´ú Abs ¸üÖ±¹Û°²È«)
+	// é è¿‘å³è¾¹ç¼˜ -> å‘å³
 	else if (MousePosition.X > ViewportSize.X * kThreshold)
 	{
 		MoveInput.Y = 1.f;
 	}
 
-	// ¿¿½üÉÏ±ßÔµ -> ÏòÇ°
+	// é è¿‘ä¸Šè¾¹ç¼˜ -> å‘å‰
 	if (MousePosition.Y > 0. && !FMath::IsNearlyEqual(MousePosition.Y, 0.) && MousePosition.Y < ViewportSize.Y * (1.f - kThreshold))
 	{
 		MoveInput.X = 1.f;
 	}
-	// ¿¿½üÏÂ±ßÔµ -> Ïòºó
+	// é è¿‘ä¸‹è¾¹ç¼˜ -> å‘åŽ
 	else if (MousePosition.Y > ViewportSize.Y * kThreshold)
 	{
 		MoveInput.X = -1.f;
 	}
 
-	// 3. Èç¹ûÓÐÈÎÒâ±ßÔµ´¥·¢£¬Ö´ÐÐÒÆ¶¯
+	// 3. å¦‚æžœæœ‰ä»»æ„è¾¹ç¼˜è§¦å‘ï¼Œæ‰§è¡Œç§»åŠ¨
 	if (!MoveInput.IsNearlyZero())
 	{
-		// ¹éÒ»»¯ÊäÈë£¬·ÀÖ¹Ð±ÏòÒÆ¶¯Ê±ËÙ¶È±ä³ÉµÈ±ÈµÄ 1.414 ±¶
+		// å½’ä¸€åŒ–è¾“å…¥ï¼Œé˜²æ­¢æ–œå‘ç§»åŠ¨æ—¶é€Ÿåº¦å˜æˆç­‰æ¯”çš„ 1.414 å€
 		MoveInput.Normalize();
 
-		// 4. ¼ÆËãÊôÓÚµ±Ç°ÉãÏñ»úË®Æ½ÊÓ½ÇµÄ¡°Ç°¡±ºÍ¡°ÓÒ¡±ÏòÁ¿
-		// »ñÈ¡ÉãÏñ»úµ±Ç°µÄÐý×ª£¬µ«Ä¨Æ½ Pitch ºÍ Roll£¬Ö»±£Áô Yaw£¨È·±£Æ½ÐÐÓÚµØÃæÒÆ¶¯£¬²»ÍùµØÏÂ×ê£©
+		// 4. è®¡ç®—å±žäºŽå½“å‰æ‘„åƒæœºæ°´å¹³è§†è§’çš„â€œå‰â€å’Œâ€œå³â€å‘é‡
+		// èŽ·å–æ‘„åƒæœºå½“å‰çš„æ—‹è½¬ï¼Œä½†æŠ¹å¹³ Pitch å’Œ Rollï¼Œåªä¿ç•™ Yawï¼ˆç¡®ä¿å¹³è¡ŒäºŽåœ°é¢ç§»åŠ¨ï¼Œä¸å¾€åœ°ä¸‹é’»ï¼‰
 		const FRotator FrameRotation{ 0.f, CameraActor->GetActorRotation().Yaw, 0.f };
 		const FVector ForwardDirection{ FRotationMatrix(FrameRotation).GetUnitAxis(EAxis::X) };
 		const FVector RightDirection{ FRotationMatrix(FrameRotation).GetUnitAxis(EAxis::Y) };
 
-		// 5. ×éºÏ×îÖÕµÄÊÀ½ç×ø±êÒÆ¶¯ÏòÁ¿
+		// 5. ç»„åˆæœ€ç»ˆçš„ä¸–ç•Œåæ ‡ç§»åŠ¨å‘é‡
 		const FVector WorldMoveDirection{ (ForwardDirection * MoveInput.X) + (RightDirection * MoveInput.Y) };
 
-		// 6. Ó¦ÓÃÒÆ¶¯ (MoveSpeed ÎªÄãµÄÉãÏñ»úÒÆ¶¯ËÙ¶È£¬ÀýÈç 1200.f)
+		// 6. åº”ç”¨ç§»åŠ¨ (MoveSpeed ä¸ºä½ çš„æ‘„åƒæœºç§»åŠ¨é€Ÿåº¦ï¼Œä¾‹å¦‚ 1200.f)
 		FVector NewLocation{ CameraActor->GetActorLocation() + (WorldMoveDirection * kSpeed * DeltaTime) };
 
 		{

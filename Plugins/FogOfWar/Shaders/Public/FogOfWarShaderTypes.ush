@@ -225,7 +225,7 @@ FBresenhamAlgoData GetNextBresenhamAlgoDataPos(FBresenhamAlgoData Data)
 #endif
 
 //#ifdef __cplusplus
-//// C++ ±àÒëÄ£Ê½
+//// C++ ï¿½ï¿½ï¿½ï¿½Ä£Ê½
 //    enum class EGridMagnitude : uint8
 //    {
 //        Sine = 0,
@@ -234,7 +234,7 @@ FBresenhamAlgoData GetNextBresenhamAlgoDataPos(FBresenhamAlgoData Data)
 //        Mountain = 3
 //    };
 //#else
-//// HLSL ±àÒëÄ£Ê½
+//// HLSL ï¿½ï¿½ï¿½ï¿½Ä£Ê½
 //    enum EGridHashFunctionType
 //    {
 //        EHF_Sine = 0,
@@ -243,3 +243,62 @@ FBresenhamAlgoData GetNextBresenhamAlgoDataPos(FBresenhamAlgoData Data)
 //        EHF_Mountain = 3
 //    };
 //#endif
+
+#ifdef __cplusplus
+// struct alignas(16) FFogOfWarData
+// {
+// 	FVector2f ActorLocation;
+// 	FVector2f ActorVisionLeft;
+// 	FVector2f ActorVisionRight;
+// 	uint32 Radius;
+// 	float Padding;
+// };
+#else
+struct FFogOfWarData
+{
+    float2 ActorLocation;
+    float2 ActorVisionLeft;
+    float2 ActorVisionRight;
+    uint Radius;
+    float Padding;
+};
+#endif
+
+// #ifdef __cplusplus
+// struct alignas(16) FGridTransformContext
+// {
+//     FIntPoint ScreenGridOriginInWorldGrid;
+//     FVector2f ScreenToWorldGridScale;
+//     float Padding;
+// };
+// #else
+// struct FGridTransformContext
+// {
+//     int2 ScreenGridOriginInWorldGrid;
+//     float2 ScreenToWorldGridScale;
+//     float Padding;
+// };
+// #endif
+
+#ifndef __cplusplus
+struct FGridTransformContext
+{
+    int2 ScreenGridOriginInWorldGrid;
+    float2 ScreenToWorldGridScale;
+};
+
+// int2 ScreenPositionToWorld(const int2 ScreenPosition, const FGridTransformContext Context)
+// {
+//     return int2(
+//         Context.ScreenGridOriginInWorldGrid.x + int(ScreenPosition.x * Context.ScreenToWorldGridScale.x),
+//         Context.ScreenGridOriginInWorldGrid.y + int(ScreenPosition.y * Context.ScreenToWorldGridScale.y)
+//     );
+// }
+int2 ScreenPositionToWorld(const int2 ScreenPosition, int2 ScreenGridOriginInWorldGrid, float2 ScreenToWorldGridScale)
+{
+    return int2(
+        ScreenGridOriginInWorldGrid.x + int(ScreenPosition.x * ScreenToWorldGridScale.x),
+        ScreenGridOriginInWorldGrid.y + int(ScreenPosition.y * ScreenToWorldGridScale.y)
+    );
+}
+#endif

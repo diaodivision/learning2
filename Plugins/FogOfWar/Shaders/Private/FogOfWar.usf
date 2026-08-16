@@ -6,6 +6,9 @@ float2 GroundSize;
 uint2 TextureSize;
 float SmoothStepThreshold;
 float SmoothStepDistanceThreshold;
+int2 ScreenGridOriginInWorldGrid;
+float2 ScreenToWorldGridScale;
+
 
 uint NumVisionStart;
 uint NumVision;
@@ -24,7 +27,8 @@ RWTexture2D<float4> OutputTexture;
 
 bool IsGridInVision(int2 GridPos, uint Index);
 float GetNormalizedDistanceToBoundary(int2 GridPos, float2 StartPos, float2 Direction, float2 EdgeDirection);
-int GetGridHeight(int X, int Y);
+// int GetGridHeight(int X, int Y);
+int GetGridHeight(int2 XY);
 bool CheckLineOfSight(int2 Start, int2 End, int MaxSteps);
 
 // 在后处理材质采样时, 应该把 Sampler Source 设置为 Shared: Clamp
@@ -40,6 +44,8 @@ void MainCS(
     int x = DispatchThreadId.x;
     int y = DispatchThreadId.y;
 
+    int2 XYOnWorld = ScreenPositionToWorld(DispatchThreadId.xy, ScreenGridOriginInWorldGrid, ScreenToWorldGridScale);
+
     if (x >= TextureSize.x || y >= TextureSize.y)
     {
         return;
@@ -49,18 +55,19 @@ void MainCS(
     //return;
     //OutputTexture[DispatchThreadId.xy] = float4(GetGridHeight(x, y) > 0 ? 1: 0, 0, 0, 1);
     //return;
-    
-    int2 GridPos = int2(x, y);
-    int Index = y * TextureSize.x + x;
+
+    //int2 WorldPosition = ScreenPositionToWorld(int2(x,y), ScreenGridOriginInWorldGrid, ScreenToWorldGridScale);
+    //OutputTexture[DispatchThreadId.xy] = float4(GetGridHeight(WorldPosition.x, WorldPosition.y) > 0 ? 1 : 0, 0, 0, 1);
+    //return;
 
     OutputTexture[DispatchThreadId.xy] = float4(0, 0, 0, 1);
     for (uint i = 0; i < NumVisionStart; i++)
     {
-        if (GetGridHeight(x, y) == 0 && IsGridInVision(GridPos, i))
+        if (/*GetGridHeight(x, y)*/ GetGridHeight(XYOnWorld) == 0 && IsGridInVision(DispatchThreadId.xy, i))
         {
             float2 StartPos = VisionStartPosBuffer[i];
-            int2 Start = int2(StartPos.x, StartPos.y);
-            int2 End = int2(x, y);
+            int2 Start = ScreenPositionToWorld(int2(StartPos.x, StartPos.y), ScreenGridOriginInWorldGrid, ScreenToWorldGridScale);
+            int2 End = XYOnWorld;
             
             if (CheckLineOfSight(Start, End, 5000))
             {
@@ -173,27 +180,32 @@ float GetNormalizedDistanceToBoundary(int2 GridPos, float2 StartPos, float2 Dire
     return 1.0;
 }
 
-int GetGridHeight(int X, int Y)
+// int GetGridHeight(int X, int Y)
+// {
+//     //uint Index = Y * TextureSize.x + X;
+//     //
+//     //for (uint i = Index, Step = 0; Step < NumWorldHeghtBuffer; i++, Step++)
+//     //{
+//     //    if (i >= NumWorldHeghtBuffer)
+//     //    {
+//     //        i = 0;
+//     //    }
+//     //    
+//     //    FHeightData Data = WorldHeightBuffer[i];
+//     //    if (Data.Key == Index)
+//     //    {
+//     //        return max(0, Data.Height);
+//     //    }
+//     //}
+    
+//     return WorldHeightTexture[int2(X, Y)].r > 0 ? 1 : 0;
+    
+//     //return 0;
+// }
+
+int GetGridHeight(int2 XY)
 {
-    //uint Index = Y * TextureSize.x + X;
-    //
-    //for (uint i = Index, Step = 0; Step < NumWorldHeghtBuffer; i++, Step++)
-    //{
-    //    if (i >= NumWorldHeghtBuffer)
-    //    {
-    //        i = 0;
-    //    }
-    //    
-    //    FHeightData Data = WorldHeightBuffer[i];
-    //    if (Data.Key == Index)
-    //    {
-    //        return max(0, Data.Height);
-    //    }
-    //}
-    
-    return WorldHeightTexture[int2(X, Y)].r > 0 ? 1 : 0;
-    
-    //return 0;
+    return WorldHeightTexture[XY].r > 0 ? 1 : 0;
 }
 
 bool CheckLineOfSight(int2 Start, int2 End, int MaxSteps)
@@ -215,7 +227,7 @@ bool CheckLineOfSight(int2 Start, int2 End, int MaxSteps)
         int2 Pos = int2(floor(Current));
         
         // 修正 3：确保 GetGridHeight 内部有边界检查 (Pos.x >= 0 && Pos.x < Width 等)
-        if (GetGridHeight(Pos.x, Pos.y) != 0)
+        if (GetGridHeight(Pos) != 0)
         {
             return false; // 遇到障碍
         }

@@ -7,6 +7,11 @@
 #include "FogOfWarTypes.h"
 #include "FogOfWarShaderTypes.ush"
 
+// BEGIN_SHADER_PARAMETER_STRUCT(FGridTransformContext, )
+// 	SHADER_PARAMETER(FIntPoint, ScreenGridOriginInWorldGrid)
+// 	SHADER_PARAMETER(FVector2f, ScreenToWorldGridScale)
+// END_SHADER_PARAMETER_STRUCT()
+
 class FFogOfWarComputeShader : public FGlobalShader
 {
 public:
@@ -14,21 +19,24 @@ public:
 	SHADER_USE_PARAMETER_STRUCT(FFogOfWarComputeShader, FGlobalShader);
 
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
-		// 标量参数
+		// 鏍囬噺鍙傛暟
 		SHADER_PARAMETER(FVector2f, GroundOrigin)
 		SHADER_PARAMETER(FVector2f, GroundSize)
 		SHADER_PARAMETER(FIntPoint, TextureSize)
 		SHADER_PARAMETER(float, SmoothStepThreshold)
 		SHADER_PARAMETER(float, SmoothStepDistanceThreshold)
+		SHADER_PARAMETER(FIntPoint, ScreenGridOriginInWorldGrid)
+		SHADER_PARAMETER(FVector2f, ScreenToWorldGridScale)
+		// SHADER_PARAMETER_STRUCT(FGridTransformContext, GridTransformContext)
 
-		// 数组大小参数
+		// 鏁扮粍澶у皬鍙傛暟
 		SHADER_PARAMETER(uint32, NumVisionStart)
 		SHADER_PARAMETER(uint32, NumVision)
 		SHADER_PARAMETER(uint32, NumRadiusSq)
 		SHADER_PARAMETER(uint32, NumDirection)
 		SHADER_PARAMETER(uint32, NumWorldHeghtBuffer)
 
-		// 结构化缓冲区SHADER_PARAMETER_RDG_BUFFER_SRV
+		// 缁撴瀯鍖栫紦鍐插尯SHADER_PARAMETER_RDG_BUFFER_SRV
 		SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<FIntPoint>, VisionStartPosBuffer)
 		SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<FVector2f>, VisionBuffer)
 		SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<int32>, RadiusSqBuffer)
@@ -36,7 +44,7 @@ public:
 		SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<FHeightData>, WorldHeightBuffer)
 		SHADER_PARAMETER_RDG_TEXTURE_SRV(Texture2D, WorldHeightTexture)
 
-		// 输出纹理
+		// 杈撳嚭绾圭悊
 		SHADER_PARAMETER_RDG_TEXTURE_UAV(RWTexture2D<float4>, OutputTexture)
 	END_SHADER_PARAMETER_STRUCT()
 
