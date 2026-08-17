@@ -138,7 +138,7 @@ void UFogOfWarSubsystem::Tick_Internal()
 	const TOptional<FBox2D> CameraBounds{ UFogOfWarComponentStatics::GetCameraFrustumGroundIntersections(this) };
 	if (!CameraBounds.IsSet()) { return; }
 
-	const TOptional<FIntPoint> GridPositionOnWorld{UFogOfWarComponentStatics::GetGridPositionOnWorld(FVector2D{ CameraBounds.GetValue().Max.X, CameraBounds.GetValue().Min.Y}, this)};
+	const TOptional<FIntPoint> GridPositionOnWorld{UFogOfWarComponentStatics::GetGridPositionOnWorld(FVector2D{ CameraBounds.GetValue().Max.X, CameraBounds.GetValue().Min.Y}, this, EAllowMinusPosition::Yes)};
 	if (!GridPositionOnWorld.IsSet()) { return; }
 
 	// FGridTransformContext GridTransformContext;
@@ -433,9 +433,6 @@ void UFogOfWarSubsystem::SetupScaleFactor()
 
 void UFogOfWarSubsystem::GetFogOfWarActorData(TArray<FIntPoint>& ActorPositions, TArray<FVector2f>& ActorVision, TArray<int32>& RadiusSqList) const
 {
-	const UWorldHeightSubsystem* WorldHeightSubsystem{GetWorld() ? GetWorld()->GetSubsystem<UWorldHeightSubsystem>() : nullptr};
-	if (!WorldHeightSubsystem) { return; }
-
 	const TOptional<FBox2D> ScreenBox{UFogOfWarComponentStatics::GetCameraFrustumGroundIntersections(this)};
 	if (!ScreenBox.IsSet()) { return; }
 
@@ -452,9 +449,10 @@ void UFogOfWarSubsystem::GetFogOfWarActorData(TArray<FIntPoint>& ActorPositions,
 
 		const TOptional<FFogOfWarData> Data{Component->GetFogOfWarData()};
 		if (!Data.IsSet()) { continue; }
-		const TOptional<FGridSizeType> GridSize{WorldHeightSubsystem->GetGridSize()};
+		const TOptional<FGridSizeType> GridSize{UFogOfWarComponentStatics::GetGridSize(EGridType::World, this)};
+		const TOptional<FBox2D> LandBoundingBox{UFogOfWarComponentStatics::GetLandBoundingBox(this)};
 		const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
-		if (!GridSize.IsSet() || !ScreenSize.IsSet()) { return; }
+		if (!GridSize.IsSet() || !LandBoundingBox.IsSet() || !ScreenSize.IsSet()) { return; }
 		// const TOptional<FIntPoint> PositionOnScreen{UFogOfWarComponentStatics::GetGridPositionOnScreen(Data.GetValue().ActorLocation, ScreenSize.GetValue(), ScreenBox.GetValue()) };
 		// if (!PositionOnScreen.IsSet()) { continue; }
 		// ActorPositions.Add(PositionOnScreen.GetValue());
@@ -463,7 +461,8 @@ void UFogOfWarSubsystem::GetFogOfWarActorData(TArray<FIntPoint>& ActorPositions,
 		// if (!GridPositionOnLand.IsSet()) {continue;}
 		// ActorPositions.Add(GridPositionOnLand.GetValue());
 
-		const TOptional<FIntPoint> ActorPositionOnScreen{UFogOfWarComponentStatics::GetGridPositionOnScreen(Data.GetValue().ActorLocation, ScreenSize.GetValue(), ScreenBox.GetValue(), EAllowMinusPosition::Yes)};
+		const TOptional<FIntPoint> ActorPositionOnScreen{UFogOfWarComponentStatics::GetGridPositionOnScreenDebug(Data.GetValue().ActorLocation, ScreenSize.GetValue(), ScreenBox.GetValue(), LandBoundingBox.GetValue(), EAllowMinusPosition::Yes)};
+		// const TOptional<FIntPoint> ActorPositionOnScreen{UFogOfWarComponentStatics::GetGridPositionOnScreen(Data.GetValue().ActorLocation, ScreenSize.GetValue(), ScreenBox.GetValue(), EAllowMinusPosition::Yes)};
 		if (!ActorPositionOnScreen.IsSet()) {continue;}
 		ActorPositions.Add(ActorPositionOnScreen.GetValue());
 		ActorVision.Add(FVector2f{UFogOfWarComponentStatics::ProjectWorldDirectionToScreen(Data.GetValue().ActorVisionLeft)});
@@ -474,48 +473,48 @@ void UFogOfWarSubsystem::GetFogOfWarActorData(TArray<FIntPoint>& ActorPositions,
 
 void UFogOfWarSubsystem::UpdateWorldHeightData()
 {
-	const UWorldHeightSubsystem* WorldHeightSubsystem{UFogOfWarComponentStatics::GetWorldHeightSubsystem(this)};
-	const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
-	if (!WorldHeightSubsystem || !ScreenSize.IsSet()) { return; }
+	// const UWorldHeightSubsystem* WorldHeightSubsystem{UFogOfWarComponentStatics::GetWorldHeightSubsystem(this)};
+	// const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
+	// if (!WorldHeightSubsystem || !ScreenSize.IsSet()) { return; }
 
-	if (const int32 Size{ ScreenSize.GetValue().X * ScreenSize.GetValue().Y }; WorldHeightData.Num() != Size) { WorldHeightData.SetNumZeroed(Size); }
-	else { FMemory::Memzero(WorldHeightData.GetData(), WorldHeightData.GetAllocatedSize()); }
+	// if (const int32 Size{ ScreenSize.GetValue().X * ScreenSize.GetValue().Y }; WorldHeightData.Num() != Size) { WorldHeightData.SetNumZeroed(Size); }
+	// else { FMemory::Memzero(WorldHeightData.GetData(), WorldHeightData.GetAllocatedSize()); }
 
-	CachedWorldHeightDataVersion = WorldHeightSubsystem->GetWorldHeightDataVersion();
+	// CachedWorldHeightDataVersion = WorldHeightSubsystem->GetWorldHeightDataVersion();
 	
 	
-	const TOptional<FBox2D> LandBoundingBox{ WorldHeightSubsystem->GetLandBoundingBox() };
-	if (!LandBoundingBox.IsSet()) { return; }
-	const TOptional<FBox2D> ScreenAABB{ UFogOfWarComponentStatics::GetCameraFrustumGroundIntersections(this) };
-	if (!ScreenAABB.IsSet()) {return;}
-	for (auto It = WorldHeightSubsystem->GetWorldHeightMap().CreateConstIterator(); It; ++It)
-	{
-		if (It->Value <= 0){continue;}
-		const TOptional<FVector> Location{WorldHeightSubsystem->GetGridLocationByIndex(It->Key)};
-		if (!Location.IsSet()) { continue; }
+	// const TOptional<FBox2D> LandBoundingBox{ UFogOfWarComponentStatics::GetLandBoundingBox(this) };
+	// if (!LandBoundingBox.IsSet()) { return; }
+	// const TOptional<FBox2D> ScreenAABB{ UFogOfWarComponentStatics::GetCameraFrustumGroundIntersections(this) };
+	// if (!ScreenAABB.IsSet()) {return;}
+	// for (auto It = WorldHeightSubsystem->GetWorldHeightMap().CreateConstIterator(); It; ++It)
+	// {
+	// 	if (It->Value <= 0){continue;}
+	// 	const TOptional<FVector> Location{WorldHeightSubsystem->GetGridLocationByIndex(It->Key)};
+	// 	if (!Location.IsSet()) { continue; }
 		
-		const FBox2D ScreenBox{FVector2D{ScreenAABB.GetValue().Min}, FVector2D{ScreenAABB.GetValue().Max}};
-		const FogOfWarTypes::GridIndexType Index { UFogOfWarComponentStatics::GetGridIndexOnScreen(Location.GetValue(), ScreenSize.GetValue(), ScreenBox)};
-		if (!WorldHeightData.IsValidIndex(Index)) {continue;}
-		WorldHeightData[Index] = 1;
+	// 	const FBox2D ScreenBox{FVector2D{ScreenAABB.GetValue().Min}, FVector2D{ScreenAABB.GetValue().Max}};
+	// 	const FogOfWarTypes::GridIndexType Index { UFogOfWarComponentStatics::GetGridIndexOnScreen(Location.GetValue(), ScreenSize.GetValue(), ScreenBox)};
+	// 	if (!WorldHeightData.IsValidIndex(Index)) {continue;}
+	// 	WorldHeightData[Index] = 1;
 		
-		const TOptional<FIntPoint> CurrentIndex{UFogOfWarComponentStatics::GetGridPositionOnScreen(Location.GetValue(), ScreenSize.GetValue(), ScreenBox)};
-		if (!CurrentIndex.IsSet()) { continue; }
-		constexpr int32 Step{ 2 };
-		for (auto i = -(Step * 3); i <= (Step * 3); i++)
-		{
-			const auto TargetX{ CurrentIndex.GetValue().X + i };
-			for (auto j = -Step; j <= Step; j++)
-			{
-				const auto TargetY{ CurrentIndex.GetValue().Y + j };
-				const FogOfWarTypes::GridIndexType NearIndex{ TargetX + TargetY * ScreenSize.GetValue().X };
-				if (WorldHeightData.IsValidIndex(NearIndex))
-				{
-					WorldHeightData[NearIndex] = 1;
-				}
-			}
-		}
-	}
+	// 	const TOptional<FIntPoint> CurrentIndex{UFogOfWarComponentStatics::GetGridPositionOnScreen(Location.GetValue(), ScreenSize.GetValue(), ScreenBox)};
+	// 	if (!CurrentIndex.IsSet()) { continue; }
+	// 	constexpr int32 Step{ 2 };
+	// 	for (auto i = -(Step * 3); i <= (Step * 3); i++)
+	// 	{
+	// 		const auto TargetX{ CurrentIndex.GetValue().X + i };
+	// 		for (auto j = -Step; j <= Step; j++)
+	// 		{
+	// 			const auto TargetY{ CurrentIndex.GetValue().Y + j };
+	// 			const FogOfWarTypes::GridIndexType NearIndex{ TargetX + TargetY * ScreenSize.GetValue().X };
+	// 			if (WorldHeightData.IsValidIndex(NearIndex))
+	// 			{
+	// 				WorldHeightData[NearIndex] = 1;
+	// 			}
+	// 		}
+	// 	}
+	// }
 }
 
 void UFogOfWarSubsystem::UpdateWorldHeightDataToTexture(FRHICommandListImmediate& RHICmdList)

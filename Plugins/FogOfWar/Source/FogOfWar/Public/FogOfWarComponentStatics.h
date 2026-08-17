@@ -39,11 +39,13 @@ public:
 	static FOGOFWAR_INL_API FGridBoundsDataType MakeGridBoundsTypeFromActor(const AActor& Actor);
 
 	static TOptional<FGridSizeType> GetGridSize(const EGridType GridType, const UObject* WorldContextObject);
+	static TOptional<FIntPoint> GetScreenSize(const UObject* WorldContextObject);
 
 	// UFUNCTION(BlueprintPure, meta = (DefaultToSelf = WorldContextObject))
 	// static FVector GetIntersectionFromCameraToGround(const UObject* WorldContextObject);
 
 	static TOptional<FBox2D> GetCameraFrustumGroundIntersections(const UObject* WorldContextObject, const double GroundHeight = 0.);
+	static TOptional<FBox2D> GetLandBoundingBox(const UObject* WorldContextObject);
 
 	UFUNCTION(BlueprintPure, Category = "Bounds", meta = (DefaultToSelf = Actor))
 	static bool GetActorOrientBox(FOrientedBox& OrientedBox, const AActor* Actor);
@@ -56,18 +58,20 @@ public:
 	static FOrientedBoxAABBAndTransform GetOrientedBoxAABBAndTransform(const FOrientedBox& OrientedBox);
 	static FOrientedBox GetAABBBoxOriented(const FBox& AABB);
 
-	static TOptional<FIntPoint> GetGridPositionOnScreen(const FVector& WorldLocation, const FIntPoint& ScreenSize, const FBox2D& ScreenBoundingBox, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No);
-	static FogOfWarTypes::GridIndexType GetGridIndexOnScreen(const FVector& WorldLocation, const FIntPoint& ScreenSize, const FBox2D& ScreenBoundingBox);
+	static TOptional<FIntPoint> GetGridPositionOnScreen(const FVector& WorldLocation, const UObject* WorldContextObject, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No);
+	static FogOfWarTypes::GridIndexType GetGridIndexOnScreen(const FVector& WorldLocation, const UObject* WorldContextObject);
+	static TOptional<FIntPoint> GetGridPositionOnScreen(const FVector& WorldLocation, const FIntPoint& ScreenSize, const FBox2D& ScreenBoundingBox, const FBox2D& LandBoundingBox, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No);
+	static FogOfWarTypes::GridIndexType GetGridIndexOnScreen(const FVector& WorldLocation, const FIntPoint& ScreenSize, const FBox2D& ScreenBoundingBox, const FBox2D& LandBoundingBox);
 	
 	static FVector2D ProjectWorldDirectionToScreen(const FVector& WorldDirection);	
 	
-	static TOptional<FIntPoint> GetGridPosition(const FVector& WorldLocation, const UObject* WorldContextObject);
-	static FogOfWarTypes::GridIndexType GetGridIndexOnWorld(const FVector& WorldLocation, const UObject* WorldContextObject);
-	static FogOfWarTypes::GridIndexType GetGridIndexOnWorld(const FVector& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem);
-	static TOptional<FIntPoint> GetGridPositionOnWorld(const FVector& WorldLocation, const UObject* WorldContextObject);
-	static TOptional<FIntPoint> GetGridPositionOnWorld(const FVector& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem);
-	static TOptional<FIntPoint> GetGridPositionOnWorld(const FVector2D& WorldLocation, const UObject* WorldContextObject);
-	static TOptional<FIntPoint> GetGridPositionOnWorld(const FVector2D& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem);
+	static TOptional<FIntPoint> GetGridPosition(const FVector& WorldLocation, const UObject* WorldContextObject, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No);
+	static FogOfWarTypes::GridIndexType GetGridIndexOnWorld(const FVector& WorldLocation, const UObject* WorldContextObject, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No);
+	static FogOfWarTypes::GridIndexType GetGridIndexOnWorld(const FVector& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No);
+	static TOptional<FIntPoint> GetGridPositionOnWorld(const FVector& WorldLocation, const UObject* WorldContextObject, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No);
+	static TOptional<FIntPoint> GetGridPositionOnWorld(const FVector& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No);
+	static TOptional<FIntPoint> GetGridPositionOnWorld(const FVector2D& WorldLocation, const UObject* WorldContextObject, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No);
+	static TOptional<FIntPoint> GetGridPositionOnWorld(const FVector2D& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No);
 
 	static UFogOfWarSubsystem* GetFogOfWarSubsystem(const UObject* WorldContextObject);
 	static UWorldHeightSubsystem* GetWorldHeightSubsystem(const UObject* WorldContextObject);

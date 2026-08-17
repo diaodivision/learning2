@@ -25,7 +25,7 @@ TOptional<FGridSizeType> UFogOfWarComponentStatics::GetGridSize(const EGridType 
 {
 	const UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull);
 	if (!World) { return NullOpt; }
-
+	
 	if (GridType == EGridType::World)
 	{
 		const UWorldHeightSubsystem* WorldHeightSubsystem{ World->GetSubsystem<UWorldHeightSubsystem>() };
@@ -38,8 +38,13 @@ TOptional<FGridSizeType> UFogOfWarComponentStatics::GetGridSize(const EGridType 
 
 		return FogOfWarSubsystem ? FogOfWarSubsystem->GetGridSize() : NullOpt;
 	}
-
+	
 	return NullOpt;
+}
+
+TOptional<FIntPoint> UFogOfWarComponentStatics::GetScreenSize(const UObject* WorldContextObject)
+{
+	return GetFogOfWarSubsystem(WorldContextObject) ? GetFogOfWarSubsystem(WorldContextObject)->GetScreenSize() : NullOpt;
 }
 
 // FVector UFogOfWarComponentStatics::GetIntersectionFromCameraToGround(const UObject* WorldContextObject)
@@ -108,6 +113,11 @@ TOptional<FBox2D> UFogOfWarComponentStatics::GetCameraFrustumGroundIntersections
 	return Result.Num() == 2 ? TOptional<FBox2D>{ Result } : NullOpt;
 }
 
+TOptional<FBox2D> UFogOfWarComponentStatics::GetLandBoundingBox(const UObject* WorldContextObject)
+{
+	return GetWorldHeightSubsystem(WorldContextObject) ? GetWorldHeightSubsystem(WorldContextObject)->GetLandBoundingBox() : NullOpt;
+}
+
 bool UFogOfWarComponentStatics::GetActorOrientBox(FOrientedBox& OrientedBox, const AActor* Actor)
 {
 	if (!Actor) { return false; }
@@ -151,39 +161,63 @@ bool UFogOfWarComponentStatics::GetComponentOrientBox(FOrientedBox& OrientedBox,
 	return true;
 }
 
-TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPosition(const FVector& WorldLocation, const UObject* WorldContextObject)
+TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnScreen(const FVector& WorldLocation, const UObject* WorldContextObject, const EAllowMinusPosition AllowMinusPosition)
 {
-	return GetWorldHeightSubsystem(WorldContextObject) ? GetWorldHeightSubsystem(WorldContextObject)->GetGridPosition(WorldLocation) : NullOpt;
+	if (!WorldContextObject) {return NullOpt;}
+
+	const TOptional<FIntPoint> ScreenSize{GetScreenSize(WorldContextObject)};
+	const TOptional<FBox2D> ScreenBoundingBox{GetCameraFrustumGroundIntersections(WorldContextObject)};
+	const TOptional<FBox2D> LandBoundingBox{UFogOfWarComponentStatics::GetLandBoundingBox(WorldContextObject)};
+
+	if (!ScreenSize.IsSet() || !ScreenBoundingBox.IsSet() || !LandBoundingBox.IsSet()) {return NullOpt;}
+	return GetGridPositionOnScreen(WorldLocation, ScreenSize.GetValue(), ScreenBoundingBox.GetValue(), LandBoundingBox.GetValue());
 }
 
-FogOfWarTypes::GridIndexType UFogOfWarComponentStatics::GetGridIndexOnWorld(const FVector& WorldLocation, const UObject* WorldContextObject)
+FogOfWarTypes::GridIndexType UFogOfWarComponentStatics::GetGridIndexOnScreen(const FVector& WorldLocation, const UObject* WorldContextObject)
 {
-	return GetWorldHeightSubsystem(WorldContextObject) ? GetGridIndexOnWorld(WorldLocation, *GetWorldHeightSubsystem(WorldContextObject)) : INDEX_NONE;
+	if (!WorldContextObject) {return INDEX_NONE;}
+
+	const TOptional<FIntPoint> ScreenSize{GetScreenSize(WorldContextObject)};
+	const TOptional<FBox2D> ScreenBoundingBox{GetCameraFrustumGroundIntersections(WorldContextObject)};
+	const TOptional<FBox2D> LandBoundingBox{UFogOfWarComponentStatics::GetLandBoundingBox(WorldContextObject)};
+
+	if (!ScreenSize.IsSet() || !ScreenBoundingBox.IsSet() || !LandBoundingBox.IsSet()) {return INDEX_NONE;}
+	return GetGridIndexOnScreen(WorldLocation, ScreenSize.GetValue(), ScreenBoundingBox.GetValue(), LandBoundingBox.GetValue());
 }
 
-FogOfWarTypes::GridIndexType UFogOfWarComponentStatics::GetGridIndexOnWorld(const FVector& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem)
+TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPosition(const FVector& WorldLocation, const UObject* WorldContextObject, const EAllowMinusPosition AllowMinusPosition)
 {
-	return WorldHeightSubsystem.GetGridIndex(WorldLocation);
+	return GetWorldHeightSubsystem(WorldContextObject) ? GetWorldHeightSubsystem(WorldContextObject)->GetGridPosition(WorldLocation, AllowMinusPosition) : NullOpt;
 }
 
-TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnWorld(const FVector& WorldLocation, const UObject* WorldContextObject)
+FogOfWarTypes::GridIndexType UFogOfWarComponentStatics::GetGridIndexOnWorld(const FVector& WorldLocation, const UObject* WorldContextObject, const EAllowMinusPosition AllowMinusPosition)
 {
-	return GetWorldHeightSubsystem(WorldContextObject) ? GetGridPositionOnWorld(WorldLocation, *GetWorldHeightSubsystem(WorldContextObject)) : NullOpt;
+	return GetWorldHeightSubsystem(WorldContextObject) ? GetGridIndexOnWorld(WorldLocation, *GetWorldHeightSubsystem(WorldContextObject), AllowMinusPosition) : INDEX_NONE;
 }
 
-TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnWorld(const FVector& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem)
+FogOfWarTypes::GridIndexType UFogOfWarComponentStatics::GetGridIndexOnWorld(const FVector& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem, const EAllowMinusPosition AllowMinusPosition)
 {
-	return WorldHeightSubsystem.GetGridPosition(WorldLocation);
+	return WorldHeightSubsystem.GetGridIndex(WorldLocation, AllowMinusPosition);
 }
 
-TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnWorld(const FVector2D& WorldLocation, const UObject* WorldContextObject)
+TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnWorld(const FVector& WorldLocation, const UObject* WorldContextObject, const EAllowMinusPosition AllowMinusPosition)
 {
-	return GetWorldHeightSubsystem(WorldContextObject) ? GetGridPositionOnWorld(WorldLocation, *GetWorldHeightSubsystem(WorldContextObject)) : NullOpt;
+	return GetWorldHeightSubsystem(WorldContextObject) ? GetGridPositionOnWorld(WorldLocation, *GetWorldHeightSubsystem(WorldContextObject), AllowMinusPosition) : NullOpt;
 }
 
-TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnWorld(const FVector2D& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem)
+TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnWorld(const FVector& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem, const EAllowMinusPosition AllowMinusPosition)
 {
-	return WorldHeightSubsystem.GetGridPosition(WorldLocation);
+	return WorldHeightSubsystem.GetGridPosition(WorldLocation, AllowMinusPosition);
+}
+
+TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnWorld(const FVector2D& WorldLocation, const UObject* WorldContextObject, const EAllowMinusPosition AllowMinusPosition)
+{
+	return GetWorldHeightSubsystem(WorldContextObject) ? GetGridPositionOnWorld(WorldLocation, *GetWorldHeightSubsystem(WorldContextObject), AllowMinusPosition) : NullOpt;
+}
+
+TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnWorld(const FVector2D& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem, const EAllowMinusPosition AllowMinusPosition)
+{
+	return WorldHeightSubsystem.GetGridPosition(WorldLocation, AllowMinusPosition);
 }
 
 UFogOfWarSubsystem* UFogOfWarComponentStatics::GetFogOfWarSubsystem(const UObject* WorldContextObject)

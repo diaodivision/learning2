@@ -30,12 +30,18 @@ public:
 
 	TOptional<FGridSizeType> GetGridSize() const;
 
-	FogOfWarTypes::GridIndexType GetGridIndex(const FVector2D& Location2D) const;
-	FogOfWarTypes::GridIndexType GetGridIndex(const FVector& Location) const;
-	TOptional<FIntPoint> IndexToGridPosition(const FogOfWarTypes::GridIndexType Index) const;
-	TOptional<FIntPoint> GetGridPosition(const FVector& WorldLocation) const { return IndexToGridPosition(GetGridIndex(WorldLocation)); }
-	TOptional<FIntPoint> GetGridPosition(const FVector2D& WorldLocation) const { return IndexToGridPosition(GetGridIndex(WorldLocation)); }
-	TOptional<FVector> GetGridLocationByIndex(const FogOfWarTypes::GridIndexType Index) const;
+	FogOfWarTypes::GridIndexType GetGridIndex(const FVector2D& Location2D, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No) const;
+	FogOfWarTypes::GridIndexType GetGridIndex(const FVector& Location, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No) const;
+	TOptional<FIntPoint> IndexToGridPosition(const FogOfWarTypes::GridIndexType Index, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No) const;
+	TOptional<FIntPoint> GetGridPosition(const FVector& WorldLocation, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No) const
+	{ 
+		return IndexToGridPosition(GetGridIndex(WorldLocation, AllowMinusPosition), AllowMinusPosition);
+	}
+	TOptional<FIntPoint> GetGridPosition(const FVector2D& WorldLocation, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No) const 
+	{ 
+		return IndexToGridPosition(GetGridIndex(WorldLocation, AllowMinusPosition), AllowMinusPosition);
+	}
+	TOptional<FVector> GetGridLocationByIndex(const FogOfWarTypes::GridIndexType Index, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No) const;
 
 	bool IsWorldHeightVolumeOverlapWithGround(const AWorldHeightVolume& Volume) const;
 

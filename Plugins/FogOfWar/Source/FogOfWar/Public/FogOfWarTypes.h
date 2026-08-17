@@ -56,8 +56,8 @@ enum class EGridType : uint8
 
 enum class EAllowMinusPosition : uint8
 {
-	Yes,
-	No
+	No,
+	Yes
 };
 
 struct FOrientedBoxAABBAndQuat

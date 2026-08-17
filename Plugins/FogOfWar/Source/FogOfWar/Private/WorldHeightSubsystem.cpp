@@ -68,9 +68,9 @@ TOptional<FGridSizeType> UWorldHeightSubsystem::GetGridSize() const
 	return FGridSizeType{ Result, FGridSizeType::EGridSizeCoordinate::Screen };
 }
 
-FogOfWarTypes::GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector2D& Location2D) const
+FogOfWarTypes::GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector2D& Location2D, const EAllowMinusPosition AllowMinusPosition) const
 {
-	if (!LandBounds.IsSet() || !LandBounds.GetValue().IsInsideOrOnXY(FVector{ Location2D.X, Location2D.Y, 0 }))
+	if (!LandBounds.IsSet() || (AllowMinusPosition != EAllowMinusPosition::Yes && !LandBounds.GetValue().IsInsideOrOnXY(FVector{ Location2D.X, Location2D.Y, 0 })))
 	{
 		return INDEX_NONE;
 	}
@@ -89,32 +89,39 @@ FogOfWarTypes::GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector2D
 	// return GridY * GridNumX + GridX;
 
 	const FVector2D NormalizedPosition{(Location2D.Y - LandBox.Min.Y) / LandBox.GetSize().Y, (LandBox.Max.X - Location2D.X) / LandBox.GetSize().X};
-	if (NormalizedPosition.GetMin() >= 0. && NormalizedPosition.GetMax() <= 1.)
+	
+	if (AllowMinusPosition == EAllowMinusPosition::Yes || (NormalizedPosition.GetMin() >= 0. && NormalizedPosition.GetMax() <= 1.))
 	{
 		return FMath::FloorToInt32(NormalizedPosition.X * GridNumX) + FMath::FloorToInt32(NormalizedPosition.Y * GridNumY) * GridNumX;
 	}
 	return INDEX_NONE;
 }
 
-FogOfWarTypes::GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector& Location) const
+FogOfWarTypes::GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector& Location, const EAllowMinusPosition AllowMinusPosition) const
 {
 	if (Location.Z < LandBounds.GetValue().Max.Z) { return INDEX_NONE; }
 	
-	return GetGridIndex(FVector2D{ Location.X, Location.Y });
+	return GetGridIndex(FVector2D{ Location.X, Location.Y }, AllowMinusPosition);
 }
 
-TOptional<FIntPoint> UWorldHeightSubsystem::IndexToGridPosition(const FogOfWarTypes::GridIndexType Index) const
+TOptional<FIntPoint> UWorldHeightSubsystem::IndexToGridPosition(const FogOfWarTypes::GridIndexType Index, const EAllowMinusPosition AllowMinusPosition) const
 {
-	if (Index < 0 || Index >= (GridNumX * GridNumY)) { return NullOpt; }
+	if (AllowMinusPosition != EAllowMinusPosition::Yes && (Index < 0 || Index >= (GridNumX * GridNumY))) { return NullOpt; }
 
-	return FIntPoint{ static_cast<int32>(Index % GridNumX), static_cast<int32>(Index / GridNumX) };
+	// return FIntPoint{ static_cast<int32>(Index % GridNumX), static_cast<int32>(Index / GridNumX) };
+	const int32 Y{ FMath::FloorToInt32(static_cast<float>(Index) / GridNumX) };
+	const int32 X{ Index - Y * GridNumX };
+
+	return FIntPoint{ X, Y };
 }
 
-TOptional<FVector> UWorldHeightSubsystem::GetGridLocationByIndex(const FogOfWarTypes::GridIndexType Index) const
+TOptional<FVector> UWorldHeightSubsystem::GetGridLocationByIndex(const FogOfWarTypes::GridIndexType Index, const EAllowMinusPosition AllowMinusPosition) const
 {
-	if (const TOptional<FGridSizeType> GridSize{ GetGridSize() }; Index >= 0 && Index < (GridNumX * GridNumY) && Land.IsValid() && GridSize.IsSet())
+	const TOptional<FGridSizeType> GridSize{ GetGridSize() };
+	if (!GridSize.IsSet() || !Land.IsValid()) {return NullOpt;}
+	if (AllowMinusPosition == EAllowMinusPosition::Yes || (Index >= 0 && Index < (GridNumX * GridNumY)))
 	{
-		const TOptional<FIntPoint> GridPosition{IndexToGridPosition(Index)};
+		const TOptional<FIntPoint> GridPosition{IndexToGridPosition(Index, AllowMinusPosition)};
 		if (!GridPosition.IsSet()) {return NullOpt;}
 		// const int32 GridX = static_cast<int32>(Index % GridNumX);
 		// const int32 GridY = static_cast<int32>(Index / GridNumX);
@@ -398,23 +405,6 @@ void UWorldHeightSubsystem::UpdateWorldHeightTexture()
 	// 1. 安全校验
     if (FMath::Min(GridNumX, GridNumY) <= 0 || !WorldHeightTexture || !WorldHeightTexture->GetResource()) { return; }
 
-	#if WITH_EDITOR
-	struct FDebugInfo
-	{
-		FVector Location;
-		int32 Index;
-		FIntPoint GridPosition;
-		bool bIsSet = false;
-	};
-	#endif
-
-	FDebugInfo MinIndex;
-	FDebugInfo MaxIndex;
-	FDebugInfo MinX;
-	FDebugInfo MinY;
-	FDebugInfo MaxX;
-	FDebugInfo MaxY;
-
     // 2. 将数据深拷贝一份交由渲染线程持有，防止主线程销毁/重分配该数组
     TArray<uint8> WorldHeightDataArray;
 	WorldHeightDataArray.SetNumZeroed(GridNumX * GridNumY);
@@ -424,54 +414,7 @@ void UWorldHeightSubsystem::UpdateWorldHeightTexture()
 		if (!ensure(WorldHeightDataArray.IsValidIndex(It->Key))) { continue; }
 		
 		WorldHeightDataArray[Index] = 1;
-		
-		const TOptional<FIntPoint> GridPosition{ IndexToGridPosition(Index) };
-		if (!GridPosition.IsSet()) {continue;}		
-		auto SetDebugInfo = [this, Index, GridPosition](FDebugInfo& Info)
-		{
-			const TOptional<FVector> Location{GetGridLocationByIndex(Index)};
- 			if (!Location.IsSet() || !GridPosition.IsSet()) {return;}		
-			
-			Info.Location = Location.GetValue();
-			Info.GridPosition = GridPosition.GetValue();
-			Info.Index = Index;
-			Info.bIsSet = true;
-		};
-		
-		if (!MinIndex.bIsSet || MinIndex.Index > Index) {SetDebugInfo(MinIndex);}
-		if (!MaxIndex.bIsSet || MaxIndex.Index < Index) {SetDebugInfo(MaxIndex);}
-		if (!MinX.bIsSet || MinX.GridPosition.X > GridPosition.GetValue().X) {SetDebugInfo(MinX);}
-		if (!MinY.bIsSet || MinY.GridPosition.Y > GridPosition.GetValue().Y) {SetDebugInfo(MinY);}
-		if (!MaxX.bIsSet || MaxX.GridPosition.X < GridPosition.GetValue().X) {SetDebugInfo(MaxX);}
-		if (!MaxY.bIsSet || MaxY.GridPosition.Y < GridPosition.GetValue().Y) {SetDebugInfo(MaxY);}
-		
-		// constexpr int32 Step{2};
-		// for (auto i{-Step}; i <= Step; i++)
-		// {
-			// for (auto j{-Step}; j <= Step; j++)
-			// {
-				// const FogOfWarTypes::GridIndexType NearIndex{ GridPosition.GetValue().X + i + (GridPosition.GetValue().Y + j) * GridNumX };
-				// if (WorldHeightDataArray.IsValidIndex(NearIndex)) { WorldHeightDataArray[NearIndex] = 1; }
-			// }
-		// }
 	}
-
-	static int32 Count{1};
-	auto PrintDebugInfo = [](const FDebugInfo& Info, const FString& Name)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Printing Debug Info, Name: %s"), *Name);
-		UE_LOG(LogTemp, Error, TEXT("Printing Debug Info, Location: %s"), *Info.Location.ToString());
-		UE_LOG(LogTemp, Error, TEXT("Printing Debug Info, Position: %s"), *Info.GridPosition.ToString());
-		UE_LOG(LogTemp, Error, TEXT("Printing Debug Info, Index: %d"), Info.Index);
-	};
-	UE_LOG(LogTemp, Error, TEXT("Printing Debug Info, Count: %d start------------------------"), Count);
-	if (MinIndex.bIsSet) {PrintDebugInfo(MinIndex, TEXT("MinIndex"));}
-	if (MaxIndex.bIsSet) {PrintDebugInfo(MaxIndex, TEXT("MaxIndex"));}
-	if (MinX.bIsSet) {PrintDebugInfo(MinX, TEXT("MinX"));}
-	if (MinY.bIsSet) {PrintDebugInfo(MinY, TEXT("MinY"));}
-	if (MaxX.bIsSet) {PrintDebugInfo(MaxX, TEXT("MaxX"));}
-	if (MaxY.bIsSet) {PrintDebugInfo(MaxY, TEXT("MaxY"));}
-	UE_LOG(LogTemp, Error, TEXT("Printing Debug Info, Count: %d end--------------------------"), Count++);
 
     // 3. 投递渲染命令
     ENQUEUE_RENDER_COMMAND(UpdateTextureCmd)(
