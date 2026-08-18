@@ -15,6 +15,7 @@
 #include "HoverReactive/HoverReactiveInterface.h"
 #include "InputRecordedDataTypes/RecordedDataDelegates.h"
 #include "Ability/Tags/PlayerResponseGameplayTags.h"
+#include "FogOfWarMaskedActorInterface.h"
 #include "MyCharacterBase.generated.h"
 
 struct FOnAttributeChangeData;
@@ -46,7 +47,8 @@ class LEARNING2_API AMyCharacterBase :
 	public IGenericTeamAgentInterface,
 	public IAbilitySystemInterface,
 	public ICharacterWidgetControllableInterface,
-	public IHoverReactiveInterface
+	public IHoverReactiveInterface,
+	public IFogOfWarMaskedActorInterface
 {
 	GENERATED_BODY()
 
@@ -128,6 +130,8 @@ public:
 	virtual void Freeze_Implementation() override;
 	virtual void Unfreeze_Implementation() override;
 	virtual FORCEINLINE bool IsFreezing_Implementation() override { return bIsFreezing; };
+
+	virtual void UpdateFogOfWarTexture_Implementation(UTexture2D* FogOfWarTexture) override;
 
 protected:
 	UFUNCTION(BlueprintNativeEvent, Category = "Weapon")
@@ -226,6 +230,9 @@ protected:
 	TObjectPtr<UCharacterWidgetComponent> CharacterWidgetComponent;
 
 	TMap<FGameplayTag, int32> ResponseTagCountMap;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Fog Of War Mask")
+	bool bIsFogOfWarMaskInitialized{ false };
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Team|ID", meta = (AllowPrivateAccess = true))

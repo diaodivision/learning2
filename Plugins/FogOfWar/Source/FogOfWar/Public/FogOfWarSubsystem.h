@@ -11,12 +11,13 @@
 #include "Tickable.h"
 #include "FogOfWarSubsystem.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnVisibilityTextureUpdated, UTexture2D *, Texture);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFogOfWarTextureUpdatedDelegate, UTexture2D *, Texture);
 DECLARE_MULTICAST_DELEGATE(FOnViewportSizeChangedDelegate);
 
 class APlayerCameraManager;
 class UFogOfWarComponent;
 class USceneComponent;
+class UMaterialInstanceDynamic;
 
 /**
  *
@@ -66,12 +67,8 @@ private:
     void CreateDynamicTexture();
     void SetTextureParameter() const;
 
-    void CreateWorldHeightTexture();
-
     void GetFogOfWarActorData(TArray<FIntPoint> &ActorPositions, TArray<FVector2f> &ActorVision,
                               TArray<int32> &RadiusSqList) const;
-    void UpdateWorldHeightData();
-    void UpdateWorldHeightDataToTexture(FRHICommandListImmediate &RHICmdList);
 
     void UploadFogOfWarActorData(const TArray<FIntPoint> &ActorPositions, const TArray<FVector2f> &ActorVision,
                                  const TArray<int32> &RadiusSqList, FFogOfWarComputeShader::FParameters &Parameter,
@@ -101,7 +98,7 @@ public:
     FOnViewportSizeChangedDelegate OnViewportSizeChangedDelegate;
 
     UPROPERTY(BlueprintAssignable, Category = "FogOfWar")
-    FOnVisibilityTextureUpdated OnVisibilityTextureUpdated;
+    FOnFogOfWarTextureUpdatedDelegate OnFogOfWarTextureUpdatedDelegate;
 
 private:
     UPROPERTY()
@@ -113,9 +110,6 @@ private:
     UPROPERTY()
     TArray<uint8> WorldHeightData;
     uint32 CachedWorldHeightDataVersion{0};
-
-    UPROPERTY()
-    TObjectPtr<UTexture2D> WorldHeightTexture;
 
     // 缓存 GPU 纹理（用于 RDG 提取）
     TRefCountPtr<IPooledRenderTarget> CachedOutputTexture;

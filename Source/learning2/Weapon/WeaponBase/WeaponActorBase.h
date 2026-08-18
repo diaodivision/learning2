@@ -10,6 +10,7 @@
 #include "WeaponTypes.h"
 #include "Delegates/DelegateCombinations.h"
 #include "GameplayTagContainer.h"
+#include "FogOfWarMaskedActorInterface.h"
 #include "WeaponActorBase.generated.h"
 
 class UGameplayAbility;
@@ -23,15 +24,13 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnReserveAmmoChangedDelegate, co
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponAbilityEndedDelegate, const FGameplayAbilitySpecHandle&, Handle);
 
 UCLASS(NotBlueprintable, BlueprintType, Abstract)
-class LEARNING2_API AWeaponActorBase : public AActor, public ISwitchableInterface, public IWeaponInterface
+class LEARNING2_API AWeaponActorBase : public AActor, public ISwitchableInterface, public IWeaponInterface, public IFogOfWarMaskedActorInterface
 {
 	GENERATED_BODY()
 
 	friend class UWeaponActorBlueprintLibrary;
 
 public:
-	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
-
 	// Sets default values for this actor's properties
 	AWeaponActorBase();
 
@@ -185,6 +184,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Ability")
 	inline FGameplayAbilitySpecHandle GetWeaponFireHandle() const { return FireAbilityHandle; };
 
+	virtual void UpdateFogOfWarTexture_Implementation(UTexture2D* FogOfWarTexture) override;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -264,12 +265,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ExposeOnSpawn = "true"), Category = "Effect")
 	TSubclassOf<UGameplayEffect> EffectClass;
 
-private:
-	//// 1. 定义材质实例的软引用（允许在编辑器中指定任何 MIC）
-	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Materials", meta = (AllowPrivateAccess = true))
-	//TSoftObjectPtr<UMaterialInstanceConstant> SoftIconMaterial;
-
-	//// 2. 用于存储运行时生成的动态材质实例 (MID)
-	//UPROPERTY()
-	//TObjectPtr<UMaterialInstanceDynamic> IconMaterial;
+	UPROPERTY(BlueprintReadWrite, Category = "Fog Of War Mask")
+	bool bIsFogOfWarMaskInitialized{ false };
 };

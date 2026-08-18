@@ -9,13 +9,8 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "BlueprintFunctionLibrary/WeaponActorBlueprintLibrary.h"
 #include "Ability/WeaponOperation/Base/WeaponFireAbilityBase.h"
-
-void AWeaponActorBase::EndPlay(EEndPlayReason::Type EndPlayReason)
-{
-	Super::EndPlay(EndPlayReason);
-
-	UE_LOG(LogTemp, Error, TEXT("EndPlaying: %s"), *GetNameSafe(this));
-}
+#include "FogOfWarSubsystem.h"
+#include "FogOfWarComponentStatics.h"
 
 // Sets default values
 AWeaponActorBase::AWeaponActorBase()
@@ -218,6 +213,12 @@ FVector AWeaponActorBase::RandomSpread() const
 	return FVector::Zero();
 }
 
+void AWeaponActorBase::UpdateFogOfWarTexture_Implementation(UTexture2D* FogOfWarTexture)
+{
+	const EDoInitialize DoInitialize{ bIsFogOfWarMaskInitialized ? EDoInitialize::No : EDoInitialize::Yes };
+    UpdateFogOfWarTexture_DefaultImplementation(FogOfWarTexture, WeaponMesh, bIsFogOfWarMaskInitialized, DoInitialize);
+}
+
 // Called when the game starts or when spawned
 void AWeaponActorBase::BeginPlay()
 {
@@ -238,6 +239,11 @@ void AWeaponActorBase::InitializeDelegates()
 	if (!AvatarAbilitySystemComponent.IsValid()) { return; }
 
 	AvatarAbilitySystemComponent->OnAbilityEnded.AddUObject(this, &AWeaponActorBase::OnAbilityEnded);
+
+	if (UFogOfWarSubsystem* FogOfWarSubsystem{ UFogOfWarComponentStatics::GetFogOfWarSubsystem(this) })
+	{
+		FogOfWarSubsystem->OnFogOfWarTextureUpdatedDelegate.AddUniqueDynamic(this, &AWeaponActorBase::UpdateFogOfWarTexture);
+	}
 }
 
 void AWeaponActorBase::DeinitializeDelegates() const
@@ -245,6 +251,11 @@ void AWeaponActorBase::DeinitializeDelegates() const
 	if (!AvatarAbilitySystemComponent.IsValid()) { return; }
 
 	AvatarAbilitySystemComponent->OnAbilityEnded.RemoveAll(this);
+
+	if (UFogOfWarSubsystem* FogOfWarSubsystem{ UFogOfWarComponentStatics::GetFogOfWarSubsystem(this) })
+	{
+		FogOfWarSubsystem->OnFogOfWarTextureUpdatedDelegate.RemoveAll(this);
+	}
 }
 
 void AWeaponActorBase::OnWeaponLevelChanged(const int32 OldLevel, const int32 NewLevel)

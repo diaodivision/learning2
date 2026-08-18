@@ -26,6 +26,7 @@ AFireArmBulletBase::AFireArmBulletBase()
 
 	CreateMeshComponent();
 	CreateProjectileMovement();
+	CreateNiagaraComponent();
 }
 
 void AFireArmBulletBase::InitializeBulletData_Implementation(const UObject* InData)
@@ -100,6 +101,15 @@ void AFireArmBulletBase::BeginPlay()
 	//World->GetTimerManager().SetTimer(TimerHandle, Delegate, LifeTime, false, -1.f);
 }
 
+void AFireArmBulletBase::UpdateFogOfWarTexture_Implementation(UTexture2D* FogOfWarTexture)
+{
+	Super::UpdateFogOfWarTexture_Implementation(FogOfWarTexture);
+
+	if (!NiagaraComponent) return;
+
+	NiagaraComponent->SetVariableTexture(*GetFogOfWarTextureParameterName(), FogOfWarTexture);
+}
+
 void AFireArmBulletBase::PostRegisterAllComponents()
 {
 	Super::PostRegisterAllComponents();
@@ -142,7 +152,7 @@ void AFireArmBulletBase::CreateCollisionComponent()
 
 	CollisionComponent->SetEnableGravity(bEnableGravity);
 
-	////ÉèÖÃÅö×²Ô¤Éè
+	////ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×²Ô¤ï¿½ï¿½
 	CollisionComponent->SetCollisionProfileName(UCollisionProfile::CustomCollisionProfileName);
 	CollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	CollisionComponent->SetCollisionObjectType(ECC_WorldDynamic);

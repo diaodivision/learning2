@@ -14,7 +14,7 @@ class UFogOfWarComponentStatics;
 
 namespace FogOfWarConst
 {
-	constexpr static const TCHAR* MaterialPath{ TEXT("/Game/Experimental/NewMaterial") };
+	constexpr static const FStringView MaterialPath{ TEXT("/Game/Experimental/NewMaterial") };
 	constexpr static EPixelFormat PixelFormat{ EPixelFormat::PF_G8 };
 	constexpr static TEnumAsByte<enum TextureFilter> TextureFilter{ TF_MAX };
 
@@ -30,6 +30,8 @@ namespace FogOfWarConst
 	inline const static FVector kInvalidVector{ kInfinity, kInfinity , kInfinity };
 	inline const static FBox2D kInvalidBox2D{ kInvalidVector2D , kInvalidVector2D };
 	inline const static FBox kInvalidBox{ kInvalidVector , kInvalidVector };
+
+	constexpr static FStringView FogOfWarTextureParameterName{ TEXT("FogOfWarTexture") };
 };
 
 namespace FogOfWarTypes

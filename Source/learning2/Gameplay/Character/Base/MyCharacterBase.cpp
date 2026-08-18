@@ -4,6 +4,8 @@
 #include "MyCharacterBase.h"
 //#include "AbilitySystemComponent.h"
 #include "Ability/AbilitySystemComponent/MyAbilitySystemComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Materials/MaterialInterface.h"
 #include "Switchable/SwitchableActorCollection.h"
 #include "WeaponBase/WeaponActorBase.h"
 #include "Delegates/DelegateCombinations.h"
@@ -18,6 +20,9 @@
 #include "Character/CharacterWidgetComponent.h"
 #include "BehaviorTree/BehaviorTreeStatics.h"
 #include "WorldPauseSubsystem.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "FogOfWarSubsystem.h"
+#include "FogOfWarComponentStatics.h"
 
 // Sets default values
 AMyCharacterBase::AMyCharacterBase()
@@ -37,8 +42,6 @@ void AMyCharacterBase::BeginPlay()
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
 	Super::BeginPlay();
-
-
 
 	if (UAIPerceptionComponent * Component{ GetController() ? GetController()->FindComponentByClass<UAIPerceptionComponent>() : nullptr })
 	{
@@ -275,6 +278,12 @@ void AMyCharacterBase::Unfreeze_Implementation()
 	bIsFreezing = false;
 }
 
+void AMyCharacterBase::UpdateFogOfWarTexture_Implementation(UTexture2D* FogOfWarTexture)
+{
+	const EDoInitialize DoInitialize{ bIsFogOfWarMaskInitialized ? EDoInitialize::No : EDoInitialize::Yes };
+    UpdateFogOfWarTexture_DefaultImplementation(FogOfWarTexture, GetMesh(), bIsFogOfWarMaskInitialized, DoInitialize);
+}
+
 void AMyCharacterBase::OnWeaponMagazineAmmoChanged_Implementation(const AWeaponActorBase* Weapon, int32 OldMagazineAmmo, int32 NewMagazineAmmo)
 {
 	if (!Weapon) { return; }
@@ -475,6 +484,11 @@ void AMyCharacterBase::InitializeDelegates()
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo5Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
 
 	AbilitySystemComponent->RegisterGameplayTagEvent(PlayerResponseTags::State_Debuff_Stun.GetTag(), EGameplayTagEventType::AnyCountChange).AddUObject(this, &AMyCharacterBase::OnResponseTagCountChanged);
+
+	if (UFogOfWarSubsystem* FogOfWarSubsystem{ UFogOfWarComponentStatics::GetFogOfWarSubsystem(this) })
+	{
+		FogOfWarSubsystem->OnFogOfWarTextureUpdatedDelegate.AddUniqueDynamic(this, &AMyCharacterBase::UpdateFogOfWarTexture);
+	}
 }
 
 void AMyCharacterBase::DeinitializeDelegates()
@@ -493,6 +507,11 @@ void AMyCharacterBase::DeinitializeDelegates()
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo3Attribute()).RemoveAll(this);
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo4Attribute()).RemoveAll(this);
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo5Attribute()).RemoveAll(this);
+
+	if (UFogOfWarSubsystem* FogOfWarSubsystem{ UFogOfWarComponentStatics::GetFogOfWarSubsystem(this) })
+	{
+		FogOfWarSubsystem->OnFogOfWarTextureUpdatedDelegate.RemoveAll(this);
+	}
 }
 
 bool AMyCharacterBase::FindWeaponByPredicate(const UObject* Object) const

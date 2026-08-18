@@ -6,12 +6,13 @@
 #include "GameFramework/Actor.h"
 #include "Interface/BulletInterface.h"
 #include "Interface/FreezableInterface.h"
+#include "FogOfWarMaskedActorInterface.h"
 #include "BulletBase.generated.h"
 
 class UGameplayEffect;
 
 UCLASS(Abstract, BlueprintType, Blueprintable)
-class LEARNING2_API ABulletBase : public AActor, public IBulletInterface, public IFreezableInterface
+class LEARNING2_API ABulletBase : public AActor, public IBulletInterface, public IFreezableInterface, public IFogOfWarMaskedActorInterface
 {
 	GENERATED_BODY()
 
@@ -22,7 +23,16 @@ public:
 	virtual FORCEINLINE void Unfreeze_Implementation() override {}
 	virtual FORCEINLINE bool IsFreezing_Implementation() override { return false; }
 
+	virtual void UpdateFogOfWarTexture_Implementation(UTexture2D* FogOfWarTexture) override;
+
 protected:
+	virtual void BeginPlay() override;
+	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
+
+protected:
+	UPROPERTY(BlueprintReadWrite, Category = "Fog Of War Mask")
+	bool bIsFogOfWarMaskInitialized{ false };
+
 	UPROPERTY(BlueprintReadOnly, meta = (ExposeOnSpawn = "true"), Category = "Damage")
 	TSubclassOf<UGameplayEffect> EffectClass;
 };

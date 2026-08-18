@@ -170,7 +170,7 @@ TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnScreen(const FV
 	const TOptional<FBox2D> LandBoundingBox{UFogOfWarComponentStatics::GetLandBoundingBox(WorldContextObject)};
 
 	if (!ScreenSize.IsSet() || !ScreenBoundingBox.IsSet() || !LandBoundingBox.IsSet()) {return NullOpt;}
-	return GetGridPositionOnScreen(WorldLocation, ScreenSize.GetValue(), ScreenBoundingBox.GetValue(), LandBoundingBox.GetValue());
+	return GetGridPositionOnScreen(WorldLocation, ScreenSize.GetValue(), ScreenBoundingBox.GetValue(), LandBoundingBox.GetValue(), AllowMinusPosition);
 }
 
 FogOfWarTypes::GridIndexType UFogOfWarComponentStatics::GetGridIndexOnScreen(const FVector& WorldLocation, const UObject* WorldContextObject)

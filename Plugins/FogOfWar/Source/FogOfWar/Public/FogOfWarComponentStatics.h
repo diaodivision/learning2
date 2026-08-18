@@ -60,6 +60,7 @@ public:
 
 	static TOptional<FIntPoint> GetGridPositionOnScreen(const FVector& WorldLocation, const UObject* WorldContextObject, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No);
 	static FogOfWarTypes::GridIndexType GetGridIndexOnScreen(const FVector& WorldLocation, const UObject* WorldContextObject);
+	
 	static TOptional<FIntPoint> GetGridPositionOnScreen(const FVector& WorldLocation, const FIntPoint& ScreenSize, const FBox2D& ScreenBoundingBox, const FBox2D& LandBoundingBox, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No);
 	static FogOfWarTypes::GridIndexType GetGridIndexOnScreen(const FVector& WorldLocation, const FIntPoint& ScreenSize, const FBox2D& ScreenBoundingBox, const FBox2D& LandBoundingBox);
 	
@@ -73,8 +74,8 @@ public:
 	static TOptional<FIntPoint> GetGridPositionOnWorld(const FVector2D& WorldLocation, const UObject* WorldContextObject, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No);
 	static TOptional<FIntPoint> GetGridPositionOnWorld(const FVector2D& WorldLocation, const UWorldHeightSubsystem& WorldHeightSubsystem, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No);
 
-	static UFogOfWarSubsystem* GetFogOfWarSubsystem(const UObject* WorldContextObject);
-	static UWorldHeightSubsystem* GetWorldHeightSubsystem(const UObject* WorldContextObject);
+	static FOGOFWAR_API UFogOfWarSubsystem* GetFogOfWarSubsystem(const UObject* WorldContextObject);
+	static FOGOFWAR_API UWorldHeightSubsystem* GetWorldHeightSubsystem(const UObject* WorldContextObject);
 
 public:
 	template<class ParameterMemberType, class ArrayElementType>
@@ -84,7 +85,7 @@ private:
 	[[nodiscard]] static bool IsPrime(NumberType N);
 	[[nodiscard]] static bool IsPrime(NumberType A, NumberType i, NumberType N);
 	[[nodiscard]] static bool IsPrimeMillerRabinTest(NumberType N, const int8 IterationNum = 50);
-	[[nodiscard]] static FOGOFWAR_INL_API NumberType Witness(NumberType A, NumberType i, NumberType N);
+	[[nodiscard]] static FOGOFWAR_API NumberType Witness(NumberType A, NumberType i, NumberType N);
 };
 
 #undef FOGOFWAR_INL_API

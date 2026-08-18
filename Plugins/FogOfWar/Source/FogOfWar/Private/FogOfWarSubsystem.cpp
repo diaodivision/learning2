@@ -4,6 +4,7 @@
 #include "FogOfWarSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "FogOfWarComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "WorldHeightSubsystem.h"
 #include "GameFramework/Character.h"
 #include "FogOfWarComponentStatics.h"
@@ -93,9 +94,6 @@ void UFogOfWarSubsystem::Tick_Internal()
 		SetupScaleFactor();
 
 		GEngine->GameViewport->Viewport->ViewportResizedEvent.AddUObject(this, &UFogOfWarSubsystem::OnViewportResized);
-
-		//CreateOutputTexture();
-		CreateWorldHeightTexture();
 		CreateDynamicTexture();
 
 		bIsInitialScale = true;
@@ -107,13 +105,10 @@ void UFogOfWarSubsystem::Tick_Internal()
 		// CachedOutputTexture.SafeRelease();
 
 		// 重新生成正确尺寸的 UTexture2D 资源
-		CreateWorldHeightTexture();
 		CreateDynamicTexture();
 
 		bViewportResized = false;
 	}
-
-	UpdateWorldHeightData();
 
 	TArray<FIntPoint> ActorPositions;
 	TArray<FVector2f> ActorVision;
@@ -207,7 +202,7 @@ void UFogOfWarSubsystem::Tick_Internal()
 			AsyncTask(ENamedThreads::GameThread, [this]()
 				{
 					if (!this || !DynamicTexture || !FogOfWarMaterial) { return; }			
-					//OnVisibilityTextureUpdated.Broadcast(OutputTexture);
+					OnFogOfWarTextureUpdatedDelegate.Broadcast(DynamicTexture);
 					SetTextureParameter();
 				}
 			);
@@ -258,7 +253,7 @@ void UFogOfWarSubsystem::CreateDynamicTexture()
 	UMaterialInterface* Material = LoadObject<UMaterialInterface>(this, FogOfWarConst::MaterialPath);
 	if (!Material)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Fail to load UMaterialInterface on %s"), FogOfWarConst::MaterialPath);
+		UE_LOG(LogTemp, Warning, TEXT("Fail to load UMaterialInterface on %s"), FogOfWarConst::MaterialPath.GetData());
 
 		return;
 	}
@@ -301,35 +296,8 @@ void UFogOfWarSubsystem::CreateDynamicTexture()
 void UFogOfWarSubsystem::SetTextureParameter() const
 {
 	if (!DynamicTexture) {return;}
-	FogOfWarMaterial->SetTextureParameterValue(TEXT("DynamicMaterial"), DynamicTexture);
+	FogOfWarMaterial->SetTextureParameterValue(FogOfWarConst::FogOfWarTextureParameterName.GetData(), DynamicTexture);
 }
-
-void UFogOfWarSubsystem::CreateWorldHeightTexture()
-{
-	const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
-	if (!ScreenSize.IsSet()) { return; }
-
-	WorldHeightTexture = UTexture2D::CreateTransient(ScreenSize.GetValue().X, ScreenSize.GetValue().Y, FogOfWarConst::PixelFormat);
-	WorldHeightTexture->UpdateResource();
-}
-
-//TOptional<FIntPoint> UFogOfWarSubsystem::ProjectWorldToLand(const FVector2D& WorldLocation, const FBox2D& LandBoundingBox) const
-//{
-//	const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
-//	if (!ScreenSize.IsSet()) { return NullOpt; }
-//
-//	TArray<FVector> Corners = UFogOfWarComponentStatics::GetCameraFrustumGroundIntersections(this);
-//	if (Corners.Num() < 4) { return NullOpt; }
-//
-//	FBox2D ScreenAABB{ FVector2D{Corners[static_cast<int32>(ECorner::LeftDown)]}, FVector2D{Corners[static_cast<int32>(ECorner::RightTop)] } };
-//	ScreenAABB.Min.X = FMath::Max(ScreenAABB.Min.X, LandBoundingBox.Min.X);
-//	ScreenAABB.Min.Y = FMath::Max(ScreenAABB.Min.Y, LandBoundingBox.Min.Y);
-//	ScreenAABB.Max.X = FMath::Min(ScreenAABB.Max.X, LandBoundingBox.Max.X);
-//	ScreenAABB.Max.Y = FMath::Min(ScreenAABB.Max.Y, LandBoundingBox.Max.Y);
-//
-//	const FVector2D Result{ (WorldLocation - ScreenAABB.Min) * ScreenSize.GetValue() / ScreenAABB.GetSize() };
-//	return FIntPoint{ FMath::FloorToInt32(Result.X), FMath::FloorToInt32(Result.Y) };
-//}
 
 TOptional<FIntPoint> UFogOfWarSubsystem::ProjectWorldToLand(const FVector2D& WorldLocation, const FBox2D& LandBoundingBox) const
 {
@@ -461,8 +429,7 @@ void UFogOfWarSubsystem::GetFogOfWarActorData(TArray<FIntPoint>& ActorPositions,
 		// if (!GridPositionOnLand.IsSet()) {continue;}
 		// ActorPositions.Add(GridPositionOnLand.GetValue());
 
-		const TOptional<FIntPoint> ActorPositionOnScreen{UFogOfWarComponentStatics::GetGridPositionOnScreenDebug(Data.GetValue().ActorLocation, ScreenSize.GetValue(), ScreenBox.GetValue(), LandBoundingBox.GetValue(), EAllowMinusPosition::Yes)};
-		// const TOptional<FIntPoint> ActorPositionOnScreen{UFogOfWarComponentStatics::GetGridPositionOnScreen(Data.GetValue().ActorLocation, ScreenSize.GetValue(), ScreenBox.GetValue(), EAllowMinusPosition::Yes)};
+		const TOptional<FIntPoint> ActorPositionOnScreen{UFogOfWarComponentStatics::GetGridPositionOnScreen(Data.GetValue().ActorLocation, this, EAllowMinusPosition::Yes)};
 		if (!ActorPositionOnScreen.IsSet()) {continue;}
 		ActorPositions.Add(ActorPositionOnScreen.GetValue());
 		ActorVision.Add(FVector2f{UFogOfWarComponentStatics::ProjectWorldDirectionToScreen(Data.GetValue().ActorVisionLeft)});
@@ -471,74 +438,6 @@ void UFogOfWarSubsystem::GetFogOfWarActorData(TArray<FIntPoint>& ActorPositions,
 	}
 }
 
-void UFogOfWarSubsystem::UpdateWorldHeightData()
-{
-	// const UWorldHeightSubsystem* WorldHeightSubsystem{UFogOfWarComponentStatics::GetWorldHeightSubsystem(this)};
-	// const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
-	// if (!WorldHeightSubsystem || !ScreenSize.IsSet()) { return; }
-
-	// if (const int32 Size{ ScreenSize.GetValue().X * ScreenSize.GetValue().Y }; WorldHeightData.Num() != Size) { WorldHeightData.SetNumZeroed(Size); }
-	// else { FMemory::Memzero(WorldHeightData.GetData(), WorldHeightData.GetAllocatedSize()); }
-
-	// CachedWorldHeightDataVersion = WorldHeightSubsystem->GetWorldHeightDataVersion();
-	
-	
-	// const TOptional<FBox2D> LandBoundingBox{ UFogOfWarComponentStatics::GetLandBoundingBox(this) };
-	// if (!LandBoundingBox.IsSet()) { return; }
-	// const TOptional<FBox2D> ScreenAABB{ UFogOfWarComponentStatics::GetCameraFrustumGroundIntersections(this) };
-	// if (!ScreenAABB.IsSet()) {return;}
-	// for (auto It = WorldHeightSubsystem->GetWorldHeightMap().CreateConstIterator(); It; ++It)
-	// {
-	// 	if (It->Value <= 0){continue;}
-	// 	const TOptional<FVector> Location{WorldHeightSubsystem->GetGridLocationByIndex(It->Key)};
-	// 	if (!Location.IsSet()) { continue; }
-		
-	// 	const FBox2D ScreenBox{FVector2D{ScreenAABB.GetValue().Min}, FVector2D{ScreenAABB.GetValue().Max}};
-	// 	const FogOfWarTypes::GridIndexType Index { UFogOfWarComponentStatics::GetGridIndexOnScreen(Location.GetValue(), ScreenSize.GetValue(), ScreenBox)};
-	// 	if (!WorldHeightData.IsValidIndex(Index)) {continue;}
-	// 	WorldHeightData[Index] = 1;
-		
-	// 	const TOptional<FIntPoint> CurrentIndex{UFogOfWarComponentStatics::GetGridPositionOnScreen(Location.GetValue(), ScreenSize.GetValue(), ScreenBox)};
-	// 	if (!CurrentIndex.IsSet()) { continue; }
-	// 	constexpr int32 Step{ 2 };
-	// 	for (auto i = -(Step * 3); i <= (Step * 3); i++)
-	// 	{
-	// 		const auto TargetX{ CurrentIndex.GetValue().X + i };
-	// 		for (auto j = -Step; j <= Step; j++)
-	// 		{
-	// 			const auto TargetY{ CurrentIndex.GetValue().Y + j };
-	// 			const FogOfWarTypes::GridIndexType NearIndex{ TargetX + TargetY * ScreenSize.GetValue().X };
-	// 			if (WorldHeightData.IsValidIndex(NearIndex))
-	// 			{
-	// 				WorldHeightData[NearIndex] = 1;
-	// 			}
-	// 		}
-	// 	}
-	// }
-}
-
-void UFogOfWarSubsystem::UpdateWorldHeightDataToTexture(FRHICommandListImmediate& RHICmdList)
-{
-	const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
-	if (!ScreenSize.IsSet()) { return; }
-	FUpdateTextureRegion2D Region(0, 0, 0, 0, ScreenSize.GetValue().X, ScreenSize.GetValue().Y);
-
-	// 2. 使用RHI命令直接更新
-	// 这是最底层、最高效的调用方法之一，直接从系统内存更新纹理
-	RHICmdList.UpdateTexture2D(
-		WorldHeightTexture->GetResource()->GetTextureRHI(),          // RHI纹理资源
-		0,                   // Mip索引
-		Region,              // 更新区域
-		WorldHeightData.GetTypeSize() * ScreenSize.GetValue().X,    // 数据行距（Pitch）
-		WorldHeightData.GetData()  // 源数据指针
-	);
-
-	//UE_LOG(LogTemp, Error, TEXT("UFogOfWarSubsystem::SetLandLocationAndSizeParameters WorldHeightTexture->GetSizeX() %d"), WorldHeightTexture->GetSizeX());
-	//UE_LOG(LogTemp, Error, TEXT("UFogOfWarSubsystem::SetLandLocationAndSizeParameters WorldHeightTexture->GetSizeY() %d"), WorldHeightTexture->GetSizeY());
-	//UE_LOG(LogTemp, Error, TEXT("UFogOfWarSubsystem::SetLandLocationAndSizeParameters WorldHeightData.Num() %d"), WorldHeightData.Num());
-}
-//TArray<FIntPoint>ActorPositions;
-//TArray<FVector2f>ActorVision;
 void UFogOfWarSubsystem::UploadFogOfWarActorData(const TArray<FIntPoint>& ActorPositions, const TArray<FVector2f>& ActorVision, const TArray<int32>& RadiusSqList, FFogOfWarComputeShader::FParameters& Parameter, FRDGBuilder& GraphBuilder) const
 {
 	//TArray<FIntPoint>ActorPositions;
@@ -571,15 +470,6 @@ void UFogOfWarSubsystem::UploadFogOfWarActorData(const TArray<FIntPoint>& ActorP
 	);
 }
 
-void UFogOfWarSubsystem::UploadFogOfWarWorldHeightData(FFogOfWarComputeShader::FParameters& Parameter, FRDGBuilder& GraphBuilder, const TCHAR* DebugName) const
-{
-	FRDGTextureRef RDGTexture = GraphBuilder.RegisterExternalTexture(
-		CreateRenderTarget(WorldHeightTexture->GetResource()->GetTextureRHI(), DebugName)
-	);
-
-	Parameter.WorldHeightTexture = GraphBuilder.CreateSRV(FRDGTextureSRVDesc::Create(RDGTexture));
-}
-
 void UFogOfWarSubsystem::SetComputeShaderOutputTextureCache(FRDGTextureRef& ShaderOutputTexture, FFogOfWarComputeShader::FParameters& Parameter, FRDGBuilder& GraphBuilder, const bool bCreateNewOne)
 {
 	if (!ShaderOutputTexture /*|| !CachedOutputTexture.IsValid() */)
@@ -607,8 +497,6 @@ void UFogOfWarSubsystem::OnViewportResized(FViewport* Viewport, uint32 Unused)
 {
 	bViewportResized = true;
 	SetupScaleFactor();
-	//CreateWorldHeightTexture();
-	//CreateDynamicTexture();
 
 	UE_LOG(LogTemp, Error, TEXT("UFogOfWarSubsystem::OnViewportResized"));
 }

@@ -54,6 +54,8 @@ public:
 	virtual void Unfreeze_Implementation() override;
 	virtual FORCEINLINE bool IsFreezing_Implementation() override { return bIsFreezing; };
 
+	virtual void UpdateFogOfWarTexture_Implementation(UTexture2D* FogOfWarTexture) override;
+
 protected:
 	// Called when the game starts or when spawned
 	//virtual void Tick(float DeltaSeconds) override;
@@ -97,15 +99,12 @@ protected:
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, meta = (ExposeOnSpawn = "true"), Category = "Components")
 	FVector Direction{ FVector::ForwardVector };
 
-	// 碰撞组件（必须作为 Root)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USphereComponent> CollisionComponent;
 
-	// 网格组件
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 
-	// 子弹移动组件
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
 
