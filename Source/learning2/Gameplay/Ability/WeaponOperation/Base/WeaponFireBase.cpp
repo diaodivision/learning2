@@ -99,10 +99,13 @@ void UWeaponFireBase::ExecuteFire_Internal()
 		return;
 	}
 
-	Super::ActivateAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfoRef(), CachedTriggerEventData.GetPtrOrNull());
-	if (!IsActive()) { return; }
 	OnExecuteShoot();
-	ensureAlways(IsActive());
+	Super::ActivateAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfoRef(), CachedTriggerEventData.GetPtrOrNull());
+}
+
+void UWeaponFireBase::FinishShoot()
+{
+	if (!Weapon.IsValid()) { return; }
 
 	for (int32 i = 0; i < Weapon->GetBulletSpawnsOnFire(); i++)
 	{

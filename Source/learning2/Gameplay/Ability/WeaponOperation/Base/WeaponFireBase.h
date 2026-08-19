@@ -24,6 +24,8 @@ protected:
 	virtual void ExecuteFire(const FGameplayTag Tag, const int32 NewCount);
 	virtual void ExecuteFire_Internal();
 
+	virtual void FinishShoot() override;
+
 	virtual void OnWaitForTagTimeOut();
 
 protected:

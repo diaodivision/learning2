@@ -11,6 +11,7 @@
 #include "Interactive/ActorWidgetControllableInterface.h"
 #include "Interface/FreezableInterface.h"
 #include <type_traits>
+#include "GameplayAbilities/Public/AbilitySystemInterface.h"
 #include "InteractableActorBase.generated.h"
 
 class UStaticMeshComponent;
@@ -27,7 +28,8 @@ class LEARNING2_API AInteractableActorBase :
 	public IHighLightInterface,
 	public IInteractableTargetInterface,
 	public IActorWidgetControllableInterface,
-	public IFreezableInterface
+	public IFreezableInterface,
+	public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -48,6 +50,8 @@ public:
 	virtual void Freeze_Implementation() override;
 	virtual void Unfreeze_Implementation() override;
 	virtual FORCEINLINE bool IsFreezing_Implementation() override { return bIsFreezing; };
+
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 protected:
 	virtual bool CanActivateAbility(const FGameplayAbilitySpec& Spec) const;

@@ -1,5 +1,6 @@
 #include "DoorBase.h"
 //#include "Kismet/GameplayStatics.h"
+#include "Components/MeshComponent.h"
 #include "NavAreas/NavArea_Obstacle.h"
 #include "NavAreas/NavArea_Default.h"
 #include "Battle/BattleSubsystemTypes.h"
@@ -9,6 +10,9 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "Ability/TargetActor/GrenadeTargetActor.h"
 #include "Bullet/Base/GrenadeBulletBase.h"
+#include "FogOfWarComponentStatics.h"
+#include "WorldHeightSubsystem.h"
+#include "FogOfWarTypes.h"
 
 ADoorBase::ADoorBase()
 {
@@ -30,6 +34,13 @@ void ADoorBase::BeginPlay()
 	//	//NavSys->RegisterComponent(*NavModifierComponent);
 	//	//NavSys->RegisterComponent(NavModifierComponent);
 	//}
+
+	if (UMeshComponent* DoorMesh{ GetDoorMesh() })
+	{
+		DoorLastRotation = DoorMesh->GetComponentRotation();
+
+		DoorMesh->TransformUpdated.AddUObject(this, &ADoorBase::OnDoorRotated);
+	}
 
 	DeactivateModify();
 
@@ -54,15 +65,6 @@ FOrientedBox ADoorBase::GetBounds_Implementation() const
 	OrientedBox.ExtentZ = FMath::Abs(LocalBox.GetExtent().Z);
 
 	return OrientedBox;
-}
-
-FBox ADoorBase::GB() const
-{
-	const FOrientedBox Bounds{ IWorldHeightEffectiveActorInterface::Execute_GetBounds(this) };
-	const FVector Min{ Bounds.Center.X - Bounds.ExtentX , Bounds.Center.Y - Bounds.ExtentY , Bounds.Center.Z - Bounds.ExtentZ };
-	const FVector Max{ Bounds.Center.X + Bounds.ExtentX , Bounds.Center.Y + Bounds.ExtentY , Bounds.Center.Z + Bounds.ExtentZ };
-
-	return FBox{ Min, Max };
 }
 
 void ADoorBase::NotifySmartLinkReached(UNavLinkCustomComponent* LinkComp, UObject* PathingAgent, const FVector& DestPoint)
@@ -181,4 +183,15 @@ void ADoorBase::CreateGrenadeTargetActor()
 	//EAttachmentRule::KeepWorld, EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, false
 	//};
 	//GrenadeTargetActor->AttachToActor(GetOwner(), AttachRules);
+}
+
+void ADoorBase::OnDoorRotated(USceneComponent* SceneComponent, EUpdateTransformFlags Flags, ETeleportType TeleportType)
+{
+	if (SceneComponent->GetComponentRotation().Equals(DoorLastRotation)) { return; }
+
+	if (UWorldHeightSubsystem* WorldHeightSubsystem{ UFogOfWarComponentStatics::GetWorldHeightSubsystem(this) })
+	{
+		WorldHeightSubsystem->RequestUpdateWorldHeightData(*this, FWorldHeightBoundsUpdateRequest::Type::Removed);
+		// WorldHeightSubsystem->RequestUpdateWorldHeightData(*this, FWorldHeightBoundsUpdateRequest::Type::Added);
+	}
 }

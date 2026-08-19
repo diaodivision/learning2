@@ -168,6 +168,8 @@ void AInteractableActorBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+
 	InitAbilities();
 
 	InitWidget();
@@ -183,6 +185,10 @@ void AInteractableActorBase::Unfreeze_Implementation()
 {
 	CustomTimeDilation = 1.f;
 	bIsFreezing = false;
+}
+UAbilitySystemComponent* AInteractableActorBase::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
 }
 
 void AInteractableActorBase::PostRegisterAllComponents()

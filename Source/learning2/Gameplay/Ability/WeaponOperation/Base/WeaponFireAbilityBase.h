@@ -38,6 +38,9 @@ public:
 	void OnExecuteShoot() const;
 
 	UFUNCTION(BlueprintCallable)
+	virtual FORCEINLINE void FinishShoot() {};
+
+	UFUNCTION(BlueprintCallable)
 	bool CanExecuteShoot() const;
 
 	virtual FORCEINLINE bool ShouldRecord_Implementation() const override { return false; }

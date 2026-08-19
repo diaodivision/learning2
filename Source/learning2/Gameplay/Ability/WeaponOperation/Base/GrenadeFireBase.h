@@ -28,6 +28,8 @@ class LEARNING2_API UGrenadeFireBase : public UWeaponFireAbilityBase
 
 	virtual void OnPreview(const bool bIsPreview, const IRecordedDataObjectInterface* InRecordedData) override;
 
+	virtual void FinishShoot() override;
+
 protected:
 	UPROPERTY(BlueprintReadOnly)
 	TWeakObjectPtr<const AMyCharacterBase> Instigator;

@@ -32,25 +32,8 @@ void UGrenadeFireBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
 
 		if (TriggerEventData) { CachedTriggerEventData = *TriggerEventData; }
 
-		Super::ActivateAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfoRef(), CachedTriggerEventData.GetPtrOrNull());
 		OnExecuteShoot();
-
-		if (TriggerEventData)
-		{
-			const URecordedGrenadeFireAbilityData* GrenadeFireAbilityData{ Cast<URecordedGrenadeFireAbilityData>(TriggerEventData->OptionalObject) };
-			const FSpawnGrenadeParameters SpawnGrenadeParameters{ GrenadeFireAbilityData->GrenadeSpawnsLocation ,GrenadeFireAbilityData->CursorLocation };
-			for (int32 i = 0; i < GrenadeWeapon->GetBulletSpawnsOnFire(); i++)
-			{
-				GrenadeWeapon->SpawnBulletByParameters(SpawnGrenadeParameters);
-			}
-		}
-		else
-		{
-			for (int32 i = 0; i < GrenadeWeapon->GetBulletSpawnsOnFire(); i++)
-			{
-				GrenadeWeapon->SpawnBullet();
-			}
-		}
+		Super::ActivateAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfoRef(), CachedTriggerEventData.GetPtrOrNull());
 	}
 }
 
@@ -127,4 +110,27 @@ void UGrenadeFireBase::OnPreview(const bool bIsPreview, const IRecordedDataObjec
 	if (!Data || !Data->IsPayloadValid() || Data->Payload.RecordedCombinableAbilityData.Payload.AbilityIDList != GetCombinedAbilityIDList(*this)) { return; }
 
 	OnPreview_Internal(bIsPreview, Data->Payload.RecordedCombinableAbilityData);
+}
+
+void UGrenadeFireBase::FinishShoot()
+{
+	AGrenadeActorBase* GrenadeWeapon{ Cast<AGrenadeActorBase>(Weapon) };
+	if (!GrenadeWeapon) { return; }
+
+	if (CachedTriggerEventData.IsSet())
+	{
+		const URecordedGrenadeFireAbilityData* GrenadeFireAbilityData{ Cast<URecordedGrenadeFireAbilityData>(CachedTriggerEventData.GetValue().OptionalObject) };
+		const FSpawnGrenadeParameters SpawnGrenadeParameters{ GrenadeFireAbilityData->GrenadeSpawnsLocation ,GrenadeFireAbilityData->CursorLocation };
+		for (int32 i = 0; i < Weapon->GetBulletSpawnsOnFire(); i++)
+		{
+			GrenadeWeapon->SpawnBulletByParameters(SpawnGrenadeParameters);
+		}
+	}
+	else
+	{
+		for (int32 i = 0; i < GrenadeWeapon->GetBulletSpawnsOnFire(); i++)
+		{
+			GrenadeWeapon->SpawnBullet();
+		}
+	}
 }

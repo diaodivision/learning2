@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "InteractableActor/Base/InteractableActorBase.h"
+#include "UObject/ObjectPtr.h"
 #include "WorldHeightEffectiveActorInterface.h"
 #include "Battle/Interface/NavModifiedActorInterface.h"
 #include "AITypes.h"
@@ -15,6 +16,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDoorOpenedDelegate);
 class UNavLinkCustomComponent;
 class AGrenadeTargetActor;
 class AGrenadeBulletBase;
+class UMeshComponent;
 
 UCLASS(BlueprintType, Blueprintable, Abstract)
 class ADoorBase :
@@ -31,9 +33,6 @@ public:
 	virtual void BeginPlay() override;
 
 	virtual FOrientedBox GetBounds_Implementation() const override;
-
-	UFUNCTION(BlueprintPure)
-	FBox GB() const;
 
 	virtual void NotifySmartLinkReached(UNavLinkCustomComponent* LinkComp, UObject* PathingAgent, const FVector& DestPoint);
 
@@ -70,6 +69,15 @@ protected:
 
 	void CreateGrenadeTargetActor();
 
+	UFUNCTION(BlueprintImplementableEvent)
+	UMeshComponent* GetDoorMesh() const;
+
+	UFUNCTION(BlueprintImplementableEvent)
+	UMeshComponent* GetDoorFrameMesh() const;
+	
+	// UFUNCTION()
+	virtual void OnDoorRotated(USceneComponent* SceneComponent, EUpdateTransformFlags Flags, ETeleportType TeleportType);
+
 public:
 	UPROPERTY(BlueprintAssignable)
 	FOnDoorOpenedDelegate OnDoorOpenedDelegate;
@@ -81,6 +89,7 @@ private:
 	//FAIRequestID CacheAgentAIRequestID;
 	TOptional<FVector> CachedDestination;
 
+	bool bIsTriggerOpenDoor{ false };
 	bool bIsDoorOpened{ false };
 
 	UPROPERTY(BlueprintReadOnly, Category = "Attribute|PredictionLine", meta = (AllowPrivateAccess = true))
@@ -94,4 +103,6 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attribute|PredictionLine", meta = (AllowPrivateAccess = true))
 	TSubclassOf<AGrenadeTargetActor> GrenadeTargetActorClass;
+
+	FRotator DoorLastRotation{ FRotator::ZeroRotator };
 };

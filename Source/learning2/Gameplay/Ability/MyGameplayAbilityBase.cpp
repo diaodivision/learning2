@@ -316,12 +316,12 @@ TArray<AActor*> UMyGameplayAbilityBase::GetCombinedAbilityAvatarActorList() cons
 
 void UMyGameplayAbilityBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
-	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	if (!CommitCheck(Handle, ActorInfo, ActivationInfo))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
-
+	ApplyCost(Handle, ActorInfo, ActivationInfo);
 
 	//if (!ensureAlwaysMsgf(CombinableAbilityData.IsNull(), TEXT("Memory does not reset!")))
 	//{
@@ -358,6 +358,8 @@ void UMyGameplayAbilityBase::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 
 void UMyGameplayAbilityBase::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+	ApplyCooldown(Handle, ActorInfo, ActivationInfo);
+
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 
 	//CombinableAbilityData.Reset();

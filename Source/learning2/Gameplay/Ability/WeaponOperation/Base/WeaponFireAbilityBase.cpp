@@ -67,13 +67,13 @@ void UWeaponFireAbilityBase::ApplyCost(const FGameplayAbilitySpecHandle Handle, 
 
 	const AWeaponActorBase* Weapon = AvatarCharacter->GetControlledWeapon();
 	if (!Weapon) { return; }
-
+	
 	FGameplayEffectSpecHandle CooldownSpecHandle = MakeOutgoingGameplayEffectSpec(CostEffectCDO->GetClass(), GetAbilityLevel(Handle, ActorInfo));
 	if (!CooldownSpecHandle.IsValid()) { return; }
-
+	
 	CooldownSpecHandle.Data.Get()->SetSetByCallerMagnitude(FireCostTag, Weapon->GetFireCost());
 	CooldownSpecHandle.Data.Get()->SetSetByCallerMagnitude(WeaponSlotTag, static_cast<float>(Weapon->GetWeaponSlot()));
-
+	
 	if (UAbilitySystemComponent* AbilitySystemComponent = ActorInfo->AbilitySystemComponent.Get())
 	{
 		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*CooldownSpecHandle.Data.Get());
