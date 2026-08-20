@@ -132,6 +132,7 @@ void AFireArmBulletBase::PostUnregisterAllComponents()
 
 void AFireArmBulletBase::K2_DestroyActor()
 {
+	if (GetWorld()->GetTimerManager().TimerExists(TimerHandle)) { GetWorld()->GetTimerManager().ClearTimer(TimerHandle); }
 	UWeaponActorBlueprintLibrary::ReleaseActorToPool(this);
 }
 
@@ -216,10 +217,9 @@ void AFireArmBulletBase::InitProjectileMovement()
 
 void AFireArmBulletBase::OnReachLifeTime_Implementation()
 {
+	// GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AFireArmBulletBase::K2_DestroyActor, 5.f, false);
 	K2_DestroyActor();
 }
-
-
 
 void AFireArmBulletBase::PostInitializedBulletData_Implementation()
 {

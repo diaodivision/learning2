@@ -67,18 +67,18 @@ private:
     void CreateDynamicTexture();
     void SetTextureParameter() const;
 
-    void GetFogOfWarActorData(TArray<FIntPoint> &ActorPositions, TArray<FVector2f> &ActorVision,
-                              TArray<int32> &RadiusSqList) const;
+    void GetFogOfWarActorData(TArray<FIntPoint> &ActorPositions, TArray<FVector2f> &ActorVision, TArray<int32> &RadiusSqList) const;
 
-    void UploadFogOfWarActorData(const TArray<FIntPoint> &ActorPositions, const TArray<FVector2f> &ActorVision,
-                                 const TArray<int32> &RadiusSqList, FFogOfWarComputeShader::FParameters &Parameter,
-                                 FRDGBuilder &GraphBuilder) const;
-    void UploadFogOfWarWorldHeightData(FFogOfWarComputeShader::FParameters &Parameter, FRDGBuilder &GraphBuilder,
-                                       const TCHAR *DebugName) const;
+    void UploadFogOfWarActorData(
+        const TArray<FIntPoint> &ActorPositions, 
+        const TArray<FVector2f> &ActorVision,
+        const TArray<int32> &RadiusSqList, 
+        FFogOfWarComputeShader::FParameters &Parameter,
+        FRDGBuilder &GraphBuilder) const;
 
-    void SetComputeShaderOutputTextureCache(FRDGTextureRef &ShaderOutputTexture,
-                                            FFogOfWarComputeShader::FParameters &Parameter, FRDGBuilder &GraphBuilder,
-                                            const bool bCreateNewOne);
+    void UploadFogOfWarWorldHeightData(FFogOfWarComputeShader::FParameters &Parameter, FRDGBuilder &GraphBuilder,const TCHAR *DebugName) const;
+
+    void SetComputeShaderOutputTextureCache(FRDGTextureRef &ShaderOutputTexture,FFogOfWarComputeShader::FParameters &Parameter, FRDGBuilder &GraphBuilder, const bool bCreateNewOne);
 
     TOptional<FIntPoint> ProjectWorldToLand(const FVector2D &WorldLocation, const FBox2D &LandBoundingBox) const;
     // bool ProjectWorldToLand(FIntPoint& Position, const FVector2D& WorldLocation, const FBox2D& LandBoundingBox)
@@ -119,8 +119,8 @@ private:
     mutable bool bHasInvalidComponents{false};
 
     bool bIsInitialScale{false};
-    constexpr static int16 kScreenBaseWidth{512};
-    constexpr static int16 kScreenBaseHeight{512};
+    constexpr static int16 kScreenBaseWidth{ 256 };
+    constexpr static int16 kScreenBaseHeight{ 256 };
     float WidthScaleFactor{1};
     float HeightScaleFactor{1};
     bool bViewportResized{false};

@@ -231,6 +231,7 @@ TOptional<FGridSizeType> UFogOfWarSubsystem::GetGridSize() const
 	if (!CameraBounds.IsSet()) { return NullOpt; }
 
 	const FVector2D Result{ CameraBounds.GetValue().GetSize().Y / GetScreenSize().GetValue().X, CameraBounds.GetValue().GetSize().X / GetScreenSize().GetValue().Y };
+
 	return FGridSizeType{Result, FGridSizeType::EGridSizeCoordinate::Screen};
 }
 
@@ -418,9 +419,10 @@ void UFogOfWarSubsystem::GetFogOfWarActorData(TArray<FIntPoint>& ActorPositions,
 		const TOptional<FFogOfWarData> Data{Component->GetFogOfWarData()};
 		if (!Data.IsSet()) { continue; }
 		const TOptional<FGridSizeType> GridSize{UFogOfWarComponentStatics::GetGridSize(EGridType::World, this)};
+		const TOptional<FGridSizeType> ScreenGridSize{ UFogOfWarComponentStatics::GetGridSize(EGridType::Screen, this) };
 		const TOptional<FBox2D> LandBoundingBox{UFogOfWarComponentStatics::GetLandBoundingBox(this)};
 		const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
-		if (!GridSize.IsSet() || !LandBoundingBox.IsSet() || !ScreenSize.IsSet()) { return; }
+		if (!GridSize.IsSet() || !ScreenGridSize.IsSet() || !LandBoundingBox.IsSet() || !ScreenSize.IsSet()) { return; }
 		// const TOptional<FIntPoint> PositionOnScreen{UFogOfWarComponentStatics::GetGridPositionOnScreen(Data.GetValue().ActorLocation, ScreenSize.GetValue(), ScreenBox.GetValue()) };
 		// if (!PositionOnScreen.IsSet()) { continue; }
 		// ActorPositions.Add(PositionOnScreen.GetValue());
@@ -434,7 +436,7 @@ void UFogOfWarSubsystem::GetFogOfWarActorData(TArray<FIntPoint>& ActorPositions,
 		ActorPositions.Add(ActorPositionOnScreen.GetValue());
 		ActorVision.Add(FVector2f{UFogOfWarComponentStatics::ProjectWorldDirectionToScreen(Data.GetValue().ActorVisionLeft)});
 		ActorVision.Add(FVector2f{UFogOfWarComponentStatics::ProjectWorldDirectionToScreen(Data.GetValue().ActorVisionRight)});
-		RadiusSqList.Add(FMath::CeilToInt32(FMath::Pow(Data.GetValue().Radius / GridSize.GetValue().GetGridSizeOnScreenCoordinate().X, 2.f)));
+		RadiusSqList.Add(FMath::CeilToInt32(FMath::Pow(Data.GetValue().Radius / ScreenGridSize.GetValue().GetGridSizeOnScreenCoordinate().X, 2.f)));
 	}
 }
 

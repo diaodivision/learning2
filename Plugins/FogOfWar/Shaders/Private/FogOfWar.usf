@@ -144,7 +144,7 @@ void MainCS(
 
 bool IsGridInVision(int2 GridPos, uint Index)
 {
-    if (NumVisionStart * 2 != NumVision)
+    if (NumVisionStart * 2 != NumVision || NumVisionStart != NumRadiusSq)
     {
         return false;
     }
