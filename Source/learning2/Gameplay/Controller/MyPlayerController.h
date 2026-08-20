@@ -19,6 +19,8 @@ class UAbilitySystemComponent;
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnHoveredActorChangedDelegate, AActor*, AActor*);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSelectedActorChangedDelegate, AActor*, AActor*);
+DECLARE_MULTICAST_DELEGATE(FOnReceiveMoveInputDelegate);
+DECLARE_MULTICAST_DELEGATE(FOnReceiveShootInputDelegate);
 
 USTRUCT(BlueprintType)
 struct FSwitchWeaponAction
@@ -157,6 +159,9 @@ public:
 	FOnHoveredActorChangedDelegate OnHoveredActorChangedDelegate;
 	FOnSelectedActorChangedDelegate OnSelectedActorChangedDelegate;
 
+	FOnReceiveMoveInputDelegate OnReceiveMoveInputDelegate;
+	FOnReceiveShootInputDelegate OnReceiveShootInputDelegate;
+
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Trace")
 	float InteractiveTraceTickRate{ .1f };
@@ -184,7 +189,6 @@ protected:
 	//TMap<TWeakObjectPtr<const AActor>, const FRotator> LastRotationMap;
 
 private:
-
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay|Input")
 	TObjectPtr<UInputMappingContext> InputMapping;
 

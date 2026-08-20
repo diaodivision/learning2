@@ -18,11 +18,8 @@ class LEARNING2_API APlayerCharacterBase : public AMyCharacterBase/*, public ITa
 {
 	GENERATED_BODY()
 
-	APlayerCharacterBase();
-
-	virtual void PossessedBy(AController* NewController) override;
-
 public:
+	APlayerCharacterBase();
 	inline UInputRecordComponent* GetInputRecordComponent() const { return InputRecordComponent; }
 
 	virtual void UpdateCharacterWidget() override;
@@ -32,12 +29,17 @@ public:
 	//virtual FORCEINLINE FOnTargetingStateChangedDelegate& GetOnTargetingStateChangedDelegate() override { return OnTargetingStateChangedDelegate; }
 
 protected:
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void UnPossessed() override;
+
 	virtual void InitializeDelegates() override;
 	virtual void DeinitializeDelegates() override;
 
 	virtual void OnCharacterHealthChanged(const FOnAttributeChangeData& OnAttributeChangeData);
 
 	virtual void OnInputRecordOperationPreview(const bool bIsPreview, const IRecordedDataObjectInterface* Data);
+
+	virtual void CancelRewindingState();
 
 private:
 	void CreateAndSetupComponents();

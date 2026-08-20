@@ -26,76 +26,6 @@ APlayerCharacterBase::APlayerCharacterBase() : Super()
 	CreateAndSetupComponents();
 }
 
-void APlayerCharacterBase::PossessedBy(AController* NewController)
-{
-	Super::PossessedBy(NewController);
-
-	if (AMyPlayerController * PlayerController{ Cast<AMyPlayerController>(NewController) })
-	{
-		//APlayerState* PlayerState{ GetPlayerState() };
-		AMyHUD* HUD{ Cast<AMyHUD>(PlayerController->GetHUD()) };
-
-		if (GetPlayerState() && HUD)
-		{
-			HUD->SetUpHUD({ PlayerController, AttributeSet, GetPlayerState(), AbilitySystemComponent, InputRecordComponent, this });
-		}
-	}
-	else if (NewController != nullptr)
-	{
-		UBehaviorTreeStatics::SetSelfActor(this);
-
-		const TArray<const AWeaponActorBase*> WeaponsList{ GetWeapons() };
-		for (int32 i = 0; i < 2; i++)
-		{
-			if (!WeaponsList.IsValidIndex(i)) { break; }
-
-			const AWeaponActorBase* Weapon{ WeaponsList[i] };
-
-			UBehaviorTreeStatics::SetWeaponMagazineAmmo(this, Weapon->GetMagazineAmmo(), Weapon->GetWeaponSlot());
-			UBehaviorTreeStatics::SetWeaponMaxMagazineAmmo(this, Weapon->GetMagazineAmmoMax(), Weapon->GetWeaponSlot());
-			if (Weapon->IsOnControl()) { UBehaviorTreeStatics::SetControlledWeaponSlot(Weapon->GetWeaponSlot(), this); }
-		}
-
-		ACharacter* EnemyCharacter{ nullptr };
-		ACharacter* SensedEnemyCharacter{ nullptr };
-		if (UBattleSubsystem* BattleSubsystem = ULocalPlayer::GetSubsystem<UBattleSubsystem>(GetWorld()->GetFirstLocalPlayerFromController()))
-		{
-			SensedEnemyCharacter = Cast<ACharacter>(BattleSubsystem->GetOneTeamSensedActor(GetGenericTeamId()));
-
-			if (SensedEnemyCharacter)
-			{
-				FHitResult HitResult;
-
-				FCollisionObjectQueryParams Params;
-				Params.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
-				Params.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
-				Params.AddObjectTypesToQuery(ECollisionChannel::ECC_Destructible);
-				GetWorld()->LineTraceSingleByObjectType(HitResult, GetActorLocation(), SensedEnemyCharacter->GetActorLocation(), Params);
-
-				if (HitResult.GetActor())
-				{
-					if (HitResult.GetActor() == SensedEnemyCharacter)
-					{
-						EnemyCharacter = SensedEnemyCharacter;
-					}
-					else if (const IGenericTeamAgentInterface * TeamAgent{ Cast<IGenericTeamAgentInterface>(HitResult.GetActor()) })
-					{
-						if (TeamAgent->GetTeamAttitudeTowards(*this) == ETeamAttitude::Hostile)
-						{
-							EnemyCharacter = Cast<ACharacter>(HitResult.GetActor());
-						}
-					}
-				}
-			}
-
-		}
-		else { UBehaviorTreeStatics::SetSensedEnemyCharacter(nullptr, this); }
-
-		UBehaviorTreeStatics::SetEnemyCharacter(EnemyCharacter, this);
-		UBehaviorTreeStatics::SetSensedEnemyCharacter(SensedEnemyCharacter, this);
-	}
-}
-
 void APlayerCharacterBase::UpdateCharacterWidget()
 {
 	if (!ICharacterWidgetControllableInterface::Execute_IsCharacterWidgetVisible(this))
@@ -155,6 +85,90 @@ void APlayerCharacterBase::SetTargetingState(ETargetingState TargetingState)
 	//OnTargetingStateChangedDelegate.Broadcast(TargetingState);
 }
 
+void APlayerCharacterBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (AMyPlayerController * PlayerController{ Cast<AMyPlayerController>(NewController) })
+	{
+		//APlayerState* PlayerState{ GetPlayerState() };
+		AMyHUD* HUD{ Cast<AMyHUD>(PlayerController->GetHUD()) };
+
+		if (GetPlayerState() && HUD)
+		{
+			HUD->SetUpHUD({ PlayerController, AttributeSet, GetPlayerState(), AbilitySystemComponent, InputRecordComponent, this });
+		}
+
+		PlayerController->OnReceiveMoveInputDelegate.AddUObject(this, &APlayerCharacterBase::CancelRewindingState);
+		PlayerController->OnReceiveShootInputDelegate.AddUObject(this, &APlayerCharacterBase::CancelRewindingState);
+	}
+	else if (NewController != nullptr)
+	{
+		UBehaviorTreeStatics::SetSelfActor(this);
+
+		const TArray<const AWeaponActorBase*> WeaponsList{ GetWeapons() };
+		for (int32 i = 0; i < 2; i++)
+		{
+			if (!WeaponsList.IsValidIndex(i)) { break; }
+
+			const AWeaponActorBase* Weapon{ WeaponsList[i] };
+
+			UBehaviorTreeStatics::SetWeaponMagazineAmmo(this, Weapon->GetMagazineAmmo(), Weapon->GetWeaponSlot());
+			UBehaviorTreeStatics::SetWeaponMaxMagazineAmmo(this, Weapon->GetMagazineAmmoMax(), Weapon->GetWeaponSlot());
+			if (Weapon->IsOnControl()) { UBehaviorTreeStatics::SetControlledWeaponSlot(Weapon->GetWeaponSlot(), this); }
+		}
+
+		ACharacter* EnemyCharacter{ nullptr };
+		ACharacter* SensedEnemyCharacter{ nullptr };
+		if (UBattleSubsystem* BattleSubsystem = ULocalPlayer::GetSubsystem<UBattleSubsystem>(GetWorld()->GetFirstLocalPlayerFromController()))
+		{
+			SensedEnemyCharacter = Cast<ACharacter>(BattleSubsystem->GetOneTeamSensedActor(GetGenericTeamId()));
+
+			if (SensedEnemyCharacter)
+			{
+				FHitResult HitResult;
+
+				FCollisionObjectQueryParams Params;
+				Params.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
+				Params.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
+				Params.AddObjectTypesToQuery(ECollisionChannel::ECC_Destructible);
+				GetWorld()->LineTraceSingleByObjectType(HitResult, GetActorLocation(), SensedEnemyCharacter->GetActorLocation(), Params);
+
+				if (HitResult.GetActor())
+				{
+					if (HitResult.GetActor() == SensedEnemyCharacter)
+					{
+						EnemyCharacter = SensedEnemyCharacter;
+					}
+					else if (const IGenericTeamAgentInterface * TeamAgent{ Cast<IGenericTeamAgentInterface>(HitResult.GetActor()) })
+					{
+						if (TeamAgent->GetTeamAttitudeTowards(*this) == ETeamAttitude::Hostile)
+						{
+							EnemyCharacter = Cast<ACharacter>(HitResult.GetActor());
+						}
+					}
+				}
+			}
+
+		}
+		else { UBehaviorTreeStatics::SetSensedEnemyCharacter(nullptr, this); }
+
+		UBehaviorTreeStatics::SetEnemyCharacter(EnemyCharacter, this);
+		UBehaviorTreeStatics::SetSensedEnemyCharacter(SensedEnemyCharacter, this);
+	}
+}
+
+void APlayerCharacterBase::UnPossessed()
+{
+	Super::UnPossessed();
+
+	if (AMyPlayerController* PlayerController{ Cast<AMyPlayerController>(GetController()) })
+	{
+		PlayerController->OnReceiveMoveInputDelegate.RemoveAll(this);
+		PlayerController->OnReceiveShootInputDelegate.RemoveAll(this);
+	}
+}
+
 void APlayerCharacterBase::InitializeDelegates()
 {
 	Super::InitializeDelegates();
@@ -163,6 +177,12 @@ void APlayerCharacterBase::InitializeDelegates()
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMaxHealthAttribute()).AddUObject(this, &APlayerCharacterBase::OnCharacterHealthChanged);
 
 	InputRecordComponent->OnOperationPreviewDelegate.AddUObject(this, &APlayerCharacterBase::OnInputRecordOperationPreview);
+
+	if (AMyPlayerController* PlayerController{ Cast<AMyPlayerController>(GetController()) })
+	{
+		PlayerController->OnReceiveMoveInputDelegate.AddUObject(this, &APlayerCharacterBase::CancelRewindingState);
+		PlayerController->OnReceiveShootInputDelegate.AddUObject(this, &APlayerCharacterBase::CancelRewindingState);
+	}
 }
 
 void APlayerCharacterBase::DeinitializeDelegates()
@@ -172,6 +192,13 @@ void APlayerCharacterBase::DeinitializeDelegates()
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetCurrentHealthAttribute()).RemoveAll(this);
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMaxHealthAttribute()).RemoveAll(this);
 
+	InputRecordComponent->OnOperationPreviewDelegate.RemoveAll(this);
+
+	if (AMyPlayerController* PlayerController{ Cast<AMyPlayerController>(GetController()) })
+	{
+		PlayerController->OnReceiveMoveInputDelegate.RemoveAll(this);
+		PlayerController->OnReceiveShootInputDelegate.RemoveAll(this);
+	}
 }
 
 void APlayerCharacterBase::OnCharacterHealthChanged(const FOnAttributeChangeData& OnAttributeChangeData)
@@ -197,6 +224,14 @@ void APlayerCharacterBase::OnInputRecordOperationPreview(const bool bIsPreview, 
 	//	[](const FRecordedCombinableAbilityData& AbilityData) {UE_LOG(LogTemp, Error, TEXT("OnInputRecordOperationPreview FRecordedCombinableAbilityData")); }
 	//	},
 	//	Data);
+}
+
+void APlayerCharacterBase::CancelRewindingState()
+{
+	if (InputRecordComponent)
+	{
+		InputRecordComponent->CancelRewindingState();
+	}
 }
 
 void APlayerCharacterBase::CreateAndSetupComponents()

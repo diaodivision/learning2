@@ -105,7 +105,7 @@ void UWeaponFireBase::ExecuteFire_Internal()
 
 void UWeaponFireBase::FinishShoot()
 {
-	if (!Weapon.IsValid()) { return; }
+	if (!IsActive() || !Weapon.IsValid()) { return; }
 
 	for (int32 i = 0; i < Weapon->GetBulletSpawnsOnFire(); i++)
 	{

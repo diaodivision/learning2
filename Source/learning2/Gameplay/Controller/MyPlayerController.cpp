@@ -195,6 +195,8 @@ void AMyPlayerController::Move_Implementation(const FInputActionValue& Value)
 	{
 		ControlledPawn->AddMovementInput(FVector::ForwardVector, InputVector.Y);
 		ControlledPawn->AddMovementInput(FVector::RightVector, InputVector.X);
+
+		OnReceiveMoveInputDelegate.Broadcast();
 	}
 }
 
@@ -381,6 +383,7 @@ void AMyPlayerController::OnShoot()
 		if (APlayerCharacterBase * PlayerCharacter{ Cast<APlayerCharacterBase>(GetCharacter()) })
 		{
 			PlayerCharacter->SetTargetingState(ETargetingState::Confirm);
+			OnReceiveShootInputDelegate.Broadcast();
 		}
 
 		SetTargeting(false);
@@ -402,6 +405,7 @@ void AMyPlayerController::OnShoot()
 				if (AMyCharacterBase* ControlledCharacter = Cast<AMyCharacterBase>(GetCharacter()))
 				{
 					ControlledCharacter->OnShoot();
+					OnReceiveShootInputDelegate.Broadcast();
 				}
 			}
 		}

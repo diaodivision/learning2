@@ -51,6 +51,12 @@ public:
 		return !!const_cast<UInputRecordComponent*>(this)->GetRecordDataByHandle(RecordedDataObjectHandle);
 	}
 
+	virtual FORCEINLINE void CancelRewindingState()
+	{
+		if (GetRecordState() != ERecordState::Rewinding) { return; }
+		OnStateChanged(GetRecordState(), ERecordState::Idle);
+	}
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;

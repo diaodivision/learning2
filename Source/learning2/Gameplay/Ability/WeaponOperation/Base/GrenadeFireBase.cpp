@@ -24,7 +24,7 @@ void UGrenadeFireBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
 	}
 	else
 	{
-		if (!CanExecuteShoot() && !(TriggerEventData && TriggerEventData->OptionalObject.IsA<URecordedGrenadeFireAbilityData>()))
+		if (!CanExecuteShoot() && !(!TriggerEventData || TriggerEventData->OptionalObject.IsA<URecordedGrenadeFireAbilityData>()))
 		{
 			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 			return;
@@ -114,6 +114,8 @@ void UGrenadeFireBase::OnPreview(const bool bIsPreview, const IRecordedDataObjec
 
 void UGrenadeFireBase::FinishShoot()
 {
+	if (!IsActive()) { return; }
+
 	AGrenadeActorBase* GrenadeWeapon{ Cast<AGrenadeActorBase>(Weapon) };
 	if (!GrenadeWeapon) { return; }
 
@@ -133,4 +135,6 @@ void UGrenadeFireBase::FinishShoot()
 			GrenadeWeapon->SpawnBullet();
 		}
 	}
+
+	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfoRef(), true, false);
 }
