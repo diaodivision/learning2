@@ -1,4 +1,6 @@
 #include "RewindSystemStatics.h"
+#include "Engine/Engine.h"
+#include "Engine/World.h"
 #include "RewindSubsystem.h"
 #include "UObject/Object.h"
 #include "InputRecordedDataTypes/RecordedDataDelegates.h"
@@ -8,10 +10,8 @@ URewindSubsystem* URewindSystemStatics::GetRewindSubsystem(const UObject* WorldC
 {
 	if (UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull))
 	{
-		ULocalPlayer* LocalPlayer = World->GetFirstLocalPlayerFromController();
-		if (LocalPlayer) { return ULocalPlayer::GetSubsystem<URewindSubsystem>(LocalPlayer); }
+		return World->GetSubsystem<URewindSubsystem>();
 	}
-
 
 	return nullptr;
 }

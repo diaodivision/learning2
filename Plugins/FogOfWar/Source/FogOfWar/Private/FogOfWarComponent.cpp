@@ -14,7 +14,7 @@ void UFogOfWarComponent::BeginPlay()
 	Super::BeginPlay();
 
 	UFogOfWarSubsystem* Subsystem{ UFogOfWarComponentStatics::GetFogOfWarSubsystem(this)};
-	if (ensure(Subsystem)) {Subsystem->OnPostComponentInitialize(this);}
+	if (Subsystem) { Subsystem->OnPostComponentInitialize(this); }
 }
 
 TOptional<FFogOfWarData> UFogOfWarComponent::GetFogOfWarData() const

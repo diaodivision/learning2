@@ -1,5 +1,7 @@
 #include "WorldHeightSubsystem.h"
+#include "Engine/World.h"
 #include "FogOfWarTypes.h"
+#include "GameFramework/WorldSettings.h"
 #include "WorldHeightVolume.h"
 #include "GameFramework/Actor.h"
 // #include "Landscape.h"
@@ -11,11 +13,27 @@
 #include "Engine/StaticMeshActor.h"
 #include "WorldHeightEffectiveActorInterface.h"
 #include "RenderGraphUtils.h"
+#include "WorldHeightSubsystemProviderInterface.h"
+#include "GameFramework/GameModeBase.h"
+
+bool UWorldHeightSubsystem::ShouldCreateSubsystem(UObject* Outer) const
+{
+	if (!Super::ShouldCreateSubsystem(Outer)) { return false; }
+
+	const UWorld* World{ Cast<UWorld>(Outer) };
+	const AWorldSettings* WorldSettings{ World && World->IsGameWorld() ? World->GetWorldSettings() : nullptr };
+	if (const UObject* GameMode{ WorldSettings ? WorldSettings->DefaultGameMode->GetDefaultObject() : nullptr }; GameMode && GameMode->Implements<UWorldHeightSubsystemProviderInterface>())
+	{
+		return IWorldHeightSubsystemProviderInterface::Execute_ShouldCreateWorldHeightSubsystem(GameMode);
+	}
+	return false;
+}
 
 void UWorldHeightSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
+	UE_LOG(LogTemp, Error, TEXT("Subsystem Trace: UWorldHeightSubsystem::Initialize"))
 	InitializeDelegates();
 
 	CreateWorldHeightTexture();
@@ -24,6 +42,8 @@ void UWorldHeightSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 void UWorldHeightSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
+
+	UE_LOG(LogTemp, Error, TEXT("Subsystem Trace: UWorldHeightSubsystem::Deinitialize"))
 
 	DeinitializeDelegates();
 }

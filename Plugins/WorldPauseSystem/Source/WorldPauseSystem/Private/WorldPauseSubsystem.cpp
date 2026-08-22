@@ -2,17 +2,34 @@
 
 #include "WorldPauseSubsystem.h"
 //#include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
+#include "GameFramework/WorldSettings.h"
 #include "Interface/FreezableInterface.h"
+#include "GameFramework/GameModeBase.h"
+#include "Interface/WorldPauseSubsystemProviderInterface.h"
 
 //void UWorldPauseSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 //{
-//	Super::Initialize(Collection);
+	//	Super::Initialize(Collection);
 //}
 //
 //void UWorldPauseSubsystem::Deinitialize()
 //{
 //	Super::Deinitialize();
 //}
+
+bool UWorldPauseSubsystem::ShouldCreateSubsystem(UObject* Outer) const
+{
+	if (!Super::ShouldCreateSubsystem(Outer)) { return false; }
+
+	const UWorld* World{ Cast<UWorld>(Outer) };
+	const AWorldSettings* WorldSettings{ World && World->IsGameWorld() ? World->GetWorldSettings() : nullptr };
+	if (const UObject* GameMode{ WorldSettings ? WorldSettings->DefaultGameMode->GetDefaultObject() : nullptr }; GameMode && GameMode->Implements<UWorldPauseSubsystemProviderInterface>())
+	{
+		return IWorldPauseSubsystemProviderInterface::Execute_ShouldCreateWorldPauseSubsystem(GameMode);
+	}
+	return false;
+}
 
 void UWorldPauseSubsystem::OnFreezableObjectRegistered(UObject* FreezableObject)
 {

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Delegates/DelegateCombinations.h"
-#include "Subsystems/LocalPlayerSubsystem.h"
+#include "Subsystems/WorldSubsystem.h"
 #include "Tickable.h"
 #include "InputRecordedDataTypes/RecordedDataDefines.h"
 #include "InputRecordedDataTypes/RecordableInterface.h"
@@ -14,6 +14,8 @@
 class AActor;
 class APawn;
 class UInputRecordComponent;
+class AGameModeBase;
+class APlayerController;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnRewindSubsystemStateChangedDelegate, ERecordState, OldState, ERecordState, NewState);
 
@@ -21,18 +23,23 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnRewindSubsystemStateChangedDeleg
  *
  */
 UCLASS()
-class REWINDSYSTEM_API URewindSubsystem : public ULocalPlayerSubsystem, public FTickableGameObject
+class REWINDSYSTEM_API URewindSubsystem : public UWorldSubsystem, public FTickableGameObject
 {
 	GENERATED_BODY()
 
 public:
+	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
+
+	virtual bool IsTickable() const override { return !IsTemplate(); }//ï¿½ï¿½ï¿½ï¿½CDOï¿½ï¿½Tick
+	virtual TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(URewindSubsystem, STATGROUP_Tickables); }
+
+protected:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
 	virtual void Tick(float DeltaTime) override;
-	virtual bool IsTickable() const override { return !IsTemplate(); }//²»ÊÇCDO²ÅTick
-	virtual TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(URewindSubsystem, STATGROUP_Tickables); }
 
+public:
 	UFUNCTION(BlueprintCallable, Category = "Rewind Subsystem")
 	virtual void OnPostComponentInitialize(UInputRecordComponent* Component);
 
@@ -145,6 +152,9 @@ protected:
 
 		return bIsSwitchValid;
 	}
+
+private:
+	void OnGameModePostLogin(AGameModeBase* GameMode, APlayerController* NewPlayer);
 
 public:
 	FOnRewindSubsystemStateChangedDelegate OnRewindSubsystemStateChangedDelegate;

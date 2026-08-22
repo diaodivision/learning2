@@ -6,6 +6,7 @@
 #include "Ability/AttributeSet/MyAttributeSet.h"
 #include "Ability/AbilitySystemComponent/MyAbilitySystemComponent.h"
 //#include "InputRecordComponent.h"
+#include "RewindSystemStatics.h"
 #include "WeaponBase/WeaponActorBase.h"
 #include "Character/PlayerCharacterBase.h"
 #include "BlueprintFunctionLibrary/WeaponActorBlueprintLibrary.h"
@@ -64,7 +65,7 @@ void UWidgetController::InitializeDelegates(FPossessedCharacterWidgetControllerC
 		Context.AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo5Attribute()).AddUObject(Self, &UWidgetController::OnWeaponMagazineAmmoChanged);
 	}
 
-	if (URewindSubsystem* RewindSubsystem = GetRewindSubsystem(Context.PlayerController.Get()))
+	if (URewindSubsystem* RewindSubsystem = Self->GetRewindSubsystem())
 	{
 		RewindSubsystem->OnRewindSubsystemStateChangedDelegate.AddUniqueDynamic(Self, &UWidgetController::OnRewindSubsystemStateChanged);
 	}
@@ -99,7 +100,7 @@ void UWidgetController::DeinitializeDelegates(FPossessedCharacterWidgetControlle
 		Context.AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo5Attribute()).RemoveAll(Self);
 	}
 
-	if (URewindSubsystem* RewindSubsystem = GetRewindSubsystem(Context.PlayerController.Get()))
+	if (URewindSubsystem* RewindSubsystem = Self->GetRewindSubsystem())
 	{
 		RewindSubsystem->OnRewindSubsystemStateChangedDelegate.RemoveAll(Self);
 	}
@@ -262,15 +263,7 @@ void UWidgetController::OnWeaponMagazineAmmoChanged(const FOnAttributeChangeData
 
 URewindSubsystem* UWidgetController::GetRewindSubsystem() const
 {
-	const UWorld* World{ GetWorld() };
-	if (!World) { nullptr; }
-
-	return ULocalPlayer::GetSubsystem<URewindSubsystem>(World->GetFirstLocalPlayerFromController());
-}
-
-URewindSubsystem* UWidgetController::GetRewindSubsystem(const AMyPlayerController* Controller)
-{
-	return ULocalPlayer::GetSubsystem<URewindSubsystem>(Controller ? Controller->GetLocalPlayer() : nullptr);
+	return URewindSystemStatics::GetRewindSubsystem(this);
 }
 
 //void UWidgetController::OnControlledWeaponMagazineAmmoChanged(int32 OldAmmo, int32 NewAmmo)

@@ -17,14 +17,14 @@ class FOGOFWAR_API UWorldHeightSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
+public:
+	virtual FORCEINLINE bool ShouldCreateSubsystem(UObject* Outer) const override;
+
 protected:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-
 	virtual void Deinitialize() override;
 
 public:
-	virtual FORCEINLINE bool ShouldCreateSubsystem(UObject* Outer) const override { return true; };
-
 	void RequestUpdateWorldHeightData(const AWorldHeightVolume& Volume);
 	void RequestUpdateWorldHeightData(const AActor& OtherActor, FWorldHeightBoundsUpdateRequest::Type RequestType);
 

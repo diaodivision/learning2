@@ -14,6 +14,7 @@
 #include "BlueprintFunctionLibrary/WeaponActorBlueprintLibrary.h"
 #include "GameplayEffectTypes.h"
 #include "Battle/BattleSubsystem.h"
+#include "Battle/BattleSubsystemStatics.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISense_Sight.h"
 #include "BehaviorTree/BlackboardComponent.h"
@@ -49,7 +50,7 @@ void AMyCharacterBase::BeginPlay()
 	{
 		Component->OnTargetPerceptionUpdated.AddUniqueDynamic(this, &AMyCharacterBase::OnSenseUpdated);
 
-		if (UBattleSubsystem* BattleSubsystem{ GetWorld() ? ULocalPlayer::GetSubsystem<UBattleSubsystem>(GetWorld()->GetFirstLocalPlayerFromController()) : nullptr})
+		if (UBattleSubsystem* BattleSubsystem{ UBattleSubsystemStatics::GetBattleSubsystem(this) })
 		{
 			BattleSubsystem->RegisterToBattleSubsystem(this);
 		}
@@ -65,7 +66,7 @@ void AMyCharacterBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		Component->OnTargetPerceptionUpdated.RemoveAll(this);
 	}
 
-	if (UBattleSubsystem* BattleSubsystem{ GetWorld() ? ULocalPlayer::GetSubsystem<UBattleSubsystem>(GetWorld()->GetFirstLocalPlayerFromController()) : nullptr })
+	if (UBattleSubsystem* BattleSubsystem{ UBattleSubsystemStatics::GetBattleSubsystem(this) })
 	{
 		BattleSubsystem->UnregisterToBattleSubsystem(this);
 	}
@@ -163,8 +164,7 @@ void AMyCharacterBase::OnEnemyDisappear_Implementation(const AMyCharacterBase* E
 
 	if (!bEnemyDisappeared && !bSensedDisappeared) { return; }
 
-	UBattleSubsystem* BattleSubsystem = ULocalPlayer::GetSubsystem<UBattleSubsystem>(GetWorld()->GetFirstLocalPlayerFromController());
-
+	const UBattleSubsystem* BattleSubsystem{ UBattleSubsystemStatics::GetBattleSubsystem(this) };
 	if (AMyCharacterBase * NextSensed{ BattleSubsystem ? Cast<AMyCharacterBase>(BattleSubsystem->GetOneTeamSensedActor(TeamID.GetId())) : nullptr })
 	{
 		if (bEnemyDisappeared)
@@ -296,7 +296,7 @@ void AMyCharacterBase::UpdateFogOfWarTexture_Implementation(UTexture2D* FogOfWar
 
 void AMyCharacterBase::EnableTeamDuty(const bool bIsEnable)
 {
-	if (UBattleSubsystem* BattleSubsystem = GetWorld() ? ULocalPlayer::GetSubsystem<UBattleSubsystem>(GetWorld()->GetFirstLocalPlayerFromController()) : nullptr) 
+	if (UBattleSubsystem* BattleSubsystem{ UBattleSubsystemStatics::GetBattleSubsystem(this) }) 
 	{ 
 		UAIPerceptionComponent* AIPerceptionComponent{ GetController() ? GetController()->FindComponentByClass<UAIPerceptionComponent>() : nullptr };
 		

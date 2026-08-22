@@ -3,12 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Subsystems/LocalPlayerSubsystem.h"
+#include "Subsystems/WorldSubsystem.h"
 #include "Tickable.h"
-#include "CameraSubsystem.generated.h"
+#include "TopDownCameraSubsystem.generated.h"
 
 class ACameraBoundsVolume;
 class ATopDownCameraActor;
+class AGameModeBase;
+class APlayerController;
 
 DECLARE_MULTICAST_DELEGATE(FOnViewportSizeChangedDelegate);
 
@@ -16,10 +18,17 @@ DECLARE_MULTICAST_DELEGATE(FOnViewportSizeChangedDelegate);
  *
  */
 UCLASS()
-class TOPDOWNCAMERASYSTEM_API UCameraSubsystem : public ULocalPlayerSubsystem, public FTickableGameObject
+class TOPDOWNCAMERASYSTEM_API UTopDownCameraSubsystem : public UWorldSubsystem, public FTickableGameObject
 {
 	GENERATED_BODY()
 
+public:
+	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
+
+	virtual FORCEINLINE bool IsTickable() const override { return !IsTemplate(); }//不是CDO才Tick
+	virtual FORCEINLINE TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(UTopDownCameraSubsystem, STATGROUP_Tickables); }
+
+protected:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
@@ -36,12 +45,13 @@ protected:
 	UFUNCTION()
 	void OnPossessedPawnChanged(APawn* InOldPawn, APawn* InNewPawn);
 
-	virtual void PlayerControllerChanged(APlayerController* NewPlayerController) override;
+	virtual void SetupCameraForPlayerController(APlayerController* NewPlayerController);
 
 
 	virtual void Tick(float DeltaTime) override;
-	virtual FORCEINLINE bool IsTickable() const override { return !IsTemplate(); }//不是CDO才Tick
-	virtual TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(UCameraSubsystem, STATGROUP_Tickables); }
+
+private:
+	void OnGameModePostLogin(AGameModeBase* GameMode, APlayerController* NewPlayer);
 
 private:
 	UPROPERTY()
@@ -68,12 +78,12 @@ private:
 	FViewportInfo ViewportInfo;
 };
 
-bool UCameraSubsystem::FViewportInfo::IsSet() const
+bool UTopDownCameraSubsystem::FViewportInfo::IsSet() const
 {
 	return ViewportClient.IsValid() && ScreenSize.IsSet();
 }
 
-void UCameraSubsystem::FViewportInfo::Reset()
+void UTopDownCameraSubsystem::FViewportInfo::Reset()
 {
 	ViewportClient.Reset();
 	ScreenSize.Reset();

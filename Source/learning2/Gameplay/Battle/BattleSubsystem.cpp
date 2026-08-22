@@ -1,5 +1,7 @@
 #include "BattleSubsystem.h"
 #include "BattleFieldVolume.h"
+#include "Engine/World.h"
+#include "GameFramework/WorldSettings.h"
 #include "GenericTeamAgentInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "Interface/NavmodifiedActorInterface.h"
@@ -9,6 +11,21 @@
 #include "Perception/AISense_Sight.h"
 #include "Perception/AIPerceptionSystem.h"
 #include <limits>
+#include "Interface/BattleSubsystemProviderInterface.h"
+#include "GameFramework/GameModeBase.h"
+
+bool UBattleSubsystem::ShouldCreateSubsystem(UObject* Outer) const
+{
+	if (!Super::ShouldCreateSubsystem(Outer)) { return false; }
+
+	const UWorld* World{ Cast<UWorld>(Outer) };
+	const AWorldSettings* WorldSettings{ World && World->IsGameWorld() ? World->GetWorldSettings() : nullptr };
+	if (const UObject* GameMode{ WorldSettings ? WorldSettings->DefaultGameMode->GetDefaultObject() : nullptr }; GameMode && GameMode->Implements<UBattleSubsystemProviderInterface>())
+	{
+		return IBattleSubsystemProviderInterface::Execute_ShouldCreateBattleSubsystem(GameMode);
+	}
+	return false;
+}
 
 void UBattleSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -216,10 +233,10 @@ bool UBattleSubsystem::IsSensedByTeam(BattleSubsystemTypes::TeamIDType TeamID, c
 	return false;
 }
 
-AActor* UBattleSubsystem::GetOneTeamSensedActor(const BattleSubsystemTypes::TeamIDType TeamID)
+AActor* UBattleSubsystem::GetOneTeamSensedActor(const BattleSubsystemTypes::TeamIDType TeamID) const
 {
 	//TMap<BattleSubsystemTypes::TeamIDType, FTeamSensesContainer> TeamSensesMap;
-	if (FTeamSensesContainer * Container{ TeamSensesMap.Find(TeamID) }) { return Container->GetOneTeamSensedActor(); }
+	if (const FTeamSensesContainer * Container{ TeamSensesMap.Find(TeamID) }) { return Container->GetOneTeamSensedActor(); }
 
 	return nullptr;
 }
@@ -243,12 +260,6 @@ void UBattleSubsystem::DeinitializeDelegates()
 			}
 		}
 	}
-}
-
-void UBattleSubsystem::OnCharacterMovementUpdated(float DeltaTime, const FVector& OldLocation, const FVector& OldVelocity)
-{
-
-
 }
 
 TArray<TWeakObjectPtr<AActor>> UBattleSubsystem::CollectModifiedActors(const FVector& StartLocation, const FVector& EndLocation)

@@ -2,12 +2,31 @@
 
 
 #include "RewindSubsystem.h"
+#include "Engine/Engine.h"
+#include "Engine/World.h"
+#include "GameFramework/WorldSettings.h"
 #include "InputRecordComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/Controller.h"
 #include "Kismet/GameplayStatics.h"
 #include <limits>
+#include "TimerManager.h"
 #include "WorldPauseSubsystem.h"
+#include "GameFramework/GameModeBase.h"
+#include "Interface/RewindSubsystemProviderInterface.h"
+
+bool URewindSubsystem::ShouldCreateSubsystem(UObject* Outer) const
+{
+	if (!Super::ShouldCreateSubsystem(Outer)) { return false; }
+
+	const UWorld* World{ Cast<UWorld>(Outer) };
+	const AWorldSettings* WorldSettings{ World && World->IsGameWorld() ? World->GetWorldSettings() : nullptr };
+	if (const UObject* GameMode{ WorldSettings ? WorldSettings->DefaultGameMode->GetDefaultObject() : nullptr }; GameMode && GameMode->Implements<URewindSubsystemProviderInterface>())
+	{
+		return IRewindSubsystemProviderInterface::Execute_ShouldCreateRewindSubsystem(GameMode);
+	}
+	return false;
+}
 
 void URewindSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -101,113 +120,6 @@ FRecordedDataObjectHandle URewindSubsystem::Record(TUniquePtr<IRecordedDataObjec
 	if (!InputRecordComponent->IsValid()) { return FRecordedDataObjectHandle{}; }
 
 	return (*InputRecordComponent)->Record(MoveTemp(RecordedData), PostRecordCallable);
-}
-
-void URewindSubsystem::InitializeDelegates()
-{
-#if WITH_EDITOR
-	GEngine->OnLevelActorAdded().AddUObject(this, &URewindSubsystem::OnActorAdded);
-	GEngine->OnLevelActorDeleted().AddUObject(this, &URewindSubsystem::OnActorDeleted);
-#endif
-
-	GetWorld()->GetTimerManager().SetTimerForNextTick([WeakThis = MakeWeakObjectPtr<URewindSubsystem>(this)]() {
-		if (!WeakThis.IsValid()) { return; }
-
-		WeakThis->GetWorld()->GetFirstPlayerController()->OnPossessedPawnChanged.AddDynamic(WeakThis.Get(), &URewindSubsystem::OnPossessedPawnChanged);
-		});
-}
-
-void URewindSubsystem::DeinitializeDelegates()
-{
-#if WITH_EDITOR
-	GEngine->OnLevelActorAdded().RemoveAll(this);
-	GEngine->OnLevelActorDeleted().RemoveAll(this);
-#endif
-
-	UWorld* World = GetWorld();
-	if (!World) { return; }
-
-	AController* Controller = World->GetFirstPlayerController();
-	if (!Controller) { return; }
-
-	Controller->OnPossessedPawnChanged.RemoveAll(this);
-}
-
-void URewindSubsystem::InitializeInputRecordComponentMap()
-{
-	TArray<AActor*> RecordableActors;
-	//UGameplayStatics::GetAllActorsOfClass(this, ACharacter::StaticClass(), Actors);
-	UGameplayStatics::GetAllActorsWithInterface(this, URecordableActorInterface::StaticClass(), RecordableActors);
-
-	for (AActor* Actor : RecordableActors)
-	{
-		if (Actor && IsActorRecordable(*Actor))
-		{
-			if (UInputRecordComponent* Component = GetInputRecordComponentFromOwner(*Actor))
-			{
-				InputRecordComponentMap.Add(Actor, Component);
-			}
-		}
-	}
-}
-
-void URewindSubsystem::OnIdleState()
-{
-}
-
-void URewindSubsystem::OnRecordPauseState()
-{
-}
-
-void URewindSubsystem::OnRecordingState()
-{
-	UE_LOG(LogTemp, Warning, TEXT("URewindSubsystem::OnRecordingState"));
-
-	for (const TWeakObjectPtr<UInputRecordComponent>& Component : GetInputRecordComponents())
-	{
-		Component->AdvanceCurrentTickOnRecordState();
-	}
-}
-
-void URewindSubsystem::OnPreviewPauseState()
-{
-}
-
-void URewindSubsystem::OnPreviewingState()
-{
-	const AActor* PlayerActor = UGameplayStatics::GetPlayerPawn(this, 0);
-	if (!PlayerActor) { return; }
-
-	if (TWeakObjectPtr<UInputRecordComponent>* Component = InputRecordComponentMap.Find(PlayerActor); Component && Component->IsValid())
-	{
-		const RewindSystemTickType CurrentTick = (*Component)->GetCurrentTick();
-
-		(*Component)->PreviewToTick(CurrentTick + 1);
-	}
-}
-
-
-void URewindSubsystem::OnRewindingState()
-{
-	int32 TerminatedComponentCount{ 0 };
-
-	TArray<TWeakObjectPtr<UInputRecordComponent>> Components = GetInputRecordComponents();
-	for (const TWeakObjectPtr<UInputRecordComponent>& Component : Components)
-	{
-		if (Component->GetCurrentTick() <= Component->GetTickMax())
-		{
-			Component->HandleRecordedData();
-		}
-		else
-		{
-			TerminatedComponentCount++;
-		}
-	}
-
-	if (TerminatedComponentCount == Components.Num())
-	{
-		SwitchState(ERecordState::Idle);
-	}
 }
 
 void URewindSubsystem::SwitchState(ERecordState NewState)
@@ -332,6 +244,109 @@ UInputRecordComponent* URewindSubsystem::GetInputRecordComponentFromOwner(const 
 {
 	TWeakObjectPtr<UInputRecordComponent>* InputRecordComponentPtr{ InputRecordComponentMap.Find(&Owner) };
 	return InputRecordComponentPtr ? InputRecordComponentPtr->Get() : nullptr;
+}
+
+void URewindSubsystem::InitializeDelegates()
+{
+#if WITH_EDITOR
+	GEngine->OnLevelActorAdded().AddUObject(this, &URewindSubsystem::OnActorAdded);
+	GEngine->OnLevelActorDeleted().AddUObject(this, &URewindSubsystem::OnActorDeleted);
+#endif
+
+	FGameModeEvents::OnGameModePostLoginEvent().AddUObject(this, &URewindSubsystem::OnGameModePostLogin);
+}
+
+void URewindSubsystem::DeinitializeDelegates()
+{
+#if WITH_EDITOR
+	GEngine->OnLevelActorAdded().RemoveAll(this);
+	GEngine->OnLevelActorDeleted().RemoveAll(this);
+#endif
+
+	UWorld* World = GetWorld();
+	if (!World) { return; }
+
+	AController* Controller = World->GetFirstPlayerController();
+	if (!Controller) { return; }
+
+	Controller->OnPossessedPawnChanged.RemoveAll(this);
+}
+
+void URewindSubsystem::InitializeInputRecordComponentMap()
+{
+	TArray<AActor*> RecordableActors;
+	//UGameplayStatics::GetAllActorsOfClass(this, ACharacter::StaticClass(), Actors);
+	UGameplayStatics::GetAllActorsWithInterface(this, URecordableActorInterface::StaticClass(), RecordableActors);
+
+	for (AActor* Actor : RecordableActors)
+	{
+		if (Actor && IsActorRecordable(*Actor))
+		{
+			if (UInputRecordComponent* Component = GetInputRecordComponentFromOwner(*Actor))
+			{
+				InputRecordComponentMap.Add(Actor, Component);
+			}
+		}
+	}
+}
+
+void URewindSubsystem::OnIdleState()
+{
+}
+
+void URewindSubsystem::OnRecordPauseState()
+{
+}
+
+void URewindSubsystem::OnRecordingState()
+{
+	UE_LOG(LogTemp, Warning, TEXT("URewindSubsystem::OnRecordingState"));
+
+	for (const TWeakObjectPtr<UInputRecordComponent>& Component : GetInputRecordComponents())
+	{
+		Component->AdvanceCurrentTickOnRecordState();
+	}
+}
+
+void URewindSubsystem::OnPreviewPauseState()
+{
+}
+
+void URewindSubsystem::OnPreviewingState()
+{
+	const AActor* PlayerActor = UGameplayStatics::GetPlayerPawn(this, 0);
+	if (!PlayerActor) { return; }
+
+	if (TWeakObjectPtr<UInputRecordComponent>* Component = InputRecordComponentMap.Find(PlayerActor); Component && Component->IsValid())
+	{
+		const RewindSystemTickType CurrentTick = (*Component)->GetCurrentTick();
+
+		(*Component)->PreviewToTick(CurrentTick + 1);
+	}
+}
+
+
+void URewindSubsystem::OnRewindingState()
+{
+	int32 TerminatedComponentCount{ 0 };
+
+	TArray<TWeakObjectPtr<UInputRecordComponent>> Components = GetInputRecordComponents();
+	for (const TWeakObjectPtr<UInputRecordComponent>& Component : Components)
+	{
+		if (Component->GetCurrentTick() <= Component->GetTickMax())
+		{
+			Component->HandleRecordedData();
+		}
+		else
+		{
+			TerminatedComponentCount++;
+		}
+	}
+
+	if (TerminatedComponentCount == Components.Num())
+	{
+		SwitchState(ERecordState::Idle);
+	}
 }
 
 void URewindSubsystem::OnIdleStateStart()
@@ -494,3 +509,7 @@ void URewindSubsystem::SetSubsystemTickEnabled(bool bIsEnable)
 	SetTickableTickType(bIsEnable ? ETickableTickType::Always : ETickableTickType::Never);
 }
 
+void URewindSubsystem::OnGameModePostLogin(AGameModeBase* GameMode, APlayerController* NewPlayer)
+{
+	NewPlayer->OnPossessedPawnChanged.AddUniqueDynamic(this, &URewindSubsystem::OnPossessedPawnChanged);
+}

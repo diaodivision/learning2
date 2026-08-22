@@ -19,6 +19,7 @@
 #include "InputRecord/Location/RecordedLocationVisualizationComponent.h"
 #include "BehaviorTree/BehaviorTreeStatics.h"
 #include "Battle/BattleSubsystem.h"
+#include "Battle/BattleSubsystemStatics.h"
 #include "PredictionLineProvider/PredictionLineProviderInterface.h"
 #include "Targeting/TargetingInstigatorTypes.h"
 
@@ -152,7 +153,7 @@ void APlayerCharacterBase::PossessedBy(AController* NewController)
 
 		ACharacter* EnemyCharacter{ nullptr };
 		ACharacter* SensedEnemyCharacter{ nullptr };
-		if (UBattleSubsystem* BattleSubsystem = ULocalPlayer::GetSubsystem<UBattleSubsystem>(GetWorld()->GetFirstLocalPlayerFromController()))
+		if (UBattleSubsystem* BattleSubsystem{ UBattleSubsystemStatics::GetBattleSubsystem(this) })
 		{
 			SensedEnemyCharacter = Cast<ACharacter>(BattleSubsystem->GetOneTeamSensedActor(GetGenericTeamId()));
 

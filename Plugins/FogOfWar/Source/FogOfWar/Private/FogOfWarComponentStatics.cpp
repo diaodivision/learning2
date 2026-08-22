@@ -33,9 +33,7 @@ TOptional<FGridSizeType> UFogOfWarComponentStatics::GetGridSize(const EGridType 
 	}
 	else if (GridType == EGridType::Screen)
 	{
-		const ULocalPlayer* LocalPlayer{ World->GetFirstLocalPlayerFromController() };
-		const UFogOfWarSubsystem* FogOfWarSubsystem{ LocalPlayer ? LocalPlayer->GetSubsystem<UFogOfWarSubsystem>(): nullptr };
-
+		const UFogOfWarSubsystem* FogOfWarSubsystem{ World->GetSubsystem<UFogOfWarSubsystem>() };
 		return FogOfWarSubsystem ? FogOfWarSubsystem->GetGridSize() : NullOpt;
 	}
 	
@@ -223,8 +221,7 @@ TOptional<FIntPoint> UFogOfWarComponentStatics::GetGridPositionOnWorld(const FVe
 UFogOfWarSubsystem* UFogOfWarComponentStatics::GetFogOfWarSubsystem(const UObject* WorldContextObject)
 {
 	const UWorld* World{GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull)};
-	const ULocalPlayer* LocalPlayer{ World ? World->GetFirstLocalPlayerFromController() : nullptr };
-	return LocalPlayer ? LocalPlayer->GetSubsystem<UFogOfWarSubsystem>() : nullptr;
+	return World ? World->GetSubsystem<UFogOfWarSubsystem>() : nullptr;
 }
 
 UWorldHeightSubsystem* UFogOfWarComponentStatics::GetWorldHeightSubsystem(const UObject* WorldContextObject)

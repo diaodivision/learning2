@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Math/UnrealMathUtility.h"
-#include "Subsystems/LocalPlayerSubsystem.h"
+#include "Subsystems/WorldSubsystem.h"
 #include "FogOfWarTypes.h"
 #include "FogOfWarComputeShader.h"
 #include "Engine/EngineBaseTypes.h" // 必须包含此头文件以使用 FTickFunction
@@ -23,26 +23,24 @@ class UMaterialInstanceDynamic;
  *
  */
 UCLASS()
-class FOGOFWAR_API UFogOfWarSubsystem : public ULocalPlayerSubsystem, public FTickableGameObject
+class FOGOFWAR_API UFogOfWarSubsystem : public UWorldSubsystem, public FTickableGameObject
 {
     GENERATED_BODY()
 
 public:
-    UFogOfWarSubsystem();
+    virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 
+    virtual FORCEINLINE bool IsTickable() const override { return !IsTemplate(); } // 不是CDO才Tick
+    virtual FORCEINLINE TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(UFogOfWarSubsystem, STATGROUP_Tickables); }
+
+protected:
     virtual void Initialize(FSubsystemCollectionBase &Collection) override;
-
     virtual void Deinitialize() override;
 
     virtual void Tick(float DeltaTime) override;
     virtual void Tick_Internal();
 
-    virtual bool IsTickable() const override { return !IsTemplate(); } // 不是CDO才Tick
-    virtual TStatId GetStatId() const override
-    {
-        RETURN_QUICK_DECLARE_CYCLE_STAT(UFogOfWarSubsystem, STATGROUP_Tickables);
-    }
-
+public:
     UFUNCTION(BlueprintCallable, Category = "FogOfWar")
     void OnPostComponentInitialize(UFogOfWarComponent *Component);
 
@@ -75,8 +73,6 @@ private:
         const TArray<int32> &RadiusSqList, 
         FFogOfWarComputeShader::FParameters &Parameter,
         FRDGBuilder &GraphBuilder) const;
-
-    void UploadFogOfWarWorldHeightData(FFogOfWarComputeShader::FParameters &Parameter, FRDGBuilder &GraphBuilder,const TCHAR *DebugName) const;
 
     void SetComputeShaderOutputTextureCache(FRDGTextureRef &ShaderOutputTexture,FFogOfWarComputeShader::FParameters &Parameter, FRDGBuilder &GraphBuilder, const bool bCreateNewOne);
 

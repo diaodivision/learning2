@@ -4,10 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Delegates/DelegateCombinations.h"
-#include "Subsystems/LocalPlayerSubsystem.h"
-#include "Tickable.h"
+#include "Subsystems/WorldSubsystem.h"
+// #include "Tickable.h"
 #include "GenericQuadTree.h"
-//#include "GenericTeamAgentInterface.h"
 #include "BattleSubsystemTypes.h"
 #include "Perception/AIPerceptionTypes.h"
 #include "BattleSubsystem.generated.h"
@@ -33,20 +32,24 @@ private:
  *
  */
 UCLASS()
-class LEARNING2_API UBattleSubsystem : public ULocalPlayerSubsystem, public FTickableGameObject
+class LEARNING2_API UBattleSubsystem : public UWorldSubsystem/*, public FTickableGameObject*/
 {
 	GENERATED_BODY()
 
 public:
-	using EnemyType = BattleSubsystemTypes::EnemyType;
-
+		using EnemyType = BattleSubsystemTypes::EnemyType;
+	
+		virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
+		// virtual FORCEINLINE bool IsTickable() const override { return !IsTemplate(); }//����CDO��Tick
+		// virtual FORCEINLINE TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(UBattleSubsystem, STATGROUP_Tickables); }
+	
+protected:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
-	virtual void Tick(float DeltaTime) override {};
-	virtual bool IsTickable() const override { return !IsTemplate(); }//����CDO��Tick
-	virtual TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(UBattleSubsystem, STATGROUP_Tickables); }
+	// virtual void Tick(float DeltaTime) override {};
 
+public:
 	[[nodiscard]] virtual FNavigationModifyHandle ActivateNavModify(const FVector& StartLocation, const FVector& EndLocation);
 	virtual void DeactivateNavModify(const FNavigationModifyHandle& Handle);
 
@@ -62,14 +65,11 @@ public:
 	bool K2_IsSensedByTeam(int32 TeamID, const AMyCharacterBase* Enemy) const;
 	bool IsSensedByTeam(BattleSubsystemTypes::TeamIDType TeamID, const AMyCharacterBase& Enemy) const;
 
-	AActor* GetOneTeamSensedActor(const BattleSubsystemTypes::TeamIDType TeamID);
+	AActor* GetOneTeamSensedActor(const BattleSubsystemTypes::TeamIDType TeamID) const;
 
 protected:
 	virtual void InitializeDelegates();
 	virtual void DeinitializeDelegates();
-
-	UFUNCTION()
-	virtual void OnCharacterMovementUpdated(float DeltaTime, const FVector& OldLocation, const FVector& OldVelocity);
 
 	virtual TArray<TWeakObjectPtr<AActor>> CollectModifiedActors(const FVector& StartLocation, const FVector& EndLocation);
 

@@ -24,13 +24,14 @@ public class learning2 : ModuleRules
             "Slate",
             "SlateCore",
             "Niagara",
-            "WorldPauseSystem"
+            "WorldPauseSystem",
+            "TopDownCameraSystem"
         });
 
 
         PrivateDependencyModuleNames.AddRange(new string[] { "UMG" });
 
-        // Ìí¼Ó¹«¹²°üº¬Â·¾¶
+        // ï¿½ï¿½ï¿½Ó¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½
         PublicIncludePaths.AddRange(new string[] {
             "learning2",
 

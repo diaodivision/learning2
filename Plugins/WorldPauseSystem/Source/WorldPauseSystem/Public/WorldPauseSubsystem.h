@@ -13,8 +13,9 @@ class WORLDPAUSESYSTEM_API UWorldPauseSubsystem : public UWorldSubsystem
 	//virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	//virtual void Deinitialize() override;
 
-
 public:
+	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
+
 	virtual void OnFreezableObjectRegistered(UObject* FreezableObject);
 	virtual void OnFreezableObjectUnregistered(UObject* FreezableObject);
 

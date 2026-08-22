@@ -2,6 +2,8 @@
 
 
 #include "FogOfWarSubsystem.h"
+#include "Engine/GameViewportClient.h"
+#include "GameFramework/WorldSettings.h"
 #include "Kismet/GameplayStatics.h"
 #include "FogOfWarComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -11,16 +13,28 @@
 #include "RenderGraphUtils.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "FogOfWarShaderTypes.ush"
+#include "FogOfWarSubsystemProviderInterface.h"
+#include "GameFramework/GameModeBase.h"
 
-UFogOfWarSubsystem::UFogOfWarSubsystem() :ULocalPlayerSubsystem()
+bool UFogOfWarSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 {
+	if (!Super::ShouldCreateSubsystem(Outer)) { return false; }
+
+	const UWorld* World{ Cast<UWorld>(Outer) };
+	const AWorldSettings* WorldSettings{ World && World->IsGameWorld() ? World->GetWorldSettings() : nullptr };
+	if (const UObject* GameMode{ WorldSettings ? WorldSettings->DefaultGameMode->GetDefaultObject() : nullptr }; GameMode && GameMode->Implements<UFogOfWarSubsystemProviderInterface>())
+	{
+		return IFogOfWarSubsystemProviderInterface::Execute_ShouldCreateFogOfWarSubsystem(GameMode);
+	}
+	return false;
 }
 
 void UFogOfWarSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+	Collection.InitializeDependency<UWorldHeightSubsystem>();
 
-	UE_LOG(LogTemp, Warning, TEXT("UFogOfWarSubsystem::Initialize"));
+	UE_LOG(LogTemp, Error, TEXT("Subsystem Trace: UFogOfWarSubsystem::Initialize"))
 
 	TArray<AActor*> Characters;
 	UGameplayStatics::GetAllActorsOfClass(this, ACharacter::StaticClass(), Characters);
@@ -63,7 +77,7 @@ void UFogOfWarSubsystem::Deinitialize()
 
 	GEngine->GameViewport->Viewport->ViewportResizedEvent.RemoveAll(this);
 
-	UE_LOG(LogTemp, Warning, TEXT("UFogOfWarSubsystem::Deinitialize"));
+	UE_LOG(LogTemp, Error, TEXT("Subsystem Trace: UFogOfWarSubsystem::Deinitialize"))
 }
 
 void UFogOfWarSubsystem::Tick(float DeltaTime)
@@ -300,6 +314,101 @@ void UFogOfWarSubsystem::SetTextureParameter() const
 	FogOfWarMaterial->SetTextureParameterValue(FogOfWarConst::FogOfWarTextureParameterName.GetData(), DynamicTexture);
 }
 
+void UFogOfWarSubsystem::GetFogOfWarActorData(TArray<FIntPoint>& ActorPositions, TArray<FVector2f>& ActorVision, TArray<int32>& RadiusSqList) const
+{
+	const TOptional<FBox2D> ScreenBox{UFogOfWarComponentStatics::GetCameraFrustumGroundIntersections(this)};
+	if (!ScreenBox.IsSet()) { return; }
+
+	for (const TWeakObjectPtr<UFogOfWarComponent> WeakComponentPtr : FogOfWarComponents)
+	{
+		if (!WeakComponentPtr.IsValid())
+		{
+			bHasInvalidComponents = true;
+
+			continue;
+		}
+
+		const UFogOfWarComponent* Component = WeakComponentPtr.Get();
+
+		const TOptional<FFogOfWarData> Data{Component->GetFogOfWarData()};
+		if (!Data.IsSet()) { continue; }
+		const TOptional<FGridSizeType> GridSize{UFogOfWarComponentStatics::GetGridSize(EGridType::World, this)};
+		const TOptional<FGridSizeType> ScreenGridSize{ UFogOfWarComponentStatics::GetGridSize(EGridType::Screen, this) };
+		const TOptional<FBox2D> LandBoundingBox{UFogOfWarComponentStatics::GetLandBoundingBox(this)};
+		const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
+		if (!GridSize.IsSet() || !ScreenGridSize.IsSet() || !LandBoundingBox.IsSet() || !ScreenSize.IsSet()) { return; }
+		// const TOptional<FIntPoint> PositionOnScreen{UFogOfWarComponentStatics::GetGridPositionOnScreen(Data.GetValue().ActorLocation, ScreenSize.GetValue(), ScreenBox.GetValue()) };
+		// if (!PositionOnScreen.IsSet()) { continue; }
+		// ActorPositions.Add(PositionOnScreen.GetValue());
+		
+		// const TOptional<FIntPoint> GridPositionOnLand{UFogOfWarComponentStatics::GetGridPosition(Data.GetValue().ActorLocation, this)};
+		// if (!GridPositionOnLand.IsSet()) {continue;}
+		// ActorPositions.Add(GridPositionOnLand.GetValue());
+
+		const TOptional<FIntPoint> ActorPositionOnScreen{UFogOfWarComponentStatics::GetGridPositionOnScreen(Data.GetValue().ActorLocation, this, EAllowMinusPosition::Yes)};
+		if (!ActorPositionOnScreen.IsSet()) {continue;}
+		ActorPositions.Add(ActorPositionOnScreen.GetValue());
+		ActorVision.Add(FVector2f{UFogOfWarComponentStatics::ProjectWorldDirectionToScreen(Data.GetValue().ActorVisionLeft)});
+		ActorVision.Add(FVector2f{UFogOfWarComponentStatics::ProjectWorldDirectionToScreen(Data.GetValue().ActorVisionRight)});
+		RadiusSqList.Add(FMath::CeilToInt32(FMath::Pow(Data.GetValue().Radius / ScreenGridSize.GetValue().GetGridSizeOnScreenCoordinate().X, 2.f)));
+	}
+}
+
+void UFogOfWarSubsystem::UploadFogOfWarActorData(const TArray<FIntPoint>& ActorPositions, const TArray<FVector2f>& ActorVision, const TArray<int32>& RadiusSqList, FFogOfWarComputeShader::FParameters& Parameter, FRDGBuilder& GraphBuilder) const
+{
+	//TArray<FIntPoint>ActorPositions;
+	//TArray<FVector2f>ActorVision;
+
+	//GetFogOfWarActorData(ActorPositions, ActorVision);
+
+	UFogOfWarComponentStatics::UploadStructedBuffer(
+		Parameter.VisionStartPosBuffer,
+		Parameter.NumVisionStart,
+		GraphBuilder,
+		ActorPositions,
+		TEXT("VisionStartPosBuffer")
+	);
+
+	UFogOfWarComponentStatics::UploadStructedBuffer(
+		Parameter.VisionBuffer,
+		Parameter.NumVision,
+		GraphBuilder,
+		ActorVision,
+		TEXT("VisionBuffer")
+	);
+
+	UFogOfWarComponentStatics::UploadStructedBuffer(
+		Parameter.RadiusSqBuffer,
+		Parameter.NumRadiusSq,
+		GraphBuilder,
+		RadiusSqList,
+		TEXT("RadiusSqBuffer")
+	);
+}
+
+void UFogOfWarSubsystem::SetComputeShaderOutputTextureCache(FRDGTextureRef& ShaderOutputTexture, FFogOfWarComputeShader::FParameters& Parameter, FRDGBuilder& GraphBuilder, const bool bCreateNewOne)
+{
+	if (!ShaderOutputTexture /*|| !CachedOutputTexture.IsValid() */)
+	{
+		const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
+		if (!ScreenSize.IsSet()) { return; }
+
+		FRDGTextureDesc TextureDesc = FRDGTextureDesc::Create2D(
+			ScreenSize.GetValue(),
+			FogOfWarConst::PixelFormat,
+			FClearValueBinding::Black,
+			TexCreate_ShaderResource | TexCreate_UAV
+		);
+		ShaderOutputTexture = GraphBuilder.CreateTexture(TextureDesc, TEXT("OutputTexture"));
+	}
+	// else
+	// {
+	// 	ShaderOutputTexture = GraphBuilder.RegisterExternalTexture(CachedOutputTexture);
+	// }
+
+	Parameter.OutputTexture = GraphBuilder.CreateUAV(ShaderOutputTexture);
+}
+
 TOptional<FIntPoint> UFogOfWarSubsystem::ProjectWorldToLand(const FVector2D& WorldLocation, const FBox2D& LandBoundingBox) const
 {
 	const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
@@ -398,101 +507,6 @@ void UFogOfWarSubsystem::SetupScaleFactor()
 
 	bIsInitialScale = true;
 	OnViewportSizeChangedDelegate.Broadcast();
-}
-
-void UFogOfWarSubsystem::GetFogOfWarActorData(TArray<FIntPoint>& ActorPositions, TArray<FVector2f>& ActorVision, TArray<int32>& RadiusSqList) const
-{
-	const TOptional<FBox2D> ScreenBox{UFogOfWarComponentStatics::GetCameraFrustumGroundIntersections(this)};
-	if (!ScreenBox.IsSet()) { return; }
-
-	for (const TWeakObjectPtr<UFogOfWarComponent> WeakComponentPtr : FogOfWarComponents)
-	{
-		if (!WeakComponentPtr.IsValid())
-		{
-			bHasInvalidComponents = true;
-
-			continue;
-		}
-
-		const UFogOfWarComponent* Component = WeakComponentPtr.Get();
-
-		const TOptional<FFogOfWarData> Data{Component->GetFogOfWarData()};
-		if (!Data.IsSet()) { continue; }
-		const TOptional<FGridSizeType> GridSize{UFogOfWarComponentStatics::GetGridSize(EGridType::World, this)};
-		const TOptional<FGridSizeType> ScreenGridSize{ UFogOfWarComponentStatics::GetGridSize(EGridType::Screen, this) };
-		const TOptional<FBox2D> LandBoundingBox{UFogOfWarComponentStatics::GetLandBoundingBox(this)};
-		const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
-		if (!GridSize.IsSet() || !ScreenGridSize.IsSet() || !LandBoundingBox.IsSet() || !ScreenSize.IsSet()) { return; }
-		// const TOptional<FIntPoint> PositionOnScreen{UFogOfWarComponentStatics::GetGridPositionOnScreen(Data.GetValue().ActorLocation, ScreenSize.GetValue(), ScreenBox.GetValue()) };
-		// if (!PositionOnScreen.IsSet()) { continue; }
-		// ActorPositions.Add(PositionOnScreen.GetValue());
-		
-		// const TOptional<FIntPoint> GridPositionOnLand{UFogOfWarComponentStatics::GetGridPosition(Data.GetValue().ActorLocation, this)};
-		// if (!GridPositionOnLand.IsSet()) {continue;}
-		// ActorPositions.Add(GridPositionOnLand.GetValue());
-
-		const TOptional<FIntPoint> ActorPositionOnScreen{UFogOfWarComponentStatics::GetGridPositionOnScreen(Data.GetValue().ActorLocation, this, EAllowMinusPosition::Yes)};
-		if (!ActorPositionOnScreen.IsSet()) {continue;}
-		ActorPositions.Add(ActorPositionOnScreen.GetValue());
-		ActorVision.Add(FVector2f{UFogOfWarComponentStatics::ProjectWorldDirectionToScreen(Data.GetValue().ActorVisionLeft)});
-		ActorVision.Add(FVector2f{UFogOfWarComponentStatics::ProjectWorldDirectionToScreen(Data.GetValue().ActorVisionRight)});
-		RadiusSqList.Add(FMath::CeilToInt32(FMath::Pow(Data.GetValue().Radius / ScreenGridSize.GetValue().GetGridSizeOnScreenCoordinate().X, 2.f)));
-	}
-}
-
-void UFogOfWarSubsystem::UploadFogOfWarActorData(const TArray<FIntPoint>& ActorPositions, const TArray<FVector2f>& ActorVision, const TArray<int32>& RadiusSqList, FFogOfWarComputeShader::FParameters& Parameter, FRDGBuilder& GraphBuilder) const
-{
-	//TArray<FIntPoint>ActorPositions;
-	//TArray<FVector2f>ActorVision;
-
-	//GetFogOfWarActorData(ActorPositions, ActorVision);
-
-	UFogOfWarComponentStatics::UploadStructedBuffer(
-		Parameter.VisionStartPosBuffer,
-		Parameter.NumVisionStart,
-		GraphBuilder,
-		ActorPositions,
-		TEXT("VisionStartPosBuffer")
-	);
-
-	UFogOfWarComponentStatics::UploadStructedBuffer(
-		Parameter.VisionBuffer,
-		Parameter.NumVision,
-		GraphBuilder,
-		ActorVision,
-		TEXT("VisionBuffer")
-	);
-
-	UFogOfWarComponentStatics::UploadStructedBuffer(
-		Parameter.RadiusSqBuffer,
-		Parameter.NumRadiusSq,
-		GraphBuilder,
-		RadiusSqList,
-		TEXT("RadiusSqBuffer")
-	);
-}
-
-void UFogOfWarSubsystem::SetComputeShaderOutputTextureCache(FRDGTextureRef& ShaderOutputTexture, FFogOfWarComputeShader::FParameters& Parameter, FRDGBuilder& GraphBuilder, const bool bCreateNewOne)
-{
-	if (!ShaderOutputTexture /*|| !CachedOutputTexture.IsValid() */)
-	{
-		const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
-		if (!ScreenSize.IsSet()) { return; }
-
-		FRDGTextureDesc TextureDesc = FRDGTextureDesc::Create2D(
-			ScreenSize.GetValue(),
-			FogOfWarConst::PixelFormat,
-			FClearValueBinding::Black,
-			TexCreate_ShaderResource | TexCreate_UAV
-		);
-		ShaderOutputTexture = GraphBuilder.CreateTexture(TextureDesc, TEXT("OutputTexture"));
-	}
-	// else
-	// {
-	// 	ShaderOutputTexture = GraphBuilder.RegisterExternalTexture(CachedOutputTexture);
-	// }
-
-	Parameter.OutputTexture = GraphBuilder.CreateUAV(ShaderOutputTexture);
 }
 
 void UFogOfWarSubsystem::OnViewportResized(FViewport* Viewport, uint32 Unused)

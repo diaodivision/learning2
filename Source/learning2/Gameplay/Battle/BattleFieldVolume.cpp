@@ -1,5 +1,6 @@
 #include "BattleFieldVolume.h"
 #include "BattleSubsystem.h"
+#include "BattleSubsystemStatics.h"
 
 ABattleFieldVolume::ABattleFieldVolume()
 {
@@ -14,7 +15,7 @@ ABattleFieldVolume::ABattleFieldVolume()
 
 void ABattleFieldVolume::BeginPlay()
 {
-	if (UBattleSubsystem* BattleSubsystem = ULocalPlayer::GetSubsystem<UBattleSubsystem>(GetWorld()->GetFirstLocalPlayerFromController()))
+	if (UBattleSubsystem* BattleSubsystem{ UBattleSubsystemStatics::GetBattleSubsystem(this) })
 	{
 		BattleSubsystem->OnBattleFieldVolumeBeginPlay(this);
 	}
@@ -22,7 +23,7 @@ void ABattleFieldVolume::BeginPlay()
 
 void ABattleFieldVolume::EndPlay(EEndPlayReason::Type EndPlayReason)
 {
-	if (UBattleSubsystem* BattleSubsystem = ULocalPlayer::GetSubsystem<UBattleSubsystem>(GetWorld()->GetFirstLocalPlayerFromController()))
+	if (UBattleSubsystem* BattleSubsystem{ UBattleSubsystemStatics::GetBattleSubsystem(this) })
 	{
 		BattleSubsystem->OnBattleFieldVolumeEndPlay(this, EndPlayReason);
 	}

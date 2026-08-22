@@ -414,7 +414,7 @@ class FTeamSensesContainer::Impl
 public:
 	void OnSenseUpdated(const FSenseUpdateInfo& SenseUpdateInfo);
 
-	AActor* GetOneTeamSensedActor();
+	AActor* GetOneTeamSensedActor() const;
 
 	void OnActorEndPlayed(const AActor& EndPlayedActor);
 
@@ -467,7 +467,7 @@ void FTeamSensesContainer::Impl::OnSenseUpdated(const FSenseUpdateInfo& SenseUpd
 	}
 }
 
-AActor* FTeamSensesContainer::Impl::GetOneTeamSensedActor()
+AActor* FTeamSensesContainer::Impl::GetOneTeamSensedActor() const
 {
 	if (!TeamSensesEnemies.IsEmpty()) { return TeamSensesEnemies.begin()->Get(); }
 
@@ -546,7 +546,7 @@ void FTeamSensesContainer::OnSenseUpdated(const FSenseUpdateInfo& SenseUpdateInf
 	pImpl->OnSenseUpdated(SenseUpdateInfo);
 }
 
-AActor* FTeamSensesContainer::GetOneTeamSensedActor()
+AActor* FTeamSensesContainer::GetOneTeamSensedActor() const
 {
 	return pImpl->GetOneTeamSensedActor();
 }

@@ -1,8 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "CameraSubsystem.h"
+#include "TopDownCameraSubsystem.h"
+#include "Engine/World.h"
 #include "GameFramework/Pawn.h"
+#include "GameFramework/WorldSettings.h"
 #include "TopDownCameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "CameraBoundsVolume.h"
@@ -11,15 +13,36 @@
 #include "Framework/Application/SlateApplication.h"
 #include "Engine/GameViewportClient.h"
 #include "Widgets/SViewport.h"
+#include "GameFramework/GameModeBase.h"
+#include "TopDownCameraSubsystemProviderInterface.h"
 
-void UCameraSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+bool UTopDownCameraSubsystem::ShouldCreateSubsystem(UObject* Outer) const
+{
+	if (!Super::ShouldCreateSubsystem(Outer)) { return false; }
+
+	const UWorld* World{ Cast<UWorld>(Outer) };
+	const AWorldSettings* WorldSettings{ World && World->IsGameWorld() ? World->GetWorldSettings() : nullptr };
+	if (const UObject* GameMode{ WorldSettings ? WorldSettings->DefaultGameMode->GetDefaultObject() : nullptr }; GameMode && GameMode->Implements<UTopDownCameraSubsystemProviderInterface>())
+	{
+		return ITopDownCameraSubsystemProviderInterface::Execute_ShouldCreateTopDownCameraSubsystem(GameMode);
+	}
+	return false;
+}
+
+void UTopDownCameraSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+
+	if (APlayerController* PC{ GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr })
+	{
+		SetupCameraForPlayerController(PC);
+	}
+	else{ FGameModeEvents::OnGameModePostLoginEvent().AddUObject(this, &UTopDownCameraSubsystem::OnGameModePostLogin); }
 
 	InitializeViewportInfo();
 }
 
-void UCameraSubsystem::Deinitialize()
+void UTopDownCameraSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
 
@@ -34,7 +57,7 @@ void UCameraSubsystem::Deinitialize()
 	}
 }
 
-const ACameraBoundsVolume* UCameraSubsystem::GetCameraBoundsVolume()
+const ACameraBoundsVolume* UTopDownCameraSubsystem::GetCameraBoundsVolume()
 {
 	if (!CameraBoundsVolume.IsValid())
 	{
@@ -44,13 +67,13 @@ const ACameraBoundsVolume* UCameraSubsystem::GetCameraBoundsVolume()
 	return CameraBoundsVolume.Get();
 }
 
-void UCameraSubsystem::InitializeViewportInfo()
+void UTopDownCameraSubsystem::InitializeViewportInfo()
 {
 	if (!ViewportInfo.ViewportClient.IsValid()) { ViewportInfo.ViewportClient = GetWorld() ? GetWorld()->GetGameViewport() : nullptr; }
 
 	FViewport* Viewport{ ViewportInfo.ViewportClient.IsValid() ? ViewportInfo.ViewportClient->Viewport : nullptr };
 	if (!Viewport) { return; }
-	if (!Viewport->ViewportResizedEvent.IsBoundToObject(this)) { Viewport->ViewportResizedEvent.AddUObject(this, &UCameraSubsystem::OnViewportResized); }
+	if (!Viewport->ViewportResizedEvent.IsBoundToObject(this)) { Viewport->ViewportResizedEvent.AddUObject(this, &UTopDownCameraSubsystem::OnViewportResized); }
 
 	FVector2D ViewportSize;
 	ViewportInfo.ViewportClient->GetViewportSize(ViewportSize);
@@ -59,14 +82,14 @@ void UCameraSubsystem::InitializeViewportInfo()
 	ViewportInfo.ScreenSize = ViewportSize;
 }
 
-void UCameraSubsystem::OnViewportResized(FViewport* Viewport, uint32 Unused)
+void UTopDownCameraSubsystem::OnViewportResized(FViewport* Viewport, uint32 Unused)
 {
 	ViewportInfo.ScreenSize.Reset();
 
 	InitializeViewportInfo();
 }
 
-void UCameraSubsystem::OnPossessedPawnChanged(APawn* InOldPawn, APawn* InNewPawn)
+void UTopDownCameraSubsystem::OnPossessedPawnChanged(APawn* InOldPawn, APawn* InNewPawn)
 {
 	if (APlayerController* PlayerController{ GetWorld()->GetFirstPlayerController() }; PlayerController && CameraActor)
 	{
@@ -79,10 +102,8 @@ void UCameraSubsystem::OnPossessedPawnChanged(APawn* InOldPawn, APawn* InNewPawn
 	}
 }
 
-void UCameraSubsystem::PlayerControllerChanged(APlayerController* NewPlayerController)
+void UTopDownCameraSubsystem::SetupCameraForPlayerController(APlayerController* NewPlayerController)
 {
-	Super::PlayerControllerChanged(NewPlayerController);
-
 	if (!CameraActor)
 	{
 		const FTransform CameraTransform{ FRotator{ -90.f, 0.f, 0.f }.Quaternion(), FVector::ZAxisVector * 2000.f };
@@ -107,7 +128,7 @@ void UCameraSubsystem::PlayerControllerChanged(APlayerController* NewPlayerContr
 	{
 		PlayerController->SetViewTarget(CameraActor);
 		InitializeViewportInfo();
-		PlayerController->OnPossessedPawnChanged.AddUniqueDynamic(this, &UCameraSubsystem::OnPossessedPawnChanged);
+		PlayerController->OnPossessedPawnChanged.AddUniqueDynamic(this, &UTopDownCameraSubsystem::OnPossessedPawnChanged);
 		if (const APawn* ControlledPawn{  PlayerController->GetPawn() })
 		{
 			const FVector TargetLocation{ ControlledPawn->GetActorLocation().X, ControlledPawn->GetActorLocation().Y, CameraActor->GetActorLocation().Z };
@@ -116,7 +137,7 @@ void UCameraSubsystem::PlayerControllerChanged(APlayerController* NewPlayerContr
 	}
 }
 
-void UCameraSubsystem::Tick(float DeltaTime)
+void UTopDownCameraSubsystem::Tick(float DeltaTime)
 {
 	if (!CameraActor || !ViewportInfo.IsSet()) { return; }
 
@@ -127,14 +148,14 @@ void UCameraSubsystem::Tick(float DeltaTime)
 	const TSharedPtr<SViewport> ViewportWidget = GameViewport? GameViewport->GetGameViewportWidget() : nullptr;
 	if (!ViewportWidget.IsValid()) { return;}
 	const FVector2D MousePos = FSlateApplication::Get().GetCursorPos();
-	// UE_LOG(LogTemp, Error, TEXT("UCameraSubsystem::Tick MousePos %s"), *MousePos.ToString());
+	// UE_LOG(LogTemp, Error, TEXT("UTopDownCameraSubsystem::Tick MousePos %s"), *MousePos.ToString());
 	// 2. 使用 FGeometry 自带的 IsUnderLocation 判定绝对坐标是否在 Widget 内部
 	if (!ViewportWidget->GetCachedGeometry().IsUnderLocation(MousePos)) {return;}
 
 	FVector2D MousePosition;
 	ViewportInfo.ViewportClient->GetMousePosition(MousePosition);
 
-	// UE_LOG(LogTemp, Error, TEXT("UCameraSubsystem::Tick MousePosition %s"), *MousePosition.ToString());
+	// UE_LOG(LogTemp, Error, TEXT("UTopDownCameraSubsystem::Tick MousePosition %s"), *MousePosition.ToString());
 
 	const FVector2D& ViewportSize{ ViewportInfo.ScreenSize.GetValue() };
 
@@ -192,4 +213,13 @@ void UCameraSubsystem::Tick(float DeltaTime)
 
 		CameraActor->SetActorLocation(NewLocation);
 	}
+}
+
+void UTopDownCameraSubsystem::OnGameModePostLogin(AGameModeBase* GameMode, APlayerController* NewPlayer)
+{
+    // 确保是当前 World 内的 PlayerController
+    if (NewPlayer && NewPlayer->GetWorld() == GetWorld())
+    {
+        SetupCameraForPlayerController(NewPlayer);
+    }
 }

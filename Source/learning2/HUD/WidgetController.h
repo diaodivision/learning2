@@ -58,7 +58,6 @@ protected:
 	//void OnControlledWeaponReserveAmmoChanged(int32 OldAmmo, int32 NewAmmo);
 
 	URewindSubsystem* GetRewindSubsystem() const;
-	static URewindSubsystem* GetRewindSubsystem(const AMyPlayerController* Controller);
 
 public:
 	//UPROPERTY(BlueprintAssignable)

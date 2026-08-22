@@ -3,6 +3,7 @@
 
 #include "BTTask_FlankMoveTo.h"
 #include "Battle/BattleSubsystem.h"
+#include "Battle/BattleSubsystemStatics.h"
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Object.h"
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Vector.h"
 #include "AIController.h"
@@ -17,7 +18,7 @@ EBTNodeResult::Type UBTTask_FlankMoveTo::PerformMoveTask(UBehaviorTreeComponent&
 	//if (!bReuseExistingTask) { UE_LOG(LogTemp, Error, TEXT("OwnerComp GetOwner222 %s"), *GetNameSafe(OwnerComp.GetOwner())); }
 	EBTNodeResult::Type Result = EBTNodeResult::Failed;
 
-	if (UBattleSubsystem* BattleSubsystem = ULocalPlayer::GetSubsystem<UBattleSubsystem>(GetWorld()->GetFirstLocalPlayerFromController()); !BattleSubsystem)
+	if (UBattleSubsystem* BattleSubsystem{ UBattleSubsystemStatics::GetBattleSubsystem(this) }; !BattleSubsystem)
 	{
 		Result = Super::PerformMoveTask(OwnerComp, NodeMemory);
 	}

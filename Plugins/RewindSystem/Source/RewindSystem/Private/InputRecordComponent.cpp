@@ -39,8 +39,10 @@ void UInputRecordComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	URewindSubsystem* Subsystem = ULocalPlayer::GetSubsystem<URewindSubsystem>(GetWorld()->GetFirstLocalPlayerFromController());
-	Subsystem->OnPostComponentInitialize(this);
+	if (URewindSubsystem* Subsystem{ URewindSystemStatics::GetRewindSubsystem(this) })
+	{
+		Subsystem->OnPostComponentInitialize(this);
+	}
 }
 
 void UInputRecordComponent::OnRegister()

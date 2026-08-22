@@ -181,7 +181,7 @@ struct FTeamSensesContainer
 
 	void OnSenseUpdated(const FSenseUpdateInfo& SenseUpdateInfo);
 
-	AActor* GetOneTeamSensedActor();
+	AActor* GetOneTeamSensedActor() const;
 
 	void OnActorEndPlayed(const AActor& EndPlayedActor);
 
