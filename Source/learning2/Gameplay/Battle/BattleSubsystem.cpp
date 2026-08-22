@@ -1,5 +1,6 @@
 #include "BattleSubsystem.h"
 #include "BattleFieldVolume.h"
+#include "GenericTeamAgentInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "Interface/NavmodifiedActorInterface.h"
 #include "Engine/OverlapResult.h"
@@ -164,9 +165,9 @@ void UBattleSubsystem::RegisterToBattleSubsystem(AMyCharacterBase* Character)
 	TeamMembersMap.FindOrAdd(TeamID).Add(Character);
 
 	if (!Character->OnSenseUpdatedDelegate.IsBoundToObject(this)) { Character->OnSenseUpdatedDelegate.AddUObject(this, &UBattleSubsystem::OnSenseUpdated); }
-	if (!Character->OnEndPlay.IsAlreadyBound(this, &UBattleSubsystem::OnTeamMemberEndPlay)) { Character->OnEndPlay.AddDynamic(this, &UBattleSubsystem::OnTeamMemberEndPlay); }
+	if (!Character->OnEndPlay.IsAlreadyBound(this, &UBattleSubsystem::OnTeamMemberEndPlay)) { Character->OnEndPlay.AddUniqueDynamic(this, &UBattleSubsystem::OnTeamMemberEndPlay); }
 
-
+	UpdateAllSensesActor(true, *Character);
 }
 
 void UBattleSubsystem::UnregisterToBattleSubsystem(AMyCharacterBase* Character)
@@ -174,7 +175,10 @@ void UBattleSubsystem::UnregisterToBattleSubsystem(AMyCharacterBase* Character)
 	if (!Character) { return; }
 
 	const BattleSubsystemTypes::TeamIDType TeamID{ Character->GetGenericTeamId().GetId() };
-	if (FTeamSensesContainer* Container = TeamSensesMap.Find(TeamID)) { Container->OnActorEndPlayed(*Character); }
+	if (FTeamSensesContainer* Container = TeamSensesMap.Find(TeamID)) 
+	{ 
+		Container->OnActorEndPlayed(*Character);
+	}
 
 	if (TSet<TWeakObjectPtr<AMyCharacterBase>>*Members{ TeamMembersMap.Find(TeamID) })
 	{
@@ -184,6 +188,9 @@ void UBattleSubsystem::UnregisterToBattleSubsystem(AMyCharacterBase* Character)
 
 	Character->OnSenseUpdatedDelegate.RemoveAll(this);
 	Character->OnEndPlay.RemoveAll(this);
+
+	UpdateAllSensesActor(false, *Character);
+	OnNoLongerSensedByAnyTeamMember(Character->GetGenericTeamId(), *Character);
 }
 
 bool UBattleSubsystem::K2_IsSensedByTeam(int32 TeamID, const AMyCharacterBase* Enemy) const
@@ -267,10 +274,10 @@ TArray<TWeakObjectPtr<AActor>> UBattleSubsystem::CollectModifiedActors(const FVe
 				AActor* NavModifiedActor{ ValueIt->Get() };
 				const FVector2D NavModifiedActorLocationXY{ NavModifiedActor->GetActorLocation() };
 
-				//Óë DirectionToDestination ²»Í¬Ïò
+				//ï¿½ï¿½ DirectionToDestination ï¿½ï¿½Í¬ï¿½ï¿½
 				if (FVector2D::DotProduct(NavModifiedActorLocationXY - StartLocationXY, DirectionToDestination) < 0) { continue; }
 
-				//¾àÀë´óÓÚ DistanceSquareToDestination
+				//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ DistanceSquareToDestination
 				if (FVector2D::DistSquared(NavModifiedActorLocationXY, StartLocationXY) > DistanceSquareToDestination) { continue; }
 
 				INavModifiedActorInterface* NavModifiedActorInterface{ Cast<INavModifiedActorInterface>(NavModifiedActor) };
@@ -287,7 +294,7 @@ TArray<TWeakObjectPtr<AActor>> UBattleSubsystem::CollectModifiedActors(const FVe
 void UBattleSubsystem::OnSenseUpdated(const bool bSuccessfullySensed, AMyCharacterBase* Observer, AMyCharacterBase* Enemy)
 {
 	if (!Observer || !Enemy) { return; }
-	if (!ensure(CheckCharacterRegistered(Observer)) || !ensure(CheckCharacterRegistered(Enemy))) { return; }
+	if (!ensure(!bSuccessfullySensed || CheckCharacterRegistered(Observer)) || !ensure(!bSuccessfullySensed || CheckCharacterRegistered(Enemy))) { return; }
 
 	const BattleSubsystemTypes::TeamIDType TeamID{ Observer->GetGenericTeamId().GetId() };
 
@@ -299,7 +306,7 @@ void UBattleSubsystem::OnSenseUpdated(const bool bSuccessfullySensed, AMyCharact
 		Container.OnTeamSenseAddedDelegate.AddUObject(this, &UBattleSubsystem::OnTeamSenseAdded);
 		Container.OnNoLongerSensedByAnyTeamMemberDelegate.AddUObject(this, &UBattleSubsystem::OnNoLongerSensedByAnyTeamMember);
 	}
-	Container.OnSenseUpdated(bSuccessfullySensed, *Observer, *Enemy);
+	Container.OnSenseUpdated(FSenseUpdateInfo{bSuccessfullySensed, Observer, Enemy});
 }
 
 void UBattleSubsystem::OnTeamMemberEndPlay(AActor* TeamMember, const EEndPlayReason::Type EndPlayReason)
@@ -357,6 +364,22 @@ bool UBattleSubsystem::CheckCharacterRegistered(const AMyCharacterBase* Characte
 	}
 
 	return false;
+}
+
+void UBattleSubsystem::UpdateAllSensesActor(const bool bIsSensed, AMyCharacterBase& Observer)
+{
+	if (UAIPerceptionComponent * Component{ Observer.GetController() ? Observer.GetController()->FindComponentByClass<UAIPerceptionComponent>() : nullptr })
+	{
+		TArray<AActor*> Actors;
+		Component->GetCurrentlyPerceivedActors(UAISense_Sight::StaticClass(), Actors);
+		for (AActor* Actor : Actors)
+		{
+			if (AMyCharacterBase* EnemyCharacter{ Cast<AMyCharacterBase>(Actor) })
+			{
+				OnSenseUpdated(bIsSensed, &Observer, EnemyCharacter);
+			}
+		}
+	}
 }
 
 void UBattleSubsystem::InitializeBattleFieldVolumes()

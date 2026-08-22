@@ -3,6 +3,7 @@
 #include "Base/MyCharacterBase.h"
 #include "Targeting/TargetingInstigatorInterface.h"
 #include "Targeting/TargetingInstigatorTypes.h"
+#include "Perception/AISightTargetInterface.h"
 #include "PlayerCharacterBase.generated.h"
 
 class USpringArmComponent;
@@ -14,7 +15,7 @@ struct IRecordedDataObjectInterface;
 class URecordedLocationVisualizationComponent;
 
 UCLASS(Blueprintable, Blueprinttype)
-class LEARNING2_API APlayerCharacterBase : public AMyCharacterBase/*, public ITargetingInstigatorInterface*/
+class LEARNING2_API APlayerCharacterBase : public AMyCharacterBase/*, public ITargetingInstigatorInterface*/, public IAISightTargetInterface
 {
 	GENERATED_BODY()
 
@@ -27,6 +28,18 @@ public:
 	virtual void SetTargetingState(ETargetingState TargetingState);
 
 	//virtual FORCEINLINE FOnTargetingStateChangedDelegate& GetOnTargetingStateChangedDelegate() override { return OnTargetingStateChangedDelegate; }
+
+	virtual UAISense_Sight::EVisibilityResult CanBeSeenFrom(const FCanBeSeenFromContext& Context, FVector& OutSeenLocation, int32& OutNumberOfLoSChecksPerformed, int32& OutNumberOfAsyncLosCheckRequested, float& OutSightStrength, int32* UserData, const FOnPendingVisibilityQueryProcessedDelegate* Delegate) override;
+
+	FORCEINLINE static bool IsTraceConsideredVisible(const FHitResult* HitResult, const AActor* TargetActor)
+	{
+		if (HitResult == nullptr)
+		{
+			return true;
+		}
+		const AActor* HitResultActor = HitResult->HitObjectHandle.FetchActor();
+		return (HitResultActor ? HitResultActor->IsOwnedBy(TargetActor) : false);
+	}
 
 protected:
 	virtual void PossessedBy(AController* NewController) override;
@@ -41,8 +54,13 @@ protected:
 
 	virtual void CancelRewindingState();
 
+	virtual FORCEINLINE void OnStunTagCountChanged(const ETagCountChangeType TagCountChangeType) override {}
+	virtual FORCEINLINE void OnBlindTagCountChanged(const ETagCountChangeType TagCountChangeType) override {}
+
 private:
 	void CreateAndSetupComponents();
+
+	virtual void OnCharacterDeath_Internal() override;
 
 public:
 	FOnOperationPreviewDelegate OnOperationPreviewDelegate;

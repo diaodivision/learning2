@@ -357,6 +357,7 @@ bool UWeaponActorBlueprintLibrary::GetGrenadeBulletAttributeFromDataTable(FGrena
 	{
 		GrenadeBulletAttributeData.EffectiveRange = AttributeData->EffectiveRange;
 		GrenadeBulletAttributeData.GrenadeBulletSpeedFloatCurve = AttributeData->GrenadeBulletSpeedFloatCurve;
+		GrenadeBulletAttributeData.EffectDuration = AttributeData->EffectDuration;
 		return true;
 	}
 

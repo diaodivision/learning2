@@ -83,6 +83,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetTargeting(const bool IsTargeting, UAbilitySystemComponent* AbilitySystemComponent = nullptr);
 
+	const AActor* AutoPossessPlayerCharacter();
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

@@ -85,4 +85,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon Attribute")
 	UCurveFloat* GrenadeBulletSpeedFloatCurve{ nullptr };
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon Attribute")
+	float EffectDuration{ 0.f };
 };

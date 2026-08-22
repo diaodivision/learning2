@@ -120,9 +120,11 @@ public:
 	virtual void UpdateCharacterWidget();
 
 	UFUNCTION(BlueprintPure)
-	float GetCurrentHealth() const;
+	TOptional<float> GetCurrentHealth() const;
 	UFUNCTION(BlueprintPure)
-	float GetHealthMax() const;
+	TOptional<float> GetHealthMax() const;
+	UFUNCTION(BlueprintPure)
+	bool IsDead() const;
 
 	virtual void OnHovered_Implementation(float HoveredDelta) override;
 	virtual void OnHoverReleased_Implementation() override;
@@ -132,6 +134,8 @@ public:
 	virtual FORCEINLINE bool IsFreezing_Implementation() override { return bIsFreezing; };
 
 	virtual void UpdateFogOfWarTexture_Implementation(UTexture2D* FogOfWarTexture) override;
+
+	virtual void EnableTeamDuty(const bool bIsEnable);
 
 protected:
 	UFUNCTION(BlueprintNativeEvent, Category = "Weapon")
@@ -160,6 +164,10 @@ protected:
 	UFUNCTION()
 	void OnControlledWeaponChanged_Internal(AActor* OldActor, AActor* NewActor);
 
+	virtual void OnCharacterHealthChanged(const FOnAttributeChangeData& OnAttributeChangeData);
+	UFUNCTION(BlueprintImplementableEvent, Category = "Character Attribute | HP")
+	void K2_OnCharacterHealthChanged(const float NewHealth);
+
 	void OnWeaponAmmoChanged(const FOnAttributeChangeData& OnAttributeChangeData);
 
 	virtual void InitializeDelegates();
@@ -171,18 +179,25 @@ protected:
 	UFUNCTION()
 	void OnSenseUpdated(AActor* Enemy, FAIStimulus Stimulus);
 
+	virtual void RegisterGameplayTagEvent();
 	virtual void OnResponseTagCountChanged(const FGameplayTag Tag, const int32 NewCount);
 
 	virtual void OnStunTagCountChanged(const ETagCountChangeType TagCountChangeType);
-	UFUNCTION(BlueprintImplementableEvent, Category = "Character Response")
+	UFUNCTION(BlueprintImplementableEvent, Category = "Character Response", meta = (DisplayName = "On StunTag Count Changed"))
 	void K2_OnStunTagCountChanged(const ETagCountChangeType TagCountChangeType);
 
 	virtual void OnBlindTagCountChanged(const ETagCountChangeType TagCountChangeType);
-	UFUNCTION(BlueprintImplementableEvent, Category = "Character Response")
+	UFUNCTION(BlueprintImplementableEvent, Category = "Character Response", meta = (DisplayName = "On BlindTag Count Changed"))
 	void K2_OnBlindTagCountChanged(const ETagCountChangeType TagCountChangeType);
+
+	void OnCharacterDeath();
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Character Death"))
+	void K2_OnCharacterDeath();
 
 private:
 	void CreateAndSetupComponents();
+
+	virtual void OnCharacterDeath_Internal();
 
 private:
 	EWeaponSlot CurrentTargetWeaponSlot{ EWeaponSlot::None };

@@ -53,8 +53,8 @@ void UMyAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, fl
 
 	if (Attribute == GetMagazineAmmo1Attribute())
 	{
-		//NewValue = FMath::Max(0, NewValue);
-		NewValue = NewValue;
+		NewValue = FMath::Max(0, NewValue);
+		// NewValue = NewValue;
 	}
 	if (Attribute == GetReserveAmmo1Attribute())
 	{

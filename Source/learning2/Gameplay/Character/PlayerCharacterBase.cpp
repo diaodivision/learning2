@@ -1,4 +1,5 @@
 #include "PlayerCharacterBase.h"
+#include "AISystem.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "FogOfWarComponent.h"
@@ -46,9 +47,8 @@ void APlayerCharacterBase::UpdateCharacterWidget()
 			UICharacterWeaponInfos.Add(FUICharacterWeaponInfo{ Weapon->GetWeaponIcon(), Weapon->GetMagazineAmmo(), Weapon->GetMagazineAmmoMax() });
 		}
 
-
 		FUIPlayerCharacterInfo UIPlayerCharacterInfo{
-			FUICharacterHealthState{GetCurrentHealth(),GetHealthMax()},
+			FUICharacterHealthState{GetCurrentHealth().Get(0.f),GetHealthMax().Get(0.f)},
 			FUICharacterWeaponInfo{ ControlledWeapon->GetWeaponIcon(), ControlledWeapon->GetMagazineAmmo(), ControlledWeapon->GetMagazineAmmoMax() },
 			ControlledWeapon->GetWeaponDescription(),
 			UICharacterWeaponInfos
@@ -84,6 +84,38 @@ void APlayerCharacterBase::SetTargetingState(ETargetingState TargetingState)
 
 	//OnTargetingStateChangedDelegate.Broadcast(TargetingState);
 }
+
+UAISense_Sight::EVisibilityResult APlayerCharacterBase::CanBeSeenFrom(const FCanBeSeenFromContext& Context, FVector& OutSeenLocation, int32& OutNumberOfLoSChecksPerformed, int32& OutNumberOfAsyncLosCheckRequested, float& OutSightStrength, int32* UserData, const FOnPendingVisibilityQueryProcessedDelegate* Delegate)
+{
+	if (IsDead()) { return UAISense_Sight::EVisibilityResult::NotVisible; }
+	const UWorld* World{ GetWorld() };
+	if (!World) { return UAISense_Sight::EVisibilityResult::NotVisible; }
+
+	const ECollisionChannel DefaultSightCollisionChannel{ GetDefault<UAISystem>()->DefaultSightCollisionChannel };
+	const FCollisionQueryParams QueryParams{ SCENE_QUERY_STAT(AILineOfSight), true, Context.IgnoreActor };
+	FHitResult HitResult;
+	const bool bHit{ World->LineTraceSingleByChannel(HitResult, Context.ObserverLocation, GetActorLocation(), DefaultSightCollisionChannel, QueryParams, FCollisionResponseParams::DefaultResponseParam) };
+	const bool bIsTraceConsideredVisible{ IsTraceConsideredVisible(bHit ? &HitResult : nullptr, this) };
+
+	// UE_LOG(LogTemp, Error, TEXT("APlayerCharacterBase::CanBeSeenFrom bHit %d"), bHit);
+	// UE_LOG(LogTemp, Error, TEXT("APlayerCharacterBase::CanBeSeenFrom HitResult.GetActor() %s"), *GetNameSafe(HitResult.GetActor()));
+	// UE_LOG(LogTemp, Error, TEXT("APlayerCharacterBase::CanBeSeenFrom Context.ObserverLocation %s"), *Context.ObserverLocation.ToString());
+	// UE_LOG(LogTemp, Error, TEXT("APlayerCharacterBase::CanBeSeenFrom this %s"), *GetNameSafe(this));
+	// UE_LOG(LogTemp, Error, TEXT("APlayerCharacterBase::CanBeSeenFrom Context.IgnoreActor %s"), *GetNameSafe(Context.IgnoreActor));
+
+	OutNumberOfLoSChecksPerformed = 1;
+	OutNumberOfAsyncLosCheckRequested = 0;
+	OutSightStrength = bIsTraceConsideredVisible ? 1.f : 0.f;
+	if (bIsTraceConsideredVisible) { OutSeenLocation = GetActorLocation(); }
+	return bIsTraceConsideredVisible ? UAISense_Sight::EVisibilityResult::Visible : UAISense_Sight::EVisibilityResult::NotVisible;
+}
+
+// bool APlayerCharacterBase::CanBeSeenFrom(const FVector& ObserverLocation, FVector& OutSeenLocation, int32& NumberOfLoSChecksPerformed, float& OutSightStrength, const AActor* IgnoreActor, const bool* bWasVisible, int32* UserData) const
+// {
+// 	const bool bCanBeSeenFrom{ IAISightTargetInterface::CanBeSeenFrom(ObserverLocation, OutSeenLocation, NumberOfLoSChecksPerformed, OutSightStrength, IgnoreActor, bWasVisible, UserData) && !IsDead() };
+// 	UE_LOG(LogTemp, Log, TEXT("APlayerCharacterBase::CanBeSeenFrom %d"), bCanBeSeenFrom);
+// 	return bCanBeSeenFrom;
+// }
 
 void APlayerCharacterBase::PossessedBy(AController* NewController)
 {
@@ -189,10 +221,13 @@ void APlayerCharacterBase::DeinitializeDelegates()
 {
 	Super::DeinitializeDelegates();
 
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetCurrentHealthAttribute()).RemoveAll(this);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMaxHealthAttribute()).RemoveAll(this);
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetCurrentHealthAttribute()).RemoveAll(this);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMaxHealthAttribute()).RemoveAll(this);
+	}
 
-	InputRecordComponent->OnOperationPreviewDelegate.RemoveAll(this);
+	if (InputRecordComponent) { InputRecordComponent->OnOperationPreviewDelegate.RemoveAll(this); }
 
 	if (AMyPlayerController* PlayerController{ Cast<AMyPlayerController>(GetController()) })
 	{
@@ -203,6 +238,7 @@ void APlayerCharacterBase::DeinitializeDelegates()
 
 void APlayerCharacterBase::OnCharacterHealthChanged(const FOnAttributeChangeData& OnAttributeChangeData)
 {
+	Super::OnCharacterHealthChanged(OnAttributeChangeData);
 	UpdateCharacterWidget();
 }
 
@@ -267,4 +303,24 @@ void APlayerCharacterBase::CreateAndSetupComponents()
 	RecordedLocationVisualizationComponent = CreateDefaultSubobject<URecordedLocationVisualizationComponent>(FName("RecordedLocationVisualizationComponent"));
 	RecordedLocationVisualizationComponent->PrimaryComponentTick.bCanEverTick = false;
 	//RecordedLocationVisualizationComponent->SetUpAttachment(RootComponent);
+}
+
+void APlayerCharacterBase::OnCharacterDeath_Internal()
+{
+	AMyPlayerController* PlayerController{ Cast<AMyPlayerController>(GetController()) };
+	if (PlayerController) 
+	{
+		PlayerController->DisableInput(nullptr);
+		PlayerController->UnPossess();
+		if (const AActor* NewPossessedActor{ PlayerController->AutoPossessPlayerCharacter() })
+		{
+			if (NewPossessedActor != this) { PlayerController->EnableInput(nullptr); }
+		}
+		else
+		{
+			PlayerController->Possess(this);
+		}
+	}
+
+	if (InputRecordComponent) { InputRecordComponent->DestroyComponent(); }
 }

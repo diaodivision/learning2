@@ -77,6 +77,23 @@ void AMyPlayerController::SetTargeting(const bool IsTargeting, UAbilitySystemCom
 	bIsTargeting = IsTargeting;
 }
 
+const AActor* AMyPlayerController::AutoPossessPlayerCharacter()
+{
+	TArray<AActor*> Actors;
+	UGameplayStatics::GetAllActorsOfClass(this, APlayerCharacterBase::StaticClass(), Actors);
+
+	for (AActor* Actor : Actors)
+	{
+		APlayerCharacterBase* PlayerCharacter{ Cast<APlayerCharacterBase>(Actor) };
+		if (!PlayerCharacter || PlayerCharacter == GetPawn() || PlayerCharacter->IsDead()) { continue; }
+	
+		Possess(PlayerCharacter);
+		return PlayerCharacter;
+	}
+	
+	return nullptr;
+}
+
 void AMyPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -203,6 +220,8 @@ void AMyPlayerController::Move_Implementation(const FInputActionValue& Value)
 void AMyPlayerController::Aim_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Aim"));
+
+	if (!InputEnabled()) { return; }
 
 	if (bIsTargeting) { return; }
 

@@ -36,10 +36,10 @@ public:
 	TArray<AActor*> GetEnemySensedObservers(const AActor& Enemy);
 
 private:
-	//Õâ¸ö Actor ±»ÄÄÐ©µÐÈË¿´µ½ÁË
+	//ï¿½ï¿½ï¿½ Actor ï¿½ï¿½ï¿½ï¿½Ð©ï¿½ï¿½ï¿½Ë¿ï¿½ï¿½ï¿½ï¿½ï¿½
 	TMap<FEnemyHandle, TSet<FObserverHandle>> EnemyToObserversMap;
 
-	//Õâ¸ö Actor ¿´µ½ÁËÄÄÐ©µÐÈË
+	//ï¿½ï¿½ï¿½ Actor ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð©ï¿½ï¿½ï¿½ï¿½
 	TMap<FObserverHandle, TSet<FEnemyHandle>> ObserverToEnemiesMap;
 
 public:
@@ -168,10 +168,10 @@ bool FSensesContainer::Impl::IsObserverSenseToEnemy(const AActor& Observer, cons
 
 TArray<AActor*> FSensesContainer::Impl::GetObserverSensesEnemies(const AActor& Observer)
 {
-	////Õâ¸ö Actor ±»ÄÄÐ©µÐÈË¿´µ½ÁË
+	////ï¿½ï¿½ï¿½ Actor ï¿½ï¿½ï¿½ï¿½Ð©ï¿½ï¿½ï¿½Ë¿ï¿½ï¿½ï¿½ï¿½ï¿½
 	//TMap<FEnemyHandle, TSet<FObserverHandle>> EnemyToObserversMap;
 
-	////Õâ¸ö Actor ¿´µ½ÁËÄÄÐ©µÐÈË
+	////ï¿½ï¿½ï¿½ Actor ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð©ï¿½ï¿½ï¿½ï¿½
 	//TMap<FObserverHandle, TSet<FEnemyHandle>> ObserverToEnemiesMap;
 
 	TArray<AActor*> Enemies;
@@ -240,7 +240,7 @@ void FSensesContainer::Impl::ClearInvalidData()
 		if (ActorToHandleMap.Num() < ActorToHandleMap.GetMaxIndex() / 2)
 		{
 			ActorToHandleMap.Compact();
-			ActorToHandleMap.Shrink(); // ±ØÐë³É¶Ô³öÏÖ
+			ActorToHandleMap.Shrink(); // ï¿½ï¿½ï¿½ï¿½É¶Ô³ï¿½ï¿½ï¿½
 		}
 
 		LastIndex = 0;
@@ -412,7 +412,7 @@ class FTeamSensesContainer::Impl
 	using EnemyType = AActor;
 
 public:
-	void OnSenseUpdated(const bool bSuccessfullySensed, TeamMemberType& Member, EnemyType& Enemy);
+	void OnSenseUpdated(const FSenseUpdateInfo& SenseUpdateInfo);
 
 	AActor* GetOneTeamSensedActor();
 
@@ -427,35 +427,43 @@ private:
 	TSet<TWeakObjectPtr<EnemyType>> TeamSensesEnemies;
 };
 
-void FTeamSensesContainer::Impl::OnSenseUpdated(const bool bSuccessfullySensed, TeamMemberType& Member, EnemyType& Enemy)
+void FTeamSensesContainer::Impl::OnSenseUpdated(const FSenseUpdateInfo& SenseUpdateInfo)
 {
-	TSet<TWeakObjectPtr<TeamMemberType>>* TeamMembers{ EnemyToTeamMembersMap.Find(&Enemy) };
+	if (!SenseUpdateInfo.IsValid()) { return; }
 
-	if (bSuccessfullySensed)
+	TSet<TWeakObjectPtr<TeamMemberType>>* TeamMembers{ EnemyToTeamMembersMap.Find(SenseUpdateInfo.Enemy) };
+
+	if (SenseUpdateInfo.bSuccessfullySensed)
 	{
-		if (!TeamMembers) { TeamMembers = &EnemyToTeamMembersMap.Add(&Enemy); }
+		if (!TeamMembers) { TeamMembers = &EnemyToTeamMembersMap.Add(SenseUpdateInfo.Enemy); }
 
-		TeamMembers->Add(&Member);
-		TeamSensesEnemies.Add(&Enemy);
+		TeamMembers->Add(SenseUpdateInfo.Observer);
+		TeamSensesEnemies.Add(SenseUpdateInfo.Enemy);
 
-		if (IGenericTeamAgentInterface * GenericTeamAgentInterface{ Cast<IGenericTeamAgentInterface>(&Member) })
+		if (IGenericTeamAgentInterface * GenericTeamAgentInterface{ Cast<IGenericTeamAgentInterface>(SenseUpdateInfo.Observer) })
 		{
-			OnTeamSenseAddedDelegate.Broadcast(GenericTeamAgentInterface->GetGenericTeamId().GetId(), Enemy);
+			OnTeamSenseAddedDelegate.Broadcast(GenericTeamAgentInterface->GetGenericTeamId().GetId(), *SenseUpdateInfo.Enemy.Get());
 		}
 	}
 	else
 	{
-		if (!TeamMembers)
-		{
-			TeamSensesEnemies.Remove(&Enemy);
-
-			if (IGenericTeamAgentInterface * GenericTeamAgentInterface{ Cast<IGenericTeamAgentInterface>(&Member) })
+		TeamSensesEnemies.Remove(SenseUpdateInfo.Enemy);
+		if (IGenericTeamAgentInterface * GenericTeamAgentInterface{ Cast<IGenericTeamAgentInterface>(SenseUpdateInfo.Observer) })
 			{
-				OnNoLongerSensedByAnyTeamMemberDelegate.Broadcast(GenericTeamAgentInterface->GetGenericTeamId().GetId(), Enemy);
+				OnNoLongerSensedByAnyTeamMemberDelegate.Broadcast(GenericTeamAgentInterface->GetGenericTeamId().GetId(), *SenseUpdateInfo.Enemy.Get());
 			}
+		if (TeamMembers) { TeamMembers->Remove(SenseUpdateInfo.Observer); }
+		// if (!TeamMembers)
+		// {
+		// 	TeamSensesEnemies.Remove(SenseUpdateInfo.Enemy);
 
-		}
-		else { TeamMembers->Remove(&Member); }
+		// 	if (IGenericTeamAgentInterface * GenericTeamAgentInterface{ Cast<IGenericTeamAgentInterface>(SenseUpdateInfo.Observer) })
+		// 	{
+		// 		OnNoLongerSensedByAnyTeamMemberDelegate.Broadcast(GenericTeamAgentInterface->GetGenericTeamId().GetId(), *SenseUpdateInfo.Enemy.Get());
+		// 	}
+
+		// }
+		// else { TeamMembers->Remove(SenseUpdateInfo.Observer); }
 	}
 }
 
@@ -533,9 +541,9 @@ FTeamSensesContainer& FTeamSensesContainer::operator=(FTeamSensesContainer&& Oth
 	return *this;
 }
 
-void FTeamSensesContainer::OnSenseUpdated(const bool bSuccessfullySensed, AActor& Member, AActor& Enemy)
+void FTeamSensesContainer::OnSenseUpdated(const FSenseUpdateInfo& SenseUpdateInfo)
 {
-	pImpl->OnSenseUpdated(bSuccessfullySensed, Member, Enemy);
+	pImpl->OnSenseUpdated(SenseUpdateInfo);
 }
 
 AActor* FTeamSensesContainer::GetOneTeamSensedActor()

@@ -44,7 +44,7 @@ public:
 	virtual void Deinitialize() override;
 
 	virtual void Tick(float DeltaTime) override {};
-	virtual bool IsTickable() const override { return !IsTemplate(); }//²»ÊÇCDO²ÅTick
+	virtual bool IsTickable() const override { return !IsTemplate(); }//ï¿½ï¿½ï¿½ï¿½CDOï¿½ï¿½Tick
 	virtual TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(UBattleSubsystem, STATGROUP_Tickables); }
 
 	[[nodiscard]] virtual FNavigationModifyHandle ActivateNavModify(const FVector& StartLocation, const FVector& EndLocation);
@@ -84,6 +84,8 @@ protected:
 	virtual void OnNoLongerSensedByAnyTeamMember(const BattleSubsystemTypes::TeamIDType TeamID, const AActor& SensedActor);
 
 	bool CheckCharacterRegistered(const AMyCharacterBase* Character) const;
+
+	void UpdateAllSensesActor(const bool bIsSensed, AMyCharacterBase& Observer);
 
 private:
 	void InitializeBattleFieldVolumes();

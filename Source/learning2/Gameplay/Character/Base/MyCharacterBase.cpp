@@ -4,6 +4,7 @@
 #include "MyCharacterBase.h"
 //#include "AbilitySystemComponent.h"
 #include "Ability/AbilitySystemComponent/MyAbilitySystemComponent.h"
+#include "BehaviorTree/BehaviorTreeComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Materials/MaterialInterface.h"
 #include "Switchable/SwitchableActorCollection.h"
@@ -23,6 +24,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "FogOfWarSubsystem.h"
 #include "FogOfWarComponentStatics.h"
+#include "Ability/Tags/PlayerStateGameplayTags.h"
 
 // Sets default values
 AMyCharacterBase::AMyCharacterBase()
@@ -45,9 +47,9 @@ void AMyCharacterBase::BeginPlay()
 
 	if (UAIPerceptionComponent * Component{ GetController() ? GetController()->FindComponentByClass<UAIPerceptionComponent>() : nullptr })
 	{
-		Component->OnTargetPerceptionUpdated.AddDynamic(this, &AMyCharacterBase::OnSenseUpdated);
+		Component->OnTargetPerceptionUpdated.AddUniqueDynamic(this, &AMyCharacterBase::OnSenseUpdated);
 
-		if (UBattleSubsystem* BattleSubsystem = ULocalPlayer::GetSubsystem<UBattleSubsystem>(GetWorld()->GetFirstLocalPlayerFromController()))
+		if (UBattleSubsystem* BattleSubsystem{ GetWorld() ? ULocalPlayer::GetSubsystem<UBattleSubsystem>(GetWorld()->GetFirstLocalPlayerFromController()) : nullptr})
 		{
 			BattleSubsystem->RegisterToBattleSubsystem(this);
 		}
@@ -56,19 +58,19 @@ void AMyCharacterBase::BeginPlay()
 
 void AMyCharacterBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	Super::EndPlay(EndPlayReason);
-
 	DeinitializeDelegates();
-
+	
 	if (UAIPerceptionComponent * Component{ GetController() ? GetController()->FindComponentByClass<UAIPerceptionComponent>() : nullptr })
 	{
 		Component->OnTargetPerceptionUpdated.RemoveAll(this);
 	}
 
-	if (UBattleSubsystem* BattleSubsystem = ULocalPlayer::GetSubsystem<UBattleSubsystem>(GetWorld()->GetFirstLocalPlayerFromController()))
+	if (UBattleSubsystem* BattleSubsystem{ GetWorld() ? ULocalPlayer::GetSubsystem<UBattleSubsystem>(GetWorld()->GetFirstLocalPlayerFromController()) : nullptr })
 	{
 		BattleSubsystem->UnregisterToBattleSubsystem(this);
 	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AMyCharacterBase::PostRegisterAllComponents()
@@ -240,20 +242,28 @@ void AMyCharacterBase::UpdateCharacterWidget()
 	else { CharacterWidgetComponent->UpdateUICharacterInfo({}); }
 }
 
-float AMyCharacterBase::GetCurrentHealth() const
+TOptional<float> AMyCharacterBase::GetCurrentHealth() const
 {
 	bool bFound{ false };
 	const float CurrentHealth{ AbilitySystemComponent->GetGameplayAttributeValue(UMyAttributeSet::GetCurrentHealthAttribute(), bFound) };
 
-	return bFound ? CurrentHealth : 0.f;
+	return bFound ? TOptional<float>{ CurrentHealth } : NullOpt;
 }
 
-float AMyCharacterBase::GetHealthMax() const
+TOptional<float> AMyCharacterBase::GetHealthMax() const
 {
 	bool bFound{ false };
 	const float HealthMax{ AbilitySystemComponent->GetGameplayAttributeValue(UMyAttributeSet::GetMaxHealthAttribute(), bFound) };
 
-	return bFound ? HealthMax : 0.f;
+	return bFound ? TOptional<float>{ HealthMax } : NullOpt;
+}
+
+bool AMyCharacterBase::IsDead() const
+{
+	const TOptional<float> CurrentHealth{ GetCurrentHealth() };
+	if (!CurrentHealth.IsSet()) { return false; }
+
+	return FMath::IsNearlyZero(CurrentHealth.GetValue()) || CurrentHealth.GetValue() < 0.f;
 }
 
 void AMyCharacterBase::OnHovered_Implementation(float HoveredDelta)
@@ -282,6 +292,39 @@ void AMyCharacterBase::UpdateFogOfWarTexture_Implementation(UTexture2D* FogOfWar
 {
 	const EDoInitialize DoInitialize{ bIsFogOfWarMaskInitialized ? EDoInitialize::No : EDoInitialize::Yes };
     UpdateFogOfWarTexture_DefaultImplementation(FogOfWarTexture, GetMesh(), bIsFogOfWarMaskInitialized, DoInitialize);
+}
+
+void AMyCharacterBase::EnableTeamDuty(const bool bIsEnable)
+{
+	if (UBattleSubsystem* BattleSubsystem = GetWorld() ? ULocalPlayer::GetSubsystem<UBattleSubsystem>(GetWorld()->GetFirstLocalPlayerFromController()) : nullptr) 
+	{ 
+		UAIPerceptionComponent* AIPerceptionComponent{ GetController() ? GetController()->FindComponentByClass<UAIPerceptionComponent>() : nullptr };
+		
+		if (bIsEnable) 
+		{ 
+			BattleSubsystem->RegisterToBattleSubsystem(this); 
+
+			if (AIPerceptionComponent)
+			{
+				AIPerceptionComponent->OnTargetPerceptionUpdated.AddUniqueDynamic(this, &AMyCharacterBase::OnSenseUpdated);
+			}
+		}
+		else
+		{
+			BattleSubsystem->UnregisterToBattleSubsystem(this);
+
+			AIPerceptionComponent->OnTargetPerceptionUpdated.RemoveAll(this);
+			if (UBlackboardComponent* BlackboardComponent{ GetController() ? GetController()->FindComponentByClass<UBlackboardComponent>() : nullptr })
+			{
+				if (!BlackboardComponent) { BlackboardComponent = FindComponentByClass<UBlackboardComponent>(); }
+				if (BlackboardComponent)
+				{
+					BlackboardComponent->ClearValue(BattleSubsystemConst::BlackboardKeyName::EnemyCharacter);
+					BlackboardComponent->ClearValue(BattleSubsystemConst::BlackboardKeyName::SensedCharacter);
+				}
+			}
+		}
+	}
 }
 
 void AMyCharacterBase::OnWeaponMagazineAmmoChanged_Implementation(const AWeaponActorBase* Weapon, int32 OldMagazineAmmo, int32 NewMagazineAmmo)
@@ -396,6 +439,12 @@ void AMyCharacterBase::OnControlledWeaponChanged_Internal(AActor* OldActor, AAct
 	}
 }
 
+void AMyCharacterBase::OnCharacterHealthChanged(const FOnAttributeChangeData& OnAttributeChangeData)
+{
+	K2_OnCharacterHealthChanged(OnAttributeChangeData.NewValue);
+	if (IsDead()) { OnCharacterDeath(); }
+}
+
 void AMyCharacterBase::OnWeaponAmmoChanged(const FOnAttributeChangeData& OnAttributeChangeData)
 {
 	//AbilitySystemComponent->SetNumericAttributeBase(OnAttributeChangeData.Attribute, OnAttributeChangeData.NewValue);
@@ -466,24 +515,62 @@ void AMyCharacterBase::SimulateWeaponTrigger(const bool bIsPress)
 
 void AMyCharacterBase::InitializeDelegates()
 {
-	Weapons->OnActorAddedDelegate.AddDynamic(this, &AMyCharacterBase::OnWeaponAdded_Internal);
-	Weapons->OnActorRemovedDelegate.AddDynamic(this, &AMyCharacterBase::OnWeaponRemoved_Internal);
-	Weapons->OnControlledActorChangedDelegate.AddDynamic(this, &AMyCharacterBase::OnControlledWeaponChanged_Internal);
+	Weapons->OnActorAddedDelegate.AddUniqueDynamic(this, &AMyCharacterBase::OnWeaponAdded_Internal);
+	Weapons->OnActorRemovedDelegate.AddUniqueDynamic(this, &AMyCharacterBase::OnWeaponRemoved_Internal);
+	Weapons->OnControlledActorChangedDelegate.AddUniqueDynamic(this, &AMyCharacterBase::OnControlledWeaponChanged_Internal);
 
 	if (!ensure(AbilitySystemComponent->GetAttributeSet(UMyAttributeSet::StaticClass()))) { return; }
 
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo1Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo2Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo3Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo4Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo5Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo1Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo2Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo3Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo4Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo5Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
+	if (AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetCurrentHealthAttribute()).IsBoundToObject(this))
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetCurrentHealthAttribute()).AddUObject(this, &AMyCharacterBase::OnCharacterHealthChanged);
+	}
+	if (!AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMaxHealthAttribute()).IsBoundToObject(this))
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMaxHealthAttribute()).AddUObject(this, &AMyCharacterBase::OnCharacterHealthChanged);
+	}
+	if (!AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo1Attribute()).IsBoundToObject(this))
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo1Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
+	}
+	if (!AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo2Attribute()).IsBoundToObject(this))
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo2Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
+	}
+	if (!AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo3Attribute()).IsBoundToObject(this))
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo3Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
+	}
+	if (!AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo4Attribute()).IsBoundToObject(this))
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo4Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
+	}
+	if (!AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo5Attribute()).IsBoundToObject(this))
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo5Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
+	}
+	if (!AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo1Attribute()).IsBoundToObject(this))
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo1Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
+	}
+	if (!AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo2Attribute()).IsBoundToObject(this))
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo2Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
+	}
+	if (!AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo3Attribute()).IsBoundToObject(this))
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo3Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
+	}
+	if (!AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo4Attribute()).IsBoundToObject(this))
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo4Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
+	}
+	if (!AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo5Attribute()).IsBoundToObject(this))
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo5Attribute()).AddUObject(this, &AMyCharacterBase::OnWeaponAmmoChanged);
+	}
 
-	AbilitySystemComponent->RegisterGameplayTagEvent(PlayerResponseTags::State_Debuff_Stun.GetTag(), EGameplayTagEventType::AnyCountChange).AddUObject(this, &AMyCharacterBase::OnResponseTagCountChanged);
+	RegisterGameplayTagEvent();
 
 	if (UFogOfWarSubsystem* FogOfWarSubsystem{ UFogOfWarComponentStatics::GetFogOfWarSubsystem(this) })
 	{
@@ -493,20 +580,27 @@ void AMyCharacterBase::InitializeDelegates()
 
 void AMyCharacterBase::DeinitializeDelegates()
 {
-	Weapons->OnActorAddedDelegate.RemoveAll(this);
-	Weapons->OnActorRemovedDelegate.RemoveAll(this);
-	Weapons->OnControlledObjectChangedDelegate.RemoveAll(this);
+	if (Weapons)
+	{
+		Weapons->OnActorAddedDelegate.RemoveAll(this);
+		Weapons->OnActorRemovedDelegate.RemoveAll(this);
+		Weapons->OnControlledObjectChangedDelegate.RemoveAll(this);
+	}
 
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo1Attribute()).RemoveAll(this);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo2Attribute()).RemoveAll(this);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo3Attribute()).RemoveAll(this);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo4Attribute()).RemoveAll(this);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo5Attribute()).RemoveAll(this);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo1Attribute()).RemoveAll(this);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo2Attribute()).RemoveAll(this);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo3Attribute()).RemoveAll(this);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo4Attribute()).RemoveAll(this);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo5Attribute()).RemoveAll(this);
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetCurrentHealthAttribute()).RemoveAll(this);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo1Attribute()).RemoveAll(this);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo2Attribute()).RemoveAll(this);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo3Attribute()).RemoveAll(this);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo4Attribute()).RemoveAll(this);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetMagazineAmmo5Attribute()).RemoveAll(this);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo1Attribute()).RemoveAll(this);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo2Attribute()).RemoveAll(this);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo3Attribute()).RemoveAll(this);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo4Attribute()).RemoveAll(this);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetReserveAmmo5Attribute()).RemoveAll(this);
+	}
 
 	if (UFogOfWarSubsystem* FogOfWarSubsystem{ UFogOfWarComponentStatics::GetFogOfWarSubsystem(this) })
 	{
@@ -536,6 +630,12 @@ void AMyCharacterBase::OnSenseUpdated(AActor* Enemy, FAIStimulus Stimulus)
 	OnSenseUpdatedDelegate.Broadcast(Stimulus.WasSuccessfullySensed(), this, EnemyCharacter);
 }
 
+void AMyCharacterBase::RegisterGameplayTagEvent()
+{
+	AbilitySystemComponent->RegisterGameplayTagEvent(PlayerResponseTags::State_Debuff_Stun.GetTag(), EGameplayTagEventType::AnyCountChange).AddUObject(this, &AMyCharacterBase::OnResponseTagCountChanged);
+	AbilitySystemComponent->RegisterGameplayTagEvent(PlayerResponseTags::State_Debuff_Blind.GetTag(), EGameplayTagEventType::AnyCountChange).AddUObject(this, &AMyCharacterBase::OnResponseTagCountChanged);
+}
+
 void AMyCharacterBase::OnResponseTagCountChanged(const FGameplayTag Tag, const int32 NewCount)
 {
 	auto CalculateTagCountChangeType = [](const int32 OldCount, const int32 NewCount)
@@ -553,12 +653,40 @@ void AMyCharacterBase::OnResponseTagCountChanged(const FGameplayTag Tag, const i
 
 void AMyCharacterBase::OnStunTagCountChanged(const ETagCountChangeType TagCountChangeType)
 {
+	AController* CurrentController{ GetController() };
+	if (!CurrentController) { return; }
+
+	CurrentController->SetIgnoreMoveInput(AbilitySystemComponent->HasMatchingGameplayTag(PlayerResponseTags::State_Debuff_Stun.GetTag()));
+	EnableTeamDuty(!AbilitySystemComponent->HasMatchingGameplayTag(PlayerResponseTags::State_Debuff_Stun.GetTag()));
+	if (UBehaviorTreeComponent* BehaviorTreeComponent{ GetController() ? GetController()->FindComponentByClass<UBehaviorTreeComponent>() : nullptr })
+	{
+		if (AbilitySystemComponent->HasMatchingGameplayTag(PlayerResponseTags::State_Debuff_Stun.GetTag()))
+		{
+			BehaviorTreeComponent->StopLogic(TEXT("Stunned"));
+		}
+		else
+		{
+			BehaviorTreeComponent->StartLogic();
+		}
+	}
+
 	K2_OnStunTagCountChanged(TagCountChangeType);
 }
 
 void AMyCharacterBase::OnBlindTagCountChanged(const ETagCountChangeType TagCountChangeType)
 {
+	EnableTeamDuty(!AbilitySystemComponent->HasMatchingGameplayTag(PlayerResponseTags::State_Debuff_Blind.GetTag()));
+
 	K2_OnBlindTagCountChanged(TagCountChangeType);
+}
+
+void AMyCharacterBase::OnCharacterDeath()
+{
+	AbilitySystemComponent->AddLooseGameplayTag(PlayerStateTags::State_Dead.GetTag());
+	EnableTeamDuty(false);
+	OnCharacterDeath_Internal();
+
+	K2_OnCharacterDeath();
 }
 
 void AMyCharacterBase::CreateAndSetupComponents()
@@ -570,4 +698,9 @@ void AMyCharacterBase::CreateAndSetupComponents()
 
 	CharacterWidgetComponent = CreateDefaultSubobject<UCharacterWidgetComponent>(FName("CharacterWidgetComponent"));
 	CharacterWidgetComponent->SetupAttachment(RootComponent);
+}
+
+void AMyCharacterBase::OnCharacterDeath_Internal()
+{
+	if (GetController()) { GetController()->UnPossess(); }
 }

@@ -35,6 +35,23 @@ namespace BattleSubsystemConst
 }
 
 USTRUCT(BlueprintType)
+struct FSenseUpdateInfo
+{
+	GENERATED_BODY()
+
+	bool IsValid() const { return Observer.IsValid() && Enemy.IsValid(); }
+
+	UPROPERTY(BlueprintReadWrite, Category = "Sense Update Info")
+	bool bSuccessfullySensed{ false };
+
+	UPROPERTY(BlueprintReadWrite, Category = "Sense Update Info")
+	TWeakObjectPtr<AActor> Observer{ nullptr };
+
+	UPROPERTY(BlueprintReadWrite, Category = "Sense Update Info")
+	TWeakObjectPtr<AActor> Enemy{ nullptr };
+};
+
+USTRUCT(BlueprintType)
 struct FSenseHandle
 {
 	GENERATED_BODY()
@@ -79,7 +96,7 @@ public:
 	}
 };
 
-struct FSensesContainer
+struct UE_DEPRECATED(5.7, "Use FTeamSensesContainer instead.") FSensesContainer
 {
 	FSensesContainer();
 	~FSensesContainer();
@@ -162,7 +179,7 @@ struct FTeamSensesContainer
 	FTeamSensesContainer(const FTeamSensesContainer&) = delete;
 	FTeamSensesContainer& operator=(const FTeamSensesContainer&) = delete;
 
-	void OnSenseUpdated(const bool bSuccessfullySensed, AActor& Member, AActor& Enemy);
+	void OnSenseUpdated(const FSenseUpdateInfo& SenseUpdateInfo);
 
 	AActor* GetOneTeamSensedActor();
 

@@ -35,28 +35,31 @@ class LEARNING2_API AGrenadeBulletBase : public ABulletBase
 public:
 	AGrenadeBulletBase();
 
-	inline FName GetBulletName() const { return BulletName; }
+	FORCEINLINE FName GetBulletName() const { return BulletName; }
 	virtual void InitializeBulletData_Implementation(const UObject* InData) override;
 
-	UFUNCTION(BlueprintCallable, Category = "Attribute")
-	inline float GetDamage() const { return FMath::Max(0.f, GrenadeBulletData.Damage); }
-	UFUNCTION(BlueprintCallable, Category = "Attribute")
-	inline float GetPenetration() const { return FMath::Max(0.f, GrenadeBulletData.Penetration); }
-	UFUNCTION(BlueprintCallable, Category = "Attribute")
-	inline float GetEffectiveRange() const { return FMath::Max(0.f, GrenadeBulletData.EffectiveRange); }
-	UFUNCTION(BlueprintCallable, Category = "Attribute")
-	inline FVector GetDirection() const
+	UFUNCTION(BlueprintPure, Category = "Attribute")
+	FORCEINLINE float GetDamage() const { return FMath::Max(0.f, GrenadeBulletData.Damage); }
+	UFUNCTION(BlueprintPure, Category = "Attribute")
+	FORCEINLINE float GetPenetration() const { return FMath::Max(0.f, GrenadeBulletData.Penetration); }
+	UFUNCTION(BlueprintPure, Category = "Attribute")
+	FORCEINLINE float GetEffectiveRange() const { return FMath::Max(0.f, GrenadeBulletData.EffectiveRange); }
+	UFUNCTION(BlueprintPure, Category = "Attribute")
+	FORCEINLINE float GetEffectDuration() const { return FMath::Max(0.f, GrenadeBulletData.EffectDuration); }
+
+	UFUNCTION(BlueprintPure, Category = "Attribute")
+	FORCEINLINE FVector GetDirection() const
 	{
 		return GrenadeBulletData.Direction.IsNormalized() ? GrenadeBulletData.Direction : GrenadeBulletData.Direction.GetSafeNormal();
 	}
-	UFUNCTION(BlueprintCallable, Category = "Attribute")
+	UFUNCTION(BlueprintPure, Category = "Attribute")
 	inline float GetSpeedRate() const { return FMath::Max(0.f, GrenadeBulletData.SpeedRate); }
-	UFUNCTION(BlueprintCallable, Category = "Attribute")
+	UFUNCTION(BlueprintPure, Category = "Attribute")
 	inline float GetLifeTime() const { return FMath::Max(0.f, GrenadeBulletData.LifeTime); }
-	UFUNCTION(BlueprintCallable, Category = "Attribute")
-	inline UCurveFloat* GetGrenadeBulletSpeedFloatCurve() const { return GrenadeBulletData.GrenadeBulletSpeedFloatCurve; }
+	UFUNCTION(BlueprintPure, Category = "Attribute")
+	FORCEINLINE UCurveFloat* GetGrenadeBulletSpeedFloatCurve() const { return GrenadeBulletData.GrenadeBulletSpeedFloatCurve; }
 
-	inline UCurveFloat* GetGrenadeBulletSpeedFloatCurveFromTable() const;
+	UCurveFloat* GetGrenadeBulletSpeedFloatCurveFromTable() const;
 
 	virtual void Freeze_Implementation() override;
 	virtual void Unfreeze_Implementation() override;
