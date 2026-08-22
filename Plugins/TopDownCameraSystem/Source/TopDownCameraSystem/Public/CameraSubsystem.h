@@ -7,8 +7,8 @@
 #include "Tickable.h"
 #include "CameraSubsystem.generated.h"
 
-class ACameraActor;
 class ACameraBoundsVolume;
+class ATopDownCameraActor;
 
 DECLARE_MULTICAST_DELEGATE(FOnViewportSizeChangedDelegate);
 
@@ -45,7 +45,7 @@ protected:
 
 private:
 	UPROPERTY()
-	TObjectPtr<ACameraActor> CameraActor;
+	TObjectPtr<ATopDownCameraActor> CameraActor;
 
 	UPROPERTY()
 	TWeakObjectPtr<ACameraBoundsVolume> CameraBoundsVolume;

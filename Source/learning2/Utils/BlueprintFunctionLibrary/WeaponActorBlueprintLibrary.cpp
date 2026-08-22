@@ -437,6 +437,7 @@ float UWeaponActorBlueprintLibrary::CalculateDistanceToTarget(const float Time, 
 
 bool UWeaponActorBlueprintLibrary::GetLocationUnderCursorOnGround(FVector& Location, const APlayerController* PlayerController)
 {
+	if (!PlayerController) { return false; }
 	const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
 	const AActor* Actor = PlayerController->GetPawn();
 	if (!ensure(LocalPlayer) || !ensure(LocalPlayer->ViewportClient) || !ensure(Actor)) { return false; }

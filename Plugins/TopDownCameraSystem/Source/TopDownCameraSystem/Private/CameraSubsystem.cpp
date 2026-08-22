@@ -2,7 +2,8 @@
 
 
 #include "CameraSubsystem.h"
-#include "Camera/CameraActor.h"
+#include "GameFramework/Pawn.h"
+#include "TopDownCameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "CameraBoundsVolume.h"
 #include "Kismet/GameplayStatics.h"
@@ -70,6 +71,11 @@ void UCameraSubsystem::OnPossessedPawnChanged(APawn* InOldPawn, APawn* InNewPawn
 	if (APlayerController* PlayerController{ GetWorld()->GetFirstPlayerController() }; PlayerController && CameraActor)
 	{
 		PlayerController->SetViewTarget(CameraActor);
+		if (InNewPawn)
+		{
+			const FVector TargetLocation{ InNewPawn->GetActorLocation().X, InNewPawn->GetActorLocation().Y, CameraActor->GetActorLocation().Z };
+			CameraActor->SetForceTarget(TargetLocation, EForceMovementType::Interpolate);
+		}
 	}
 }
 
@@ -77,28 +83,36 @@ void UCameraSubsystem::PlayerControllerChanged(APlayerController* NewPlayerContr
 {
 	Super::PlayerControllerChanged(NewPlayerController);
 
-	const FTransform CameraTransform{ FRotator{ -90.f, 0.f, 0.f }.Quaternion(), FVector::ZAxisVector * 2000.f };
-	CameraActor = GetWorld()->SpawnActorDeferred<ACameraActor>(ACameraActor::StaticClass(), CameraTransform);
-	check(CameraActor);
-
-	if (UCameraComponent * CameraComponent{ CameraActor->GetCameraComponent() })
+	if (!CameraActor)
 	{
-		CameraComponent->PrimaryComponentTick.bCanEverTick = false;
-		CameraComponent->ProjectionMode = ECameraProjectionMode::Orthographic;
-		CameraComponent->OrthoWidth = 1000.f;
-		CameraComponent->bConstrainAspectRatio = false;
-		CameraComponent->SetAutoCalculateOrthoPlanes(false);
-		CameraComponent->SetOrthoNearClipPlane(-5000.f);
-		CameraComponent->SetOrthoFarClipPlane(1e7);
-	}
+		const FTransform CameraTransform{ FRotator{ -90.f, 0.f, 0.f }.Quaternion(), FVector::ZAxisVector * 2000.f };
+		CameraActor = GetWorld()->SpawnActorDeferred<ATopDownCameraActor>(ATopDownCameraActor::StaticClass(), CameraTransform);
+		check(CameraActor);
 
-	CameraActor->FinishSpawning(CameraTransform);
+		if (UCameraComponent * CameraComponent{ CameraActor->GetCameraComponent() })
+		{
+			CameraComponent->PrimaryComponentTick.bCanEverTick = false;
+			CameraComponent->ProjectionMode = ECameraProjectionMode::Orthographic;
+			CameraComponent->OrthoWidth = 1000.f;
+			CameraComponent->bConstrainAspectRatio = false;
+			CameraComponent->SetAutoCalculateOrthoPlanes(false);
+			CameraComponent->SetOrthoNearClipPlane(-5000.f);
+			CameraComponent->SetOrthoFarClipPlane(1e7);
+		}
+
+		CameraActor->FinishSpawning(CameraTransform);
+	}
 
 	if (APlayerController* PlayerController{ GetWorld()->GetFirstPlayerController() }; PlayerController && CameraActor)
 	{
 		PlayerController->SetViewTarget(CameraActor);
 		InitializeViewportInfo();
 		PlayerController->OnPossessedPawnChanged.AddUniqueDynamic(this, &UCameraSubsystem::OnPossessedPawnChanged);
+		if (const APawn* ControlledPawn{  PlayerController->GetPawn() })
+		{
+			const FVector TargetLocation{ ControlledPawn->GetActorLocation().X, ControlledPawn->GetActorLocation().Y, CameraActor->GetActorLocation().Z };
+			CameraActor->SetForceTarget(TargetLocation, EForceMovementType::Interpolate);
+		}
 	}
 }
 
