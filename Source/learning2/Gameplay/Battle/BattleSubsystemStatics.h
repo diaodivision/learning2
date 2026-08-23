@@ -11,11 +11,11 @@ class UBattleSubsystem;
 /**
  *
  */
-UCLASS()
-class LEARNING2_API UBattleSubsystemStatics : public UBlueprintFunctionLibrary
+UCLASS(MinimalAPI)
+class UBattleSubsystemStatics : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 
 public:
-    static UBattleSubsystem* GetBattleSubsystem(const UObject* WorldContextObject);
+    static LEARNING2_API UBattleSubsystem* GetBattleSubsystem(const UObject* WorldContextObject);
 };

@@ -15,18 +15,18 @@ class URecordedDataPreviewOperationDelegateWrapper;
 /**
  *
  */
-UCLASS()
-class REWINDSYSTEM_API URewindSystemStatics : public UBlueprintFunctionLibrary
+UCLASS(MinimalAPI)
+class URewindSystemStatics : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 
 public:
-	static URewindSubsystem* GetRewindSubsystem(const UObject* WorldContextObject);
+	static REWINDSYSTEM_API URewindSubsystem* GetRewindSubsystem(const UObject* WorldContextObject);
 
-	static ERecordState GetRewindSubsystemState(const UObject* WorldContextObject);
+	static REWINDSYSTEM_API ERecordState GetRewindSubsystemState(const UObject* WorldContextObject);
 
 	UFUNCTION(BlueprintPure, Category = "RewindSystem|Delegate")
-	[[nodiscard]] static URecordedDataPreviewOperationDelegateWrapper* GetPreviewOperationDelegateWrapper(bool& bSuccess, const FRecordedDataObjectHandle& RecordedDataObjectHandle);
+	[[nodiscard]] static REWINDSYSTEM_API URecordedDataPreviewOperationDelegateWrapper* GetPreviewOperationDelegateWrapper(bool& bSuccess, const FRecordedDataObjectHandle& RecordedDataObjectHandle);
 
 	static UInputRecordComponent* GetInputRecordComponentFromOwner(const AActor* AvatarActor);
 
