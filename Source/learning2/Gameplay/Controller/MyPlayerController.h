@@ -129,6 +129,9 @@ protected:
 	virtual void HandleLookAt();
 	virtual void OnCancelTargeting();
 
+	virtual void OnRewindToggle();
+	virtual void OnCancelRewind();
+
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 	void SetMouseCursor(EMouseCursor::Type Cursor);
 
@@ -217,6 +220,12 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay|Input")
 	TObjectPtr<UInputAction> CancelTargetingAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay|Input")
+	TObjectPtr<UInputAction> RewindToggleAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay|Input")
+	TObjectPtr<UInputAction> CancelRewindAction;
 
 	bool bIsTargeting{ false };
 	bool bIsBlockShootAction{ false };

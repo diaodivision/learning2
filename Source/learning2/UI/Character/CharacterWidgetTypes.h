@@ -6,6 +6,7 @@
 #include "CharacterWidgetTypes.generated.h"
 
 class UTexture2D;
+class APawn;
 
 USTRUCT(BlueprintType)
 struct FUICharacterHealthState final
@@ -75,12 +76,14 @@ struct FUIPlayerCharacterInfo final
 		const FUICharacterHealthState& UICharacterHealthState,
 		const FUICharacterWeaponInfo& ControlledWeaponInfo,
 		const FString& ControlledWeaponDescription,
-		const TArray<FUICharacterWeaponInfo>& UICharacterWeaponInfos
+		const TArray<FUICharacterWeaponInfo>& UICharacterWeaponInfos,
+		APawn* CurrentPawn
 	) :
 		UICharacterHealthState(UICharacterHealthState),
 		ControlledWeaponInfo(ControlledWeaponInfo),
 		ControlledWeaponDescription(ControlledWeaponDescription),
 		UICharacterWeaponInfos(UICharacterWeaponInfos),
+		CurrentPawn(CurrentPawn),
 		bIsValid(true)
 	{
 	}
@@ -96,6 +99,9 @@ struct FUIPlayerCharacterInfo final
 
 	UPROPERTY(BlueprintReadWrite)
 	TArray<FUICharacterWeaponInfo> UICharacterWeaponInfos;
+
+	UPROPERTY(BlueprintReadWrite)
+	TWeakObjectPtr<APawn> CurrentPawn{ nullptr };
 
 	bool bIsValid{ false };
 };

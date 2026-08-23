@@ -37,6 +37,8 @@ public:
 
 	FORCEINLINE TOptional<FVector2D> GetScreenSize() const { return ViewportInfo.ScreenSize; }
 
+	void CameraMoveTo(const FVector& TargetLocation);
+
 protected:
 	virtual void InitializeViewportInfo();
 

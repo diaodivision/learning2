@@ -7,8 +7,8 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "FogOfWarTypes.h"
 #include "FogOfWarComputeShader.h"
-#include "Engine/EngineBaseTypes.h" // 必须包含此头文件以使用 FTickFunction
-#include "Tickable.h"
+#include "Components/ActorComponent.h"
+#include "Delegates/DelegateCombinations.h"
 #include "FogOfWarSubsystem.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFogOfWarTextureUpdatedDelegate, UTexture2D *, Texture);
@@ -18,6 +18,7 @@ class APlayerCameraManager;
 class UFogOfWarComponent;
 class USceneComponent;
 class UMaterialInstanceDynamic;
+class FViewport;
 
 /**
  *

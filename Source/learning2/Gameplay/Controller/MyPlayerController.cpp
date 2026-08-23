@@ -7,6 +7,7 @@
 //#include "GameFramework/Character.h"
 #include "Character/Base/MyCharacterBase.h"
 #include "Character/PlayerCharacterBase.h"
+#include "InputRecordedDataTypes/RecordedDataDefines.h"
 #include "Kismet\GameplayStatics.h"
 #include "RewindSystemStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -135,12 +136,14 @@ void AMyPlayerController::SetupInputComponent()
 	EnhanceInputComponent->BindAction(SwitchWeaponAction.SwitchToGrenade3.Get(), ETriggerEvent::Started, this, &AMyPlayerController::SwitchWeaponByIndex, 4);
 
 	EnhanceInputComponent->BindAction(LeftMouseDownAction, ETriggerEvent::Started, this, &AMyPlayerController::OnLeftMousePressed);
-	EnhanceInputComponent->BindAction(LeftMouseDownAction, ETriggerEvent::Started, this, &AMyPlayerController::OnLeftMouseReleased);
+	EnhanceInputComponent->BindAction(LeftMouseDownAction, ETriggerEvent::Completed, this, &AMyPlayerController::OnLeftMouseReleased);
 
 	EnhanceInputComponent->BindAction(ShootAction, ETriggerEvent::Triggered, this, &AMyPlayerController::OnShoot);
 	EnhanceInputComponent->BindAction(ShootAction, ETriggerEvent::Completed, this, &AMyPlayerController::OnShootStop);
 	EnhanceInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &AMyPlayerController::OnReload);
 	EnhanceInputComponent->BindAction(CancelTargetingAction, ETriggerEvent::Started, this, &AMyPlayerController::OnCancelTargeting);
+	EnhanceInputComponent->BindAction(RewindToggleAction, ETriggerEvent::Started, this, &AMyPlayerController::OnRewindToggle);
+	EnhanceInputComponent->BindAction(CancelRewindAction, ETriggerEvent::Started, this, &AMyPlayerController::OnCancelRewind);
 	//for (auto& Action : SwitchWeaponAction)
 	//{
 	//	EnhanceInputComponent->BindAction(Action, ETriggerEvent::Started, this, &AMyPlayerController::SwitchWeapon);
@@ -468,6 +471,22 @@ void AMyPlayerController::OnCancelTargeting()
 		{
 			PlayerCharacter->SetTargetingState(ETargetingState::Cancel);
 		}
+	}
+}
+
+void AMyPlayerController::OnRewindToggle()
+{
+	if (URewindSubsystem* RewindSubsystem{ URewindSystemStatics::GetRewindSubsystem(this) }; RewindSubsystem && RewindSubsystem->GetCurrentState() == ERecordState::Idle)
+	{
+		RewindSubsystem->SwitchState(ERecordState::Recording);
+	}
+}
+
+void AMyPlayerController::OnCancelRewind()
+{
+	if (URewindSubsystem* RewindSubsystem{ URewindSystemStatics::GetRewindSubsystem(this) }; RewindSubsystem && RewindSubsystem->GetCurrentState() != ERecordState::Idle)
+	{
+		RewindSubsystem->SwitchState(ERecordState::Idle);
 	}
 }
 

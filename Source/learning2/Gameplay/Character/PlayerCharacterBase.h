@@ -54,6 +54,9 @@ protected:
 
 	virtual void CancelRewindingState();
 
+	UFUNCTION()
+	virtual void OnRewindSubsystemStateChanged(const ERecordState OldState, const ERecordState NewState);
+
 	virtual FORCEINLINE void OnStunTagCountChanged(const ETagCountChangeType TagCountChangeType) override {}
 	virtual FORCEINLINE void OnBlindTagCountChanged(const ETagCountChangeType TagCountChangeType) override {}
 

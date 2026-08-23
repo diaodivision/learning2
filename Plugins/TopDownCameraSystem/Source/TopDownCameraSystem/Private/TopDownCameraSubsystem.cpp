@@ -67,6 +67,14 @@ const ACameraBoundsVolume* UTopDownCameraSubsystem::GetCameraBoundsVolume()
 	return CameraBoundsVolume.Get();
 }
 
+void UTopDownCameraSubsystem::CameraMoveTo(const FVector& TargetLocation)
+{
+	if (CameraActor) 
+	{
+		CameraActor->SetForceTarget(FVector{ TargetLocation.X, TargetLocation.Y, CameraActor->GetActorLocation().Z }, EForceMovementType::Interpolate);
+	}
+}
+
 void UTopDownCameraSubsystem::InitializeViewportInfo()
 {
 	if (!ViewportInfo.ViewportClient.IsValid()) { ViewportInfo.ViewportClient = GetWorld() ? GetWorld()->GetGameViewport() : nullptr; }

@@ -1,7 +1,5 @@
 #include "PlayerCharacterBase.h"
 #include "AISystem.h"
-#include "GameFramework/SpringArmComponent.h"
-#include "Camera/CameraComponent.h"
 #include "FogOfWarComponent.h"
 #include "InputRecordComponent.h"
 #include "Controller/MyPlayerController.h"
@@ -22,6 +20,10 @@
 #include "Battle/BattleSubsystemStatics.h"
 #include "PredictionLineProvider/PredictionLineProviderInterface.h"
 #include "Targeting/TargetingInstigatorTypes.h"
+#include "RewindSubsystem.h"
+#include "RewindSystemStatics.h"
+#include "TopDownCameraSubsystem.h"
+#include "TopDownCameraSystemStatics.h"
 
 APlayerCharacterBase::APlayerCharacterBase() : Super()
 {
@@ -52,7 +54,8 @@ void APlayerCharacterBase::UpdateCharacterWidget()
 			FUICharacterHealthState{GetCurrentHealth().Get(0.f),GetHealthMax().Get(0.f)},
 			FUICharacterWeaponInfo{ ControlledWeapon->GetWeaponIcon(), ControlledWeapon->GetMagazineAmmo(), ControlledWeapon->GetMagazineAmmoMax() },
 			ControlledWeapon->GetWeaponDescription(),
-			UICharacterWeaponInfos
+			UICharacterWeaponInfos,
+			this
 		};
 		CharacterWidgetComponent->UpdateUIPlayerCharacterInfo(UIPlayerCharacterInfo);
 	}
@@ -216,6 +219,11 @@ void APlayerCharacterBase::InitializeDelegates()
 		PlayerController->OnReceiveMoveInputDelegate.AddUObject(this, &APlayerCharacterBase::CancelRewindingState);
 		PlayerController->OnReceiveShootInputDelegate.AddUObject(this, &APlayerCharacterBase::CancelRewindingState);
 	}
+
+	if (URewindSubsystem* RewindSubsystem{ URewindSystemStatics::GetRewindSubsystem(this) })
+	{
+		RewindSubsystem->OnRewindSubsystemStateChangedDelegate.AddUniqueDynamic(this, &APlayerCharacterBase::OnRewindSubsystemStateChanged);
+	}
 }
 
 void APlayerCharacterBase::DeinitializeDelegates()
@@ -271,26 +279,19 @@ void APlayerCharacterBase::CancelRewindingState()
 	}
 }
 
+void APlayerCharacterBase::OnRewindSubsystemStateChanged(const ERecordState OldState, const ERecordState NewState)
+{
+	if (NewState == ERecordState::Idle)
+	{
+		if (UTopDownCameraSubsystem* TopDownCameraSubsystem{ UTopDownCameraSystemStatics::GetTopDownCameraSubsystem(this) })
+		{
+			TopDownCameraSubsystem->CameraMoveTo(GetActorLocation());
+		}
+	}
+}
+
 void APlayerCharacterBase::CreateAndSetupComponents()
 {
-	//SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(FName("SpringArmComponent"));
-	//SpringArmComponent->SetupAttachment(RootComponent);
-	////SpringArmComponent->SetAbsolute(false, true, false);
-	//SpringArmComponent->SetUsingAbsoluteRotation(true);
-	//SpringArmComponent->PrimaryComponentTick.bCanEverTick = false;
-	//SpringArmComponent->SetWorldRotation(FRotator{ -90., 0., 0. });
-	//SpringArmComponent->TargetArmLength = 1200.f;
-	//SpringArmComponent->bUsePawnControlRotation = false;
-	//SpringArmComponent->bInheritPitch = false;
-	//SpringArmComponent->bInheritYaw = false;
-	//SpringArmComponent->bInheritRoll = false;
-
-	//CameraComponent = CreateDefaultSubobject<UCameraComponent>(FName("CameraComponent"));
-	//CameraComponent->PrimaryComponentTick.bCanEverTick = false;
-	//CameraComponent->ProjectionMode = ECameraProjectionMode::Orthographic;
-	//CameraComponent->OrthoWidth = 1000.f;
-	//CameraComponent->SetupAttachment(SpringArmComponent);
-
 	FogOfWarComponent = CreateDefaultSubobject<UFogOfWarComponent>(FName("FogOfWarComponent"));
 	FogOfWarComponent->PrimaryComponentTick.bCanEverTick = false;
 

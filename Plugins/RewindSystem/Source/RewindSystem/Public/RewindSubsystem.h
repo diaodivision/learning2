@@ -17,7 +17,7 @@ class UInputRecordComponent;
 class AGameModeBase;
 class APlayerController;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnRewindSubsystemStateChangedDelegate, ERecordState, OldState, ERecordState, NewState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnRewindSubsystemStateChangedDelegate, const ERecordState, OldState, const ERecordState, NewState);
 
 /**
  *
