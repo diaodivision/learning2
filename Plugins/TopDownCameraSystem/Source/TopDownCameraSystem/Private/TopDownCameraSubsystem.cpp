@@ -76,6 +76,11 @@ void UTopDownCameraSubsystem::CameraMoveTo(const FVector& TargetLocation)
 	}
 }
 
+// void UTopDownCameraSubsystem::SetCameraWidth(const float Width)
+// {
+// 	CameraActor->GetCameraComponent()->SetOrthoWidth(Width);
+// }
+
 void UTopDownCameraSubsystem::InitializeViewportInfo()
 {
 	if (!ViewportInfo.ViewportClient.IsValid()) { ViewportInfo.ViewportClient = GetWorld() ? GetWorld()->GetGameViewport() : nullptr; }
@@ -123,7 +128,7 @@ void UTopDownCameraSubsystem::SetupCameraForPlayerController(APlayerController* 
 		{
 			CameraComponent->PrimaryComponentTick.bCanEverTick = false;
 			CameraComponent->ProjectionMode = ECameraProjectionMode::Orthographic;
-			CameraComponent->OrthoWidth = 1000.f;
+			CameraComponent->OrthoWidth = 3000.f;
 			CameraComponent->bConstrainAspectRatio = false;
 			CameraComponent->SetAutoCalculateOrthoPlanes(false);
 			CameraComponent->SetOrthoNearClipPlane(-5000.f);

@@ -90,14 +90,20 @@ protected:
 	void ClearRecordedData(ERecordState NewState);
 	inline void ResetCurrentTick(ERecordState NewState)
 	{
-		RewindSystemTickType NewTick{ REWIND_TICK_NONE };
-		if (NewState == ERecordState::Recording || NewState == ERecordState::RecordPause || NewState == ERecordState::Rewinding)
-		{
-			NewTick = static_cast<RewindSystemTickType>(1);
-		}
-
-		SetCurrentTick(NewTick);
+		SetCurrentTick(GetStartTick());
 	}
+
+	FORCEINLINE RewindSystemTickType GetStartTick(const ERecordState State) const 
+	{ 
+		RewindSystemTickType Result{ REWIND_TICK_NONE };
+		if (State == ERecordState::Recording || State == ERecordState::RecordPause || State == ERecordState::Rewinding)
+		{
+			Result = static_cast<RewindSystemTickType>(1);
+		}
+		return Result;
+	}
+
+	FORCEINLINE RewindSystemTickType GetStartTick() const { return GetStartTick(GetRecordState()); }
 
 	//virtual void FreezeActorMotivation(AActor* Actor, bool bIsFreeze);
 	inline void SetCurrentTick(const RewindSystemTickType Tick)

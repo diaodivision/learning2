@@ -227,7 +227,7 @@ void UInputRecordComponent::PreviewAllData()
 
 void UInputRecordComponent::UndoPreviewAllData()
 {
-	PreviewData(GetRecordDataByTickRange(0, GetTickMax()), false);
+	PreviewData(GetRecordDataByTickRange(RecordedDataList.IsEmpty() ? 0 : RecordedDataList[0]->Tick, GetTickMax()), false);
 }
 
 void UInputRecordComponent::AdvanceCurrentTickOnRecordState()
@@ -282,9 +282,10 @@ void UInputRecordComponent::OnStateChanged(const ERecordState OldState, const ER
 		break;
 	}
 
+	if (/*OldState != ERecordState::Rewinding && */NewState == ERecordState::Idle) { UndoPreviewAllData(); }
+
 	ResetCurrentTick(NewState);
 	if (NewState == ERecordState::PreviewPause || NewState == ERecordState::Previewing) { SetCurrentTick(GetTickMax()); }
-	if (OldState != ERecordState::Rewinding && NewState == ERecordState::Idle) { UndoPreviewAllData(); }
 
 	switch (NewState)
 	{

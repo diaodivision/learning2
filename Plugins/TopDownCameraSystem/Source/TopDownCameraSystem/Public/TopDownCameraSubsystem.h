@@ -39,6 +39,9 @@ public:
 
 	void CameraMoveTo(const FVector& TargetLocation);
 
+	// UFUNCTION(BlueprintCallable)
+	// void SetCameraWidth(const float Width);
+
 protected:
 	virtual void InitializeViewportInfo();
 
