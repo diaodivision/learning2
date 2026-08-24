@@ -4,7 +4,14 @@
 #include "LevelTypes.generated.h"
 
 class UTexture2D;
-class ULevel;
+class UWorld;
+
+UENUM(BlueprintType)
+enum class ELevelType : uint8
+{
+    Menu,
+    Battle,
+};
 
 USTRUCT(BlueprintType)
 struct FLevelData : public FTableRowBase
@@ -16,6 +23,9 @@ struct FLevelData : public FTableRowBase
     
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TSoftObjectPtr<UWorld> LevelReference{ nullptr };
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    ELevelType LevelType{ ELevelType::Battle };
 };
 
 namespace LevelTypeConst

@@ -32,6 +32,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnControlledWeaponReserveAmmoChang
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnSenseUpdatedDelegate, bool bSuccessfullySensed, AMyCharacterBase* Observer, AMyCharacterBase* Enemy);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnWeaponAddedDelegate, AWeaponActorBase* Weapon);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnWeaponRemovedDelegate, AWeaponActorBase* Weapon);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterDeadDelegate, AMyCharacterBase*, Character);
 
 UENUM(BlueprintType)
 enum class ETargetConfirmType : uint8
@@ -218,6 +219,8 @@ public:
 
 	FOnWeaponAddedDelegate OnWeaponAddedDelegate;
 	FOnWeaponRemovedDelegate OnWeaponRemovedDelegate;
+
+	FOnCharacterDeadDelegate OnCharacterDeadDelegate;
 
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Components")

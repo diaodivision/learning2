@@ -687,6 +687,7 @@ void AMyCharacterBase::OnCharacterDeath()
 	OnCharacterDeath_Internal();
 
 	K2_OnCharacterDeath();
+	OnCharacterDeadDelegate.Broadcast(this);
 }
 
 void AMyCharacterBase::CreateAndSetupComponents()
