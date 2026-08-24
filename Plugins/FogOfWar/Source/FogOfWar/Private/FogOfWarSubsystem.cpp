@@ -22,7 +22,8 @@ bool UFogOfWarSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 
 	const UWorld* World{ Cast<UWorld>(Outer) };
 	const AWorldSettings* WorldSettings{ World && World->IsGameWorld() ? World->GetWorldSettings() : nullptr };
-	if (const UObject* GameMode{ WorldSettings ? WorldSettings->DefaultGameMode->GetDefaultObject() : nullptr }; GameMode && GameMode->Implements<UFogOfWarSubsystemProviderInterface>())
+	const TSubclassOf<AGameModeBase> DefaultGameMode{ WorldSettings ? WorldSettings->DefaultGameMode : nullptr };
+	if (const UObject* GameMode{ DefaultGameMode ? DefaultGameMode->GetDefaultObject() : nullptr }; GameMode && GameMode->Implements<UFogOfWarSubsystemProviderInterface>())
 	{
 		return IFogOfWarSubsystemProviderInterface::Execute_ShouldCreateFogOfWarSubsystem(GameMode);
 	}
@@ -33,8 +34,6 @@ void UFogOfWarSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 	Collection.InitializeDependency<UWorldHeightSubsystem>();
-
-	UE_LOG(LogTemp, Error, TEXT("Subsystem Trace: UFogOfWarSubsystem::Initialize"))
 
 	TArray<AActor*> Characters;
 	UGameplayStatics::GetAllActorsOfClass(this, ACharacter::StaticClass(), Characters);
@@ -76,8 +75,6 @@ void UFogOfWarSubsystem::Deinitialize()
 	Super::Deinitialize();
 
 	GEngine->GameViewport->Viewport->ViewportResizedEvent.RemoveAll(this);
-
-	UE_LOG(LogTemp, Error, TEXT("Subsystem Trace: UFogOfWarSubsystem::Deinitialize"))
 }
 
 void UFogOfWarSubsystem::Tick(float DeltaTime)
@@ -108,9 +105,7 @@ void UFogOfWarSubsystem::Tick_Internal()
 		SetupScaleFactor();
 
 		GEngine->GameViewport->Viewport->ViewportResizedEvent.AddUObject(this, &UFogOfWarSubsystem::OnViewportResized);
-		CreateDynamicTexture();
-
-		bIsInitialScale = true;
+		if (!CreateDynamicTexture()) { return; }
 	}
 
 	if (bViewportResized)
@@ -119,10 +114,16 @@ void UFogOfWarSubsystem::Tick_Internal()
 		// CachedOutputTexture.SafeRelease();
 
 		// 重新生成正确尺寸的 UTexture2D 资源
-		CreateDynamicTexture();
-
-		bViewportResized = false;
+		if (!CreateDynamicTexture()) { return; }
 	}
+
+	if (!DynamicTexture || !FogOfWarMaterial) 
+	{ 
+		if (!CreateDynamicTexture()) { return; }
+		return;
+	}
+
+	if (!bIsInitialScale || bViewportResized) { return; }
 
 	TArray<FIntPoint> ActorPositions;
 	TArray<FVector2f> ActorVision;
@@ -133,7 +134,6 @@ void UFogOfWarSubsystem::Tick_Internal()
 
 	const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
 	if (!ScreenSize.IsSet()) { return; }
-	UE_LOG(LogTemp, Error, TEXT("ScreenSize: %s"), *ScreenSize.GetValue().ToString());
 
 	FTextureResource* RenderResource = DynamicTexture ? DynamicTexture->GetResource() : nullptr;
 	if (!RenderResource || !RenderResource->TextureRHI) { return; }
@@ -190,7 +190,6 @@ void UFogOfWarSubsystem::Tick_Internal()
 
 			FRDGTextureRef OutputRDGTexture{nullptr};
 			SetComputeShaderOutputTextureCache(OutputRDGTexture, *PassParameters, GraphBuilder, false);
-			bViewportResized = false;
 
 			const FIntVector ThreadCount{ ScreenSize.GetValue().X, ScreenSize.GetValue().Y, 1 };
 			const FIntVector GroupSize{ FogOfWarConst::kThreadsX , FogOfWarConst::kThreadsY, FogOfWarConst::kThreadsZ };
@@ -263,25 +262,26 @@ bool UFogOfWarSubsystem::IsCameraFOVChanged()
 	return bNeedToUpdate;
 }
 
-void UFogOfWarSubsystem::CreateDynamicTexture()
+bool UFogOfWarSubsystem::CreateDynamicTexture()
 {
 	UMaterialInterface* Material = LoadObject<UMaterialInterface>(this, FogOfWarConst::MaterialPath);
 	if (!Material)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Fail to load UMaterialInterface on %s"), FogOfWarConst::MaterialPath.GetData());
 
-		return;
+		return false;
 	}
 
 	const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
-	if (!ScreenSize.IsSet()) { return; }
+	if (!ScreenSize.IsSet()) { return false; }
 
 	DynamicTexture = UTexture2D::CreateTransient(ScreenSize.GetValue().X, ScreenSize.GetValue().Y, FogOfWarConst::PixelFormat);
 	if (DynamicTexture)
 	{
-		DynamicTexture->CompressionSettings = TC_EditorIcon;
-		DynamicTexture->SRGB = true;
+		DynamicTexture->CompressionSettings = TC_Default;
+		DynamicTexture->SRGB = false;
 		DynamicTexture->Filter = FogOfWarConst::TextureFilter;
+		DynamicTexture->NeverStream = true;
 
 		DynamicTexture->UpdateResource();
 	}
@@ -306,6 +306,10 @@ void UFogOfWarSubsystem::CreateDynamicTexture()
 			PostProcessVolume->Settings.AddBlendable(FogOfWarMaterial, 1.f);
 		}
 	}
+
+	// bIsInitialScale = true;
+	bViewportResized = false;
+	return true;
 }
 
 void UFogOfWarSubsystem::SetTextureParameter() const
@@ -501,10 +505,6 @@ void UFogOfWarSubsystem::SetupScaleFactor()
 	if (ViewportSize.X > ViewportSize.Y) { WidthScaleFactor = ViewportSize.X / ViewportSize.Y; }
 	else { HeightScaleFactor = ViewportSize.Y / ViewportSize.X; }
 
-	UE_LOG(LogTemp, Error, TEXT("UFogOfWarSubsystem::SetupScaleFactor HeightScaleFactor %f"), HeightScaleFactor);
-	UE_LOG(LogTemp, Error, TEXT("UFogOfWarSubsystem::SetupScaleFactor WidthScaleFactor %f"), WidthScaleFactor);
-	UE_LOG(LogTemp, Error, TEXT("UFogOfWarSubsystem::SetupScaleFactor ViewportSize %s"), *ViewportSize.ToString());
-
 	bIsInitialScale = true;
 	OnViewportSizeChangedDelegate.Broadcast();
 }
@@ -513,8 +513,6 @@ void UFogOfWarSubsystem::OnViewportResized(FViewport* Viewport, uint32 Unused)
 {
 	bViewportResized = true;
 	SetupScaleFactor();
-
-	UE_LOG(LogTemp, Error, TEXT("UFogOfWarSubsystem::OnViewportResized"));
 }
 
 void UFogOfWarSubsystem::SetUpPlayerCameraManager()

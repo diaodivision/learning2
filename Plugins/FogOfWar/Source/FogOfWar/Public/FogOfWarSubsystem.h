@@ -63,7 +63,7 @@ public:
     bool IsCameraFOVChanged();
 
 private:
-    void CreateDynamicTexture();
+    bool CreateDynamicTexture();
     void SetTextureParameter() const;
 
     void GetFogOfWarActorData(TArray<FIntPoint> &ActorPositions, TArray<FVector2f> &ActorVision, TArray<int32> &RadiusSqList) const;

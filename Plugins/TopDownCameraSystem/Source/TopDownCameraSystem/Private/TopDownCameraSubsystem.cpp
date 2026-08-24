@@ -22,7 +22,8 @@ bool UTopDownCameraSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 
 	const UWorld* World{ Cast<UWorld>(Outer) };
 	const AWorldSettings* WorldSettings{ World && World->IsGameWorld() ? World->GetWorldSettings() : nullptr };
-	if (const UObject* GameMode{ WorldSettings ? WorldSettings->DefaultGameMode->GetDefaultObject() : nullptr }; GameMode && GameMode->Implements<UTopDownCameraSubsystemProviderInterface>())
+	const TSubclassOf<AGameModeBase> DefaultGameMode{ WorldSettings ? WorldSettings->DefaultGameMode : nullptr };
+	if (const UObject* GameMode{ DefaultGameMode ? DefaultGameMode->GetDefaultObject() : nullptr }; GameMode && GameMode->Implements<UTopDownCameraSubsystemProviderInterface>())
 	{
 		return ITopDownCameraSubsystemProviderInterface::Execute_ShouldCreateTopDownCameraSubsystem(GameMode);
 	}

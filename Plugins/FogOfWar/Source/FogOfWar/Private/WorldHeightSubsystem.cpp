@@ -12,7 +12,6 @@
 // #include "EngineUtils.h"
 #include "Engine/StaticMeshActor.h"
 #include "WorldHeightEffectiveActorInterface.h"
-#include "RenderGraphUtils.h"
 #include "WorldHeightSubsystemProviderInterface.h"
 #include "GameFramework/GameModeBase.h"
 
@@ -22,7 +21,8 @@ bool UWorldHeightSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 
 	const UWorld* World{ Cast<UWorld>(Outer) };
 	const AWorldSettings* WorldSettings{ World && World->IsGameWorld() ? World->GetWorldSettings() : nullptr };
-	if (const UObject* GameMode{ WorldSettings ? WorldSettings->DefaultGameMode->GetDefaultObject() : nullptr }; GameMode && GameMode->Implements<UWorldHeightSubsystemProviderInterface>())
+	const TSubclassOf<AGameModeBase> DefaultGameMode{ WorldSettings ? WorldSettings->DefaultGameMode : nullptr };
+	if (const UObject* GameMode{ DefaultGameMode ? DefaultGameMode->GetDefaultObject() : nullptr }; GameMode && GameMode->Implements<UWorldHeightSubsystemProviderInterface>())
 	{
 		return IWorldHeightSubsystemProviderInterface::Execute_ShouldCreateWorldHeightSubsystem(GameMode);
 	}
@@ -33,7 +33,6 @@ void UWorldHeightSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	UE_LOG(LogTemp, Error, TEXT("Subsystem Trace: UWorldHeightSubsystem::Initialize"))
 	InitializeDelegates();
 
 	CreateWorldHeightTexture();
@@ -42,8 +41,6 @@ void UWorldHeightSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 void UWorldHeightSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
-
-	UE_LOG(LogTemp, Error, TEXT("Subsystem Trace: UWorldHeightSubsystem::Deinitialize"))
 
 	DeinitializeDelegates();
 }

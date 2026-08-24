@@ -14,7 +14,7 @@ class UFogOfWarComponentStatics;
 
 namespace FogOfWarConst
 {
-	constexpr static const FStringView MaterialPath{ TEXT("/Game/Experimental/NewMaterial") };
+	constexpr static const FStringView MaterialPath{ TEXT("/Game/Experimental/NewMaterial.NewMaterial") };
 	constexpr static EPixelFormat PixelFormat{ EPixelFormat::PF_G8 };
 	constexpr static TEnumAsByte<enum TextureFilter> TextureFilter{ TF_MAX };
 
