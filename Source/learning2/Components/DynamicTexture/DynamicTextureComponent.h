@@ -5,8 +5,8 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include <concepts>
-#include "DynamicTextureComponent.generated.h"
 #include "Misc/CoreMiscDefines.h"
+#include "DynamicTextureComponent.generated.h"
 
 class BresenhamAlgo
 {
