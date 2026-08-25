@@ -62,6 +62,7 @@ public:
 
 	const UTexture2D* GetWorldHeightTexture() 
 	{ 
+		if (!WorldHeightTexture) { CreateWorldHeightTexture(); }
 		UpdateWorldHeightTexture();
 		return WorldHeightTexture;
 	}
@@ -86,6 +87,8 @@ protected:
 	virtual void OnActorDestroyed(AActor* Actor);
 
 	void UpdateWorldHeightTexture();
+
+	TOptional<FIntPoint> GetGridNum() const;
 
 private:
 	void CreateWorldHeightTexture();
@@ -121,9 +124,6 @@ private:
 	UPROPERTY()
 	TWeakObjectPtr<AActor> Land;
 	TOptional<FGridBounds> LandBounds;
-
-	FogOfWarTypes::GridNumType GridNumX{ FogOfWarConst::kTextureWidth };
-	FogOfWarTypes::GridNumType GridNumY{ FogOfWarConst::kTextureHeight };
 
     UPROPERTY()
     TObjectPtr<UTexture2D> WorldHeightTexture;

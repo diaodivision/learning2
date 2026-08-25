@@ -14,16 +14,16 @@ class UFogOfWarComponentStatics;
 
 namespace FogOfWarConst
 {
-	constexpr static const FStringView MaterialPath{ TEXT("/Game/Experimental/NewMaterial.NewMaterial") };
-	constexpr static EPixelFormat PixelFormat{ EPixelFormat::PF_G8 };
-	constexpr static TEnumAsByte<enum TextureFilter> TextureFilter{ TF_MAX };
+	// constexpr static const FStringView MaterialPath{ TEXT("/Game/Experimental/NewMaterial.NewMaterial") };
+	// constexpr static EPixelFormat PixelFormat{ EPixelFormat::PF_G8 };
+	// constexpr static TEnumAsByte<enum TextureFilter> TextureFilter{ TF_MAX };
 
 	constexpr static uint8 kThreadsX{ FComputeShaderUtils::kGolden2DGroupSize };
 	constexpr static uint8 kThreadsY{ FComputeShaderUtils::kGolden2DGroupSize };
 	constexpr static uint8 kThreadsZ{ 1 };
 
-	constexpr static int16 kTextureWidth{ 1024 };
-	constexpr static int16 kTextureHeight{ 1024 };
+	// constexpr static int16 kTextureWidth{ 1024 };
+	// constexpr static int16 kTextureHeight{ 1024 };
 
 	constexpr static double kInfinity{ std::numeric_limits<double>::infinity() };
 	inline const static FVector2D kInvalidVector2D{ kInfinity, kInfinity };
@@ -31,7 +31,7 @@ namespace FogOfWarConst
 	inline const static FBox2D kInvalidBox2D{ kInvalidVector2D , kInvalidVector2D };
 	inline const static FBox kInvalidBox{ kInvalidVector , kInvalidVector };
 
-	constexpr static FStringView FogOfWarTextureParameterName{ TEXT("FogOfWarTexture") };
+	// constexpr static FStringView FogOfWarTextureParameterName{ TEXT("FogOfWarTexture") };
 };
 
 namespace FogOfWarTypes
@@ -225,41 +225,6 @@ private:
 	
 	bool bIsValid{ false };
 	FVector CurrentPosition;
-
-#if !UE_BUILD_SHIPPING
-	inline static int32 ids{ 1 };
-	int32 id;
-	mutable int32 Step{ 0 };
-	inline constexpr static int32 StepMax = []() constexpr
-		{
-			constexpr int32 Width = FogOfWarConst::kTextureWidth;
-			constexpr int32 Height = FogOfWarConst::kTextureHeight;
-			return Width * Height;
-			//constexpr int32 Squared = Width * Width + Height * Height;
-
-			//int32 Result;
-
-			//if (Squared <= 1) { Result = Squared + 10; }
-			//else
-			//{
-			//	int32 left = 1, right = Squared;
-			//	while (left <= right)
-			//	{
-			//		int32 mid = left + (right - left) / 2;
-			//		if (mid > Squared / mid) { right = mid - 1; }// 防止溢出
-			//		else if (mid + 1 > Squared / (mid + 1))
-			//		{
-			//			Result = mid + 10;
-			//			break;
-			//		}
-			//		else { left = mid + 1; }
-			//	}
-			//	Result = right + 10;
-			//}
-
-			//return Result;
-		}();;
-#endif
 };
 
 USTRUCT()

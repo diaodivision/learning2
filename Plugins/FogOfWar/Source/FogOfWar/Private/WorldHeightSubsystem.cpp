@@ -1,7 +1,9 @@
 #include "WorldHeightSubsystem.h"
+#include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "FogOfWarTypes.h"
 #include "GameFramework/WorldSettings.h"
+#include "TimerManager.h"
 #include "WorldHeightVolume.h"
 #include "GameFramework/Actor.h"
 // #include "Landscape.h"
@@ -77,10 +79,13 @@ void UWorldHeightSubsystem::RequestUpdateWorldHeightData(const AActor& OtherActo
 
 TOptional<FGridSizeType> UWorldHeightSubsystem::GetGridSize() const
 {
-	if (GridNumX < 0 || GridNumY < 0 || !LandBounds.IsSet()) { return NullOpt; }
+	const TOptional<FIntPoint> GridNum{ GetGridNum() };
+	if (!GridNum.IsSet()) { return NullOpt; }
 
+	if (GridNum->GetMin() < 0 || !LandBounds.IsSet()) { return NullOpt; }
+	
 	const FBox& LandBox = LandBounds.GetValue();
-	FVector Result{LandBox.GetSize().X / GridNumY, LandBox.GetSize().Y / GridNumX, 0.};
+	FVector Result{LandBox.GetSize().X / GridNum.GetValue().Y, LandBox.GetSize().Y / GridNum.GetValue().X, 0.};
 	Result.Z = FMath::Max(Result.X, Result.Y);
 	return FGridSizeType{ Result, FGridSizeType::EGridSizeCoordinate::Screen };
 }
@@ -91,6 +96,9 @@ FogOfWarTypes::GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector2D
 	{
 		return INDEX_NONE;
 	}
+
+	const TOptional<FIntPoint> GridNum{ GetGridNum() };
+	if (!GridNum.IsSet()) { return INDEX_NONE; }
 
 	const FBox& LandBox{ LandBounds.GetValue() };
 
@@ -109,7 +117,7 @@ FogOfWarTypes::GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector2D
 	
 	if (AllowMinusPosition == EAllowMinusPosition::Yes || (NormalizedPosition.GetMin() >= 0. && NormalizedPosition.GetMax() <= 1.))
 	{
-		return FMath::FloorToInt32(NormalizedPosition.X * GridNumX) + FMath::FloorToInt32(NormalizedPosition.Y * GridNumY) * GridNumX;
+		return FMath::FloorToInt32(NormalizedPosition.X * GridNum.GetValue().X) + FMath::FloorToInt32(NormalizedPosition.Y * GridNum.GetValue().Y) * GridNum.GetValue().X;
 	}
 	return INDEX_NONE;
 }
@@ -123,20 +131,24 @@ FogOfWarTypes::GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector& 
 
 TOptional<FIntPoint> UWorldHeightSubsystem::IndexToGridPosition(const FogOfWarTypes::GridIndexType Index, const EAllowMinusPosition AllowMinusPosition) const
 {
-	if (AllowMinusPosition != EAllowMinusPosition::Yes && (Index < 0 || Index >= (GridNumX * GridNumY))) { return NullOpt; }
+	const TOptional<FIntPoint> GridNum{ GetGridNum() };
+	if (!GridNum.IsSet()) { return NullOpt; }
+
+	if (AllowMinusPosition != EAllowMinusPosition::Yes && (Index < 0 || Index >= (GridNum.GetValue().X * GridNum.GetValue().Y))) { return NullOpt; }
 
 	// return FIntPoint{ static_cast<int32>(Index % GridNumX), static_cast<int32>(Index / GridNumX) };
-	const int32 Y{ FMath::FloorToInt32(static_cast<float>(Index) / GridNumX) };
-	const int32 X{ Index - Y * GridNumX };
+	const int32 Y{ FMath::FloorToInt32(static_cast<float>(Index) / GridNum.GetValue().X) };
+	const int32 X{ Index - Y * GridNum.GetValue().X };
 
 	return FIntPoint{ X, Y };
 }
 
 TOptional<FVector> UWorldHeightSubsystem::GetGridLocationByIndex(const FogOfWarTypes::GridIndexType Index, const EAllowMinusPosition AllowMinusPosition) const
 {
+	const TOptional<FIntPoint> GridNum{ GetGridNum() };
 	const TOptional<FGridSizeType> GridSize{ GetGridSize() };
-	if (!GridSize.IsSet() || !Land.IsValid()) {return NullOpt;}
-	if (AllowMinusPosition == EAllowMinusPosition::Yes || (Index >= 0 && Index < (GridNumX * GridNumY)))
+	if (!GridNum.IsSet() || !GridSize.IsSet() || !Land.IsValid()) {return NullOpt;}
+	if (AllowMinusPosition == EAllowMinusPosition::Yes || (Index >= 0 && Index < (GridNum.GetValue().X * GridNum.GetValue().Y)))
 	{
 		const TOptional<FIntPoint> GridPosition{IndexToGridPosition(Index, AllowMinusPosition)};
 		if (!GridPosition.IsSet()) {return NullOpt;}
@@ -418,13 +430,16 @@ void UWorldHeightSubsystem::OnActorDestroyed(AActor* Actor)
 void UWorldHeightSubsystem::UpdateWorldHeightTexture()
 {
 	if (WorldHeightDataVersion == WorldHeightTextureVersion) { return; }
-
+	
+	const TOptional<FIntPoint> GridNum{ GetGridNum() };
+	if (!GridNum.IsSet()) { return; }
+	
 	// 1. 安全校验
-    if (FMath::Min(GridNumX, GridNumY) <= 0 || !WorldHeightTexture || !WorldHeightTexture->GetResource()) { return; }
+    if (GridNum->GetMin() <= 0 || !WorldHeightTexture || !WorldHeightTexture->GetResource()) { return; }
 
     // 2. 将数据深拷贝一份交由渲染线程持有，防止主线程销毁/重分配该数组
     TArray<uint8> WorldHeightDataArray;
-	WorldHeightDataArray.SetNumZeroed(GridNumX * GridNumY);
+	WorldHeightDataArray.SetNumZeroed(GridNum.GetValue().X * GridNum.GetValue().Y);
 	for (auto It = GetWorldHeightMap().CreateConstIterator(); It; ++It)
 	{
 		const FogOfWarTypes::GridIndexType Index{It->Key};
@@ -435,13 +450,13 @@ void UWorldHeightSubsystem::UpdateWorldHeightTexture()
 
     // 3. 投递渲染命令
     ENQUEUE_RENDER_COMMAND(UpdateTextureCmd)(
-        [WeakThis = MakeWeakObjectPtr(this), WorldHeightDataArray = MoveTemp(WorldHeightDataArray), TargetVersion = WorldHeightDataVersion](FRHICommandListImmediate& RHICmdList)
+        [WeakThis = MakeWeakObjectPtr(this), WorldHeightDataArray = MoveTemp(WorldHeightDataArray), TargetVersion = WorldHeightDataVersion, GridNum](FRHICommandListImmediate& RHICmdList)
         {
             FTextureResource* Resource = WeakThis.IsValid() ? WeakThis->WorldHeightTexture->GetResource() : nullptr;
             if (!Resource || !Resource->TextureRHI.IsValid()){ return; }
 
-            FUpdateTextureRegion2D Region(0, 0, 0, 0, WeakThis->GridNumX, WeakThis->GridNumY);
-            const uint32 Pitch = WeakThis->GridNumX * sizeof(uint8); // Pitch = 单行字节数
+            FUpdateTextureRegion2D Region(0, 0, 0, 0, GridNum.GetValue().X, GridNum.GetValue().Y);
+            const uint32 Pitch = GridNum.GetValue().X * sizeof(uint8); // Pitch = 单行字节数
 
             RHICmdList.UpdateTexture2D(
                 Resource->TextureRHI,
@@ -462,9 +477,17 @@ void UWorldHeightSubsystem::UpdateWorldHeightTexture()
     );
 }
 
+TOptional<FIntPoint> UWorldHeightSubsystem::GetGridNum() const
+{
+	return UFogOfWarComponentStatics::GetWorldHeightTextureSize();
+}
+
 void UWorldHeightSubsystem::CreateWorldHeightTexture()
 {
-	WorldHeightTexture = UTexture2D::CreateTransient(GridNumX, GridNumY, FogOfWarConst::PixelFormat);
+	const TOptional<FIntPoint> GridNum{ GetGridNum() };
+	if (!GridNum.IsSet()) { return; }
+
+	WorldHeightTexture = UTexture2D::CreateTransient(GridNum.GetValue().X, GridNum.GetValue().Y, UFogOfWarComponentStatics::GetFogOfWarTexturePixelFormat());
 	WorldHeightTexture->UpdateResource();
 }
 

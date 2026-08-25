@@ -158,9 +158,9 @@ void UFogOfWarSubsystem::Tick_Internal()
 	const FVector2f ScreenToWorldGridScaleFVector2f{static_cast<float>(ScreenToWorldGridScale.X), static_cast<float>(ScreenToWorldGridScale.Y)};
 
 	ENQUEUE_RENDER_COMMAND(CalculateVisionArea)(
-		[this, ActorPositions, ActorVision, RadiusSqList, RenderResource, WorldHeightTextureRHIRef = *WorldHeightTextureRHIRefPtr, GridPositionOnWorld, ScreenToWorldGridScaleFVector2f](FRHICommandListImmediate& RHICmdList)
+		[WeakThis = MakeWeakObjectPtr(this), ActorPositions, ActorVision, RadiusSqList, RenderResource, WorldHeightTextureRHIRef = *WorldHeightTextureRHIRefPtr, GridPositionOnWorld, ScreenToWorldGridScaleFVector2f](FRHICommandListImmediate& RHICmdList)
 		{
-			if (!this) { return; }
+			if (!WeakThis.IsValid()) { return; }
 
 			FRDGBuilder GraphBuilder(RHICmdList);
 
@@ -170,14 +170,14 @@ void UFogOfWarSubsystem::Tick_Internal()
 
 			FFogOfWarComputeShader::FParameters* PassParameters = GraphBuilder.AllocParameters<FFogOfWarComputeShader::FParameters>();
 
-			const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
+			const TOptional<FIntPoint> ScreenSize{ WeakThis->GetScreenSize() };
 			if (!ScreenSize.IsSet()) { return; }
 			PassParameters->TextureSize.X = ScreenSize.GetValue().X;
 			PassParameters->TextureSize.Y = ScreenSize.GetValue().Y;
 			//PassParameters->TextureSize = FVector2f(FogOfWarConst::kTextureWidth, FogOfWarConst::kTextureHeight);
 			//PassParameters->TextureSize = FVector2f(FogOfWarConst::kScreenWidth, FogOfWarConst::kScreenHeight);			
 
-			UploadFogOfWarActorData(ActorPositions, ActorVision, RadiusSqList, *PassParameters, GraphBuilder);
+			WeakThis->UploadFogOfWarActorData(ActorPositions, ActorVision, RadiusSqList, *PassParameters, GraphBuilder);
 			// UploadFogOfWarWorldHeightData(*PassParameters, GraphBuilder, TEXT("WorldHeightData"));
 			FRDGTextureRef RDGTexture = GraphBuilder.RegisterExternalTexture(
 				CreateRenderTarget(WorldHeightTextureRHIRef, TEXT("WorldHeightData"))
@@ -189,11 +189,10 @@ void UFogOfWarSubsystem::Tick_Internal()
 			PassParameters->ScreenToWorldGridScale = ScreenToWorldGridScaleFVector2f;
 
 			FRDGTextureRef OutputRDGTexture{nullptr};
-			SetComputeShaderOutputTextureCache(OutputRDGTexture, *PassParameters, GraphBuilder, false);
+			WeakThis->SetComputeShaderOutputTextureCache(OutputRDGTexture, *PassParameters, GraphBuilder, false);
 
 			const FIntVector ThreadCount{ ScreenSize.GetValue().X, ScreenSize.GetValue().Y, 1 };
-			const FIntVector GroupSize{ FogOfWarConst::kThreadsX , FogOfWarConst::kThreadsY, FogOfWarConst::kThreadsZ };
-			const FIntVector DispatchCount = FComputeShaderUtils::GetGroupCount(ThreadCount, GroupSize);
+			const FIntVector DispatchCount = FComputeShaderUtils::GetGroupCount(ThreadCount, UFogOfWarComponentStatics::GetFogOfWarThreadGroupSize());
 
 			TShaderMapRef<FFogOfWarComputeShader> ComputeShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
 
@@ -212,11 +211,11 @@ void UFogOfWarSubsystem::Tick_Internal()
 			GraphBuilder.Execute();
 
 										// 在渲染命令完成后回调
-			AsyncTask(ENamedThreads::GameThread, [this]()
+			AsyncTask(ENamedThreads::GameThread, [WeakThis]()
 				{
-					if (!this || !DynamicTexture || !FogOfWarMaterial) { return; }			
-					OnFogOfWarTextureUpdatedDelegate.Broadcast(DynamicTexture);
-					SetTextureParameter();
+					if (!WeakThis.IsValid() || !WeakThis->DynamicTexture || !WeakThis->FogOfWarMaterial) { return; }			
+					WeakThis->OnFogOfWarTextureUpdatedDelegate.Broadcast(WeakThis->DynamicTexture);
+					WeakThis->SetTextureParameter();
 				}
 			);
 		});
@@ -264,23 +263,18 @@ bool UFogOfWarSubsystem::IsCameraFOVChanged()
 
 bool UFogOfWarSubsystem::CreateDynamicTexture()
 {
-	UMaterialInterface* Material = LoadObject<UMaterialInterface>(this, FogOfWarConst::MaterialPath);
-	if (!Material)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Fail to load UMaterialInterface on %s"), FogOfWarConst::MaterialPath.GetData());
-
-		return false;
-	}
+	UMaterialInterface* Material{ UFogOfWarComponentStatics::GetFogOfWarMaterial() };
+	if (!Material) { return false; }
 
 	const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
 	if (!ScreenSize.IsSet()) { return false; }
 
-	DynamicTexture = UTexture2D::CreateTransient(ScreenSize.GetValue().X, ScreenSize.GetValue().Y, FogOfWarConst::PixelFormat);
+	DynamicTexture = UTexture2D::CreateTransient(ScreenSize.GetValue().X, ScreenSize.GetValue().Y, UFogOfWarComponentStatics::GetFogOfWarTexturePixelFormat());
 	if (DynamicTexture)
 	{
 		DynamicTexture->CompressionSettings = TC_Default;
 		DynamicTexture->SRGB = false;
-		DynamicTexture->Filter = FogOfWarConst::TextureFilter;
+		DynamicTexture->Filter = UFogOfWarComponentStatics::GetFogOfWarTextureFilter();
 		DynamicTexture->NeverStream = true;
 
 		DynamicTexture->UpdateResource();
@@ -314,8 +308,8 @@ bool UFogOfWarSubsystem::CreateDynamicTexture()
 
 void UFogOfWarSubsystem::SetTextureParameter() const
 {
-	if (!DynamicTexture) {return;}
-	FogOfWarMaterial->SetTextureParameterValue(FogOfWarConst::FogOfWarTextureParameterName.GetData(), DynamicTexture);
+	if (!FogOfWarMaterial || !DynamicTexture) {return;}
+	FogOfWarMaterial->SetTextureParameterValue(*UFogOfWarComponentStatics::GetFogOfWarTextureParameterName(), DynamicTexture);
 }
 
 void UFogOfWarSubsystem::GetFogOfWarActorData(TArray<FIntPoint>& ActorPositions, TArray<FVector2f>& ActorVision, TArray<int32>& RadiusSqList) const
@@ -399,7 +393,7 @@ void UFogOfWarSubsystem::SetComputeShaderOutputTextureCache(FRDGTextureRef& Shad
 
 		FRDGTextureDesc TextureDesc = FRDGTextureDesc::Create2D(
 			ScreenSize.GetValue(),
-			FogOfWarConst::PixelFormat,
+			UFogOfWarComponentStatics::GetFogOfWarTexturePixelFormat(),
 			FClearValueBinding::Black,
 			TexCreate_ShaderResource | TexCreate_UAV
 		);

@@ -77,6 +77,13 @@ public:
 	static FOGOFWAR_API UFogOfWarSubsystem* GetFogOfWarSubsystem(const UObject* WorldContextObject);
 	static FOGOFWAR_API UWorldHeightSubsystem* GetWorldHeightSubsystem(const UObject* WorldContextObject);
 
+	static UMaterialInterface* GetFogOfWarMaterial();
+	static EPixelFormat GetFogOfWarTexturePixelFormat();
+	static TextureFilter GetFogOfWarTextureFilter();
+	static FIntVector GetFogOfWarThreadGroupSize();
+	static TOptional<FIntPoint> GetWorldHeightTextureSize();
+	static FString GetFogOfWarTextureParameterName();
+
 public:
 	template<class ParameterMemberType, class ArrayElementType>
 	static void UploadStructedBuffer(ParameterMemberType& ParameterMember, uint32& ParameterMemberOfArrayNum, FRDGBuilder& GraphBuilder, const TArray<ArrayElementType>& Array, const TCHAR* Name);

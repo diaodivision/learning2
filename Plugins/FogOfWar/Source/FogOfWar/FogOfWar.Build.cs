@@ -9,7 +9,7 @@ public class FogOfWar : ModuleRules
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
-        // Ìí¼Ó Shaders Ä¿Â¼µ½°üº¬Â·¾¶
+        // ï¿½ï¿½ï¿½ï¿½ Shaders Ä¿Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½
         string ShaderPublicPath = Path.Combine(ModuleDirectory, "../../Shaders/Public");
         PublicIncludePaths.Add(ShaderPublicPath);
 
@@ -32,8 +32,8 @@ public class FogOfWar : ModuleRules
             {
                 "Core",
                 "RenderCore",    // FRDGBuilder, FGlobalShader, AddShaderSourceDirectoryMapping
-                "RHI",           // FRHICommandList, GMaxRHIFeatureLevel, GPU ×ÊÔ´ÀàÐÍ
-                "Projects",      // IPluginManager£¨ÓÃÓÚ¶¨Î»²å¼þÂ·¾¶£©
+                "RHI",           // FRHICommandList, GMaxRHIFeatureLevel, GPU ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½
+                "Projects",      // IPluginManagerï¿½ï¿½ï¿½ï¿½ï¿½Ú¶ï¿½Î»ï¿½ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½
                 "Landscape"
             }
         );
@@ -45,7 +45,8 @@ public class FogOfWar : ModuleRules
                 "CoreUObject",
                 "Engine",
                 "Renderer",         // SetComputePipelineState, SetShaderParameters, GetGlobalShaderMap
-                "TopDownCameraSystem"
+                "TopDownCameraSystem",
+                "DeveloperSettings"
             }
         );
 

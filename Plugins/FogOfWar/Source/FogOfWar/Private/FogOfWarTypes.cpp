@@ -191,10 +191,6 @@ FGridIndexIterator::FGridIndexIterator(const FBox& Box, const FGridSizeType& InG
 
 	CurrentPosition = FVector{ -BoxExtent.X + GridSize.X * .5, -BoxExtent.Y + GridSize.Y * .5, -BoxExtent.Z + GridSize.Z * .5 };
 	if (operator bool() == false) { operator++(); }
-
-#if !UE_BUILD_SHIPPING
-	id = ids++;
-#endif
 }
 
 void FGridIndexIterator::operator++()
@@ -227,15 +223,6 @@ FGridIndexIterator::operator bool() const
 	if (!bIsValid) {return false;}
 	if (!IsInsideOrOn()) { return false; }
 	if (operator*() == INDEX_NONE) { return false; }
-
-#if !UE_BUILD_SHIPPING
-	if (/*doonce && */Step > StepMax)
-	{
-		UE_LOG(LogTemp, Error, TEXT("id: %d\tIterator num larger than %d"), id, StepMax);
-
-		return false;
-	}
-#endif
 
 	return true;
 }

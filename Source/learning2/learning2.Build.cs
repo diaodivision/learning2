@@ -25,7 +25,8 @@ public class learning2 : ModuleRules
             "SlateCore",
             "Niagara",
             "WorldPauseSystem",
-            "TopDownCameraSystem"
+            "TopDownCameraSystem",
+            "DeveloperSettings"
         });
 
 

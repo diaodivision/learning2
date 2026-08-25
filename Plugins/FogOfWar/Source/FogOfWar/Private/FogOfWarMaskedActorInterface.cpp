@@ -3,10 +3,11 @@
 #include "FogOfWarTypes.h"
 #include "Components/MeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "FogOfWarComponentStatics.h"
 
 FString IFogOfWarMaskedActorInterface::GetFogOfWarTextureParameterName()
 {
-    return FString{ FogOfWarConst::FogOfWarTextureParameterName };
+    return UFogOfWarComponentStatics::GetFogOfWarTextureParameterName();
 }
 
 void IFogOfWarMaskedActorInterface::UpdateFogOfWarTexture_DefaultImplementation(UTexture2D* FogOfWarTexture, UMeshComponent* SkeletalMeshComponent)

@@ -5,10 +5,12 @@
 #include "GameFramework/Actor.h"
 #include "Kismet/KismetMathLibrary.h"
 #include <cmath>
+#include "PixelFormat.h"
 #include "WorldHeightSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "FogOfWarSubsystem.h"
 #include "Components/SceneComponent.h"
+#include "Configs/FogOfWarSettings.h"
 
 #if !FOGOFWAR_INLINE_ENABLED
 #define FOGOFWAR_ALLOW_INCLUDE_INL
@@ -228,6 +230,74 @@ UWorldHeightSubsystem* UFogOfWarComponentStatics::GetWorldHeightSubsystem(const 
 {
 	const UWorld* World{GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull)};
 	return World ? World->GetSubsystem<UWorldHeightSubsystem>() : nullptr;
+}
+
+UMaterialInterface* UFogOfWarComponentStatics::GetFogOfWarMaterial()
+{
+	UMaterialInterface* Result{ nullptr };
+
+	if (const UFogOfWarSettings* FogOfWarSettings{ GetDefault<UFogOfWarSettings>() })
+	{
+		if (const TSoftObjectPtr<UMaterialInterface> FogOfWarMaterial{ FogOfWarSettings->FogOfWarMaterial }; !FogOfWarMaterial.IsNull()) 
+		{ 
+			Result = FogOfWarMaterial.IsValid() ? FogOfWarSettings->FogOfWarMaterial.Get() : FogOfWarMaterial.LoadSynchronous();
+    		if (!Result) { UE_LOG(LogTemp, Error, TEXT("Load resource failed, path: %s"), *FogOfWarMaterial.ToString()); }
+		}
+		else { UE_LOG(LogTemp, Warning, TEXT("UFogOfWarSettings::FogOfWarMaterial 222 is not be specified")); }
+	}
+	else { UE_LOG(LogTemp, Warning, TEXT("Fail to get UFogOfWarSettings")); }
+
+	return Result;
+}
+
+EPixelFormat UFogOfWarComponentStatics::GetFogOfWarTexturePixelFormat()
+{
+	if (const UFogOfWarSettings* FogOfWarSettings{ GetDefault<UFogOfWarSettings>() })
+	{
+		return UFogOfWarSettings::GetPixelFormatFromEnum(FogOfWarSettings->PixelFormat);
+	}
+	
+	return PF_B8G8R8A8;
+}
+
+TextureFilter UFogOfWarComponentStatics::GetFogOfWarTextureFilter()
+{
+	if (const UFogOfWarSettings* FogOfWarSettings{ GetDefault<UFogOfWarSettings>() })
+	{
+		return UFogOfWarSettings::GetTextureFilterFromEnum(FogOfWarSettings->FilterMethod);
+	}
+
+	return TF_Default;
+}
+
+FIntVector UFogOfWarComponentStatics::GetFogOfWarThreadGroupSize()
+{
+	if (const UFogOfWarSettings* FogOfWarSettings{ GetDefault<UFogOfWarSettings>() })
+	{
+		return FIntVector{ FogOfWarSettings->kThreadsX, FogOfWarSettings->kThreadsY, FogOfWarSettings->kThreadsZ };
+	}
+
+	return FIntVector{  FogOfWarConst::kThreadsX, FogOfWarConst::kThreadsY, FogOfWarConst::kThreadsZ };
+}
+
+TOptional<FIntPoint> UFogOfWarComponentStatics::GetWorldHeightTextureSize()
+{
+	if (const UFogOfWarSettings* FogOfWarSettings{ GetDefault<UFogOfWarSettings>() })
+	{
+		return FIntPoint{ FogOfWarSettings->kTextureWidth, FogOfWarSettings->kTextureHeight };
+	}
+
+	return NullOpt;
+}
+
+FString UFogOfWarComponentStatics::GetFogOfWarTextureParameterName()
+{
+	if (const UFogOfWarSettings* FogOfWarSettings{ GetDefault<UFogOfWarSettings>() })
+	{
+		return FogOfWarSettings->FogOfWarTextureParameterName;
+	}
+
+	return FString{};
 }
 
 bool UFogOfWarComponentStatics::IsPrime(NumberType N)

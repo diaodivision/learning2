@@ -1,13 +1,32 @@
 #include "LevelStatics.h"
 #include "Engine/DataTable.h"
+#include "LevelSettings.h"
 
 TArray<FLevelData> ULevelStatics::GetLevelDatas()
 {
-    FSoftObjectPath SoftTablePath(LevelTypeConst::LevelDataPath);
-    UDataTable* DataTable = Cast<UDataTable>(SoftTablePath.TryLoad());
+    const ULevelSettings* LevelSettings = GetDefault<ULevelSettings>();
+    if (!LevelSettings)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Get LevelSettings failed"));
+        return TArray<FLevelData>{};
+    }
+    
+    if (LevelSettings->LevelDatas.IsNull())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("FogOfWarMaterial not specified"));
+        return TArray<FLevelData>{};
+    }
+
+    UDataTable* DataTable{ LevelSettings->LevelDatas.IsValid() ? LevelSettings->LevelDatas.Get() : LevelSettings->LevelDatas.LoadSynchronous() };
     if (!DataTable)
     {
-        UE_LOG(LogTemp, Error, TEXT("加载数据表失败，路径: %s"), *FString{ LevelTypeConst::LevelDataPath });
+        UE_LOG(LogTemp, Error, TEXT("Load LevelDatas, path: %s"), *LevelSettings->LevelDatas.ToString());
+        return TArray<FLevelData>{};
+    }
+
+    if (DataTable->GetRowStruct() != FLevelData::StaticStruct())
+    {
+        UE_LOG(LogTemp, Error, TEXT("DataTable RowStruct not match to struct FLevelData: %s"), *LevelSettings->LevelDatas.ToString());
         return TArray<FLevelData>{};
     }
 
