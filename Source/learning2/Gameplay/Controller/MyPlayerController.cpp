@@ -2,6 +2,7 @@
 
 
 #include "MyPlayerController.h"
+#include "Engine/EngineBaseTypes.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 //#include "GameFramework/Character.h"
@@ -93,6 +94,13 @@ const AActor* AMyPlayerController::AutoPossessPlayerCharacter()
 	}
 	
 	return nullptr;
+}
+
+void AMyPlayerController::DisableInput(class APlayerController* PlayerController)
+{
+	Super::DisableInput(PlayerController);
+
+	OnShootStop();
 }
 
 void AMyPlayerController::BeginPlay()
@@ -494,6 +502,7 @@ void AMyPlayerController::SetupMouseAndInput()
 {
 	// 1. 使用纯游戏模式（此时视口拥有最高优先级的连续捕获，鼠标一动就触发 Axis）
 	FInputModeGameAndUI InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockInFullscreen);
 	// 开启消费捕获点击，防止点击时出现奇怪的视口焦点丢失
 	//InputMode.SetConsumeCaptureMouseDown(false);
 	SetInputMode(InputMode);
@@ -586,6 +595,8 @@ void AMyPlayerController::OnUnPossess()
 	{
 		OldCharacter->OnCharacterMovementUpdated.RemoveAll(this);
 	}
+	OnShootStop();
+	OnCancelTargeting();
 
 	Super::OnUnPossess();
 }

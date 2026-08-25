@@ -31,9 +31,6 @@ float GetNormalizedDistanceToBoundary(int2 GridPos, float2 StartPos, float2 Dire
 int GetGridHeight(int2 XY);
 bool CheckLineOfSight(int2 Start, int2 End, int MaxSteps);
 
-// 在后处理材质采样时, 应该把 Sampler Source 设置为 Shared: Clamp
-// 否则当有障碍物跨过屏幕上边界时, 可能会导致原本没有障碍物的下边界也被错误地认为有障碍物
-// todo 原因待查
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void MainCS(
     uint3 DispatchThreadId : SV_DispatchThreadID,
@@ -53,11 +50,7 @@ void MainCS(
     
     //OutputTexture[DispatchThreadId.xy] = float4(x > TextureSize.x * .3f && x < TextureSize.x * 1.f && y > TextureSize.y * .3f && y < TextureSize.y * 1.f ? 1 : 0, 0, 0, 1);
     //return;
-    //OutputTexture[DispatchThreadId.xy] = float4(GetGridHeight(x, y) > 0 ? 1: 0, 0, 0, 1);
-    //return;
-
-    //int2 WorldPosition = ScreenPositionToWorld(int2(x,y), ScreenGridOriginInWorldGrid, ScreenToWorldGridScale);
-    //OutputTexture[DispatchThreadId.xy] = float4(GetGridHeight(WorldPosition.x, WorldPosition.y) > 0 ? 1 : 0, 0, 0, 1);
+    //OutputTexture[DispatchThreadId.xy] = float4(GetGridHeight(XYOnWorld) > 0 ? 1: 0, 0, 0, 1);
     //return;
 
     OutputTexture[DispatchThreadId.xy] = float4(0, 0, 0, 1);

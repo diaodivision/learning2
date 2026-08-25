@@ -43,6 +43,8 @@ void AGeneralBattleGameMode::OnCharacterDead(AMyCharacterBase* Character)
 
 void AGeneralBattleGameMode::OnGameEnded(const EGameEndResult Result)
 {
+    if (APlayerController* Controller{ GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr }) { Controller->DisableInput(nullptr); }
+
     OnGameEnded_Internal(Result);
     K2_OnGameEnded(Result);
     OnGameEndedDelegate.Broadcast(Result);

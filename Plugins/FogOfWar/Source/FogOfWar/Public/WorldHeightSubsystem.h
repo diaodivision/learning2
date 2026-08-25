@@ -31,17 +31,18 @@ public:
 	TOptional<FGridSizeType> GetGridSize() const;
 
 	FogOfWarTypes::GridIndexType GetGridIndex(const FVector2D& Location2D, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No) const;
-	FogOfWarTypes::GridIndexType GetGridIndex(const FVector& Location, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No) const;
-	TOptional<FIntPoint> IndexToGridPosition(const FogOfWarTypes::GridIndexType Index, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No) const;
-	TOptional<FIntPoint> GetGridPosition(const FVector& WorldLocation, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No) const
-	{ 
-		return IndexToGridPosition(GetGridIndex(WorldLocation, AllowMinusPosition), AllowMinusPosition);
+	FORCEINLINE FogOfWarTypes::GridIndexType GetGridIndex(const FVector& Location, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No) const
+	{
+		if (Location.Z < LandBounds.GetValue().Max.Z) { return INDEX_NONE; }
+		return GetGridIndex(FVector2D{ Location.X, Location.Y }, AllowMinusPosition);
 	}
-	TOptional<FIntPoint> GetGridPosition(const FVector2D& WorldLocation, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No) const 
+	TOptional<FIntPoint> GetGridPosition(const FVector2D& WorldLocation, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No) const;
+	FORCEINLINE TOptional<FIntPoint> GetGridPosition(const FVector& WorldLocation, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No) const
 	{ 
-		return IndexToGridPosition(GetGridIndex(WorldLocation, AllowMinusPosition), AllowMinusPosition);
+		if (WorldLocation.Z < LandBounds.GetValue().Max.Z) { return NullOpt; }
+		return GetGridPosition(FVector2D{ WorldLocation.X, WorldLocation.Y }, AllowMinusPosition);
 	}
-	TOptional<FVector> GetGridLocationByIndex(const FogOfWarTypes::GridIndexType Index, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No) const;
+	// TOptional<FVector> GetGridLocationByIndex(const FogOfWarTypes::GridIndexType Index, const EAllowMinusPosition AllowMinusPosition = EAllowMinusPosition::No) const;
 
 	bool IsWorldHeightVolumeOverlapWithGround(const AWorldHeightVolume& Volume) const;
 

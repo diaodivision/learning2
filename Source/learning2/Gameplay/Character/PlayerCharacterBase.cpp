@@ -290,6 +290,24 @@ void APlayerCharacterBase::OnRewindSubsystemStateChanged(const ERecordState OldS
 	}
 }
 
+void APlayerCharacterBase::OnCharacterDeath_Internal()
+{
+	if (AMyPlayerController* PlayerController{ Cast<AMyPlayerController>(GetController()) }) 
+	{
+		PlayerController->DisableInput(nullptr);
+		// PlayerController->UnPossess();
+		if (const AActor* NewPossessedActor{ PlayerController->AutoPossessPlayerCharacter() })
+		{
+			if (NewPossessedActor != this) { PlayerController->EnableInput(nullptr); }
+		}
+		// else { PlayerController->Possess(this); }
+	}
+
+	Super::OnCharacterDeath_Internal();
+
+	if (InputRecordComponent) { InputRecordComponent->Deactivate(); }
+}
+
 void APlayerCharacterBase::CreateAndSetupComponents()
 {
 	FogOfWarComponent = CreateDefaultSubobject<UFogOfWarComponent>(FName("FogOfWarComponent"));
@@ -305,24 +323,4 @@ void APlayerCharacterBase::CreateAndSetupComponents()
 	RecordedLocationVisualizationComponent = CreateDefaultSubobject<URecordedLocationVisualizationComponent>(FName("RecordedLocationVisualizationComponent"));
 	RecordedLocationVisualizationComponent->PrimaryComponentTick.bCanEverTick = false;
 	//RecordedLocationVisualizationComponent->SetUpAttachment(RootComponent);
-}
-
-void APlayerCharacterBase::OnCharacterDeath_Internal()
-{
-	AMyPlayerController* PlayerController{ Cast<AMyPlayerController>(GetController()) };
-	if (PlayerController) 
-	{
-		PlayerController->DisableInput(nullptr);
-		PlayerController->UnPossess();
-		if (const AActor* NewPossessedActor{ PlayerController->AutoPossessPlayerCharacter() })
-		{
-			if (NewPossessedActor != this) { PlayerController->EnableInput(nullptr); }
-		}
-		else
-		{
-			PlayerController->Possess(this);
-		}
-	}
-
-	if (InputRecordComponent) { InputRecordComponent->DestroyComponent(); }
 }

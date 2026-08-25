@@ -167,18 +167,18 @@ FogOfWarTypes::GridIndexType FGridBoundsDataType::GetGridIndexOnScreen(const FVe
 	return GridY * ScreenSize.X + GridX;
 }
 
-TOptional<FVector> FGridBoundsDataType::GetGridLocationByIndex(const FogOfWarTypes::GridIndexType Index, const FIntPoint& ScreenSize)
-{
-	if (!IsValid()) { return NullOpt; }
+// TOptional<FVector> FGridBoundsDataType::GetGridLocationByIndex(const FogOfWarTypes::GridIndexType Index, const FIntPoint& ScreenSize)
+// {
+// 	if (!IsValid()) { return NullOpt; }
 
-	const int32 GridX{ Index % ScreenSize.X };
-	const int32 GridY{ Index / ScreenSize.X };
+// 	const int32 GridX{ Index % ScreenSize.X };
+// 	const int32 GridY{ Index / ScreenSize.X };
 
-	const double NormalizedX = static_cast<double>(GridX) / ScreenSize.X;
-	const double NormalizedY = static_cast<double>(GridY) / ScreenSize.Y;
+// 	const double NormalizedX = static_cast<double>(GridX) / ScreenSize.X;
+// 	const double NormalizedY = static_cast<double>(GridY) / ScreenSize.Y;
 
-	return FVector{ Box.Min.X + Box.GetSize().X * NormalizedX,Box.Min.Y + Box.GetSize().Y * NormalizedY,Box.GetCenter().Z };
-}
+// 	return FVector{ Box.Min.X + Box.GetSize().X * NormalizedX,Box.Min.Y + Box.GetSize().Y * NormalizedY,Box.GetCenter().Z };
+// }
 
 FGridIndexIterator::FGridIndexIterator(const FBox& Box, const FGridSizeType& InGridSize, const TFunctionRef<GridIndexType(const FVector&)> GetGridIndexFunction, const FQuat& BoxQuat)
 	: BoxExtent(Box.GetExtent()), 

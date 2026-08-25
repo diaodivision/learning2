@@ -313,7 +313,8 @@ void AMyCharacterBase::EnableTeamDuty(const bool bIsEnable)
 		{
 			BattleSubsystem->UnregisterToBattleSubsystem(this);
 
-			AIPerceptionComponent->OnTargetPerceptionUpdated.RemoveAll(this);
+			if (AIPerceptionComponent) { AIPerceptionComponent->OnTargetPerceptionUpdated.RemoveAll(this); }
+
 			if (UBlackboardComponent* BlackboardComponent{ GetController() ? GetController()->FindComponentByClass<UBlackboardComponent>() : nullptr })
 			{
 				if (!BlackboardComponent) { BlackboardComponent = FindComponentByClass<UBlackboardComponent>(); }
@@ -521,7 +522,7 @@ void AMyCharacterBase::InitializeDelegates()
 
 	if (!ensure(AbilitySystemComponent->GetAttributeSet(UMyAttributeSet::StaticClass()))) { return; }
 
-	if (AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetCurrentHealthAttribute()).IsBoundToObject(this))
+	if (!AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetCurrentHealthAttribute()).IsBoundToObject(this))
 	{
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetCurrentHealthAttribute()).AddUObject(this, &AMyCharacterBase::OnCharacterHealthChanged);
 	}
@@ -690,6 +691,28 @@ void AMyCharacterBase::OnCharacterDeath()
 	OnCharacterDeadDelegate.Broadcast(this);
 }
 
+void AMyCharacterBase::OnCharacterDeath_Internal()
+{
+	UE_LOG(LogTemp, Error, TEXT("AMyCharacterBase::OnCharacterDeath_Internal CurrentController %s"), *GetNameSafe(GetController()));
+	if (AController* CurrentController{ GetController() }) 
+	{ 
+		if (UBehaviorTreeComponent* BehaviorTreeComponent{ CurrentController->FindComponentByClass<UBehaviorTreeComponent>() })
+		{
+			BehaviorTreeComponent->StopLogic(TEXT("CharacterDead"));
+		}
+		
+		if (UAIPerceptionComponent* AIPerceptionComponent{ FindComponentByClass<UAIPerceptionComponent>() })
+		{
+			AIPerceptionComponent->SetSenseEnabled(UAISense_Sight::StaticClass(), false);
+			AIPerceptionComponent->ForgetAll();
+			AIPerceptionComponent->Deactivate();
+		}
+		
+		CurrentController->UnPossess();
+	}
+	UE_LOG(LogTemp, Error, TEXT("AMyCharacterBase::OnCharacterDeath_Internal 222 CurrentController %s"), *GetNameSafe(GetController()));
+}
+
 void AMyCharacterBase::CreateAndSetupComponents()
 {
 	AbilitySystemComponent = CreateDefaultSubobject<UMyAbilitySystemComponent>(FName("AbilitySystemComponent"));
@@ -699,9 +722,4 @@ void AMyCharacterBase::CreateAndSetupComponents()
 
 	CharacterWidgetComponent = CreateDefaultSubobject<UCharacterWidgetComponent>(FName("CharacterWidgetComponent"));
 	CharacterWidgetComponent->SetupAttachment(RootComponent);
-}
-
-void AMyCharacterBase::OnCharacterDeath_Internal()
-{
-	if (GetController()) { GetController()->UnPossess(); }
 }

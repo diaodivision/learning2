@@ -60,10 +60,10 @@ protected:
 	virtual FORCEINLINE void OnStunTagCountChanged(const ETagCountChangeType TagCountChangeType) override {}
 	virtual FORCEINLINE void OnBlindTagCountChanged(const ETagCountChangeType TagCountChangeType) override {}
 
+	virtual void OnCharacterDeath_Internal() override;
+
 private:
 	void CreateAndSetupComponents();
-
-	virtual void OnCharacterDeath_Internal() override;
 
 public:
 	FOnOperationPreviewDelegate OnOperationPreviewDelegate;

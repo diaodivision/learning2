@@ -21,7 +21,7 @@ enum class FogOfWarTextureFilter : uint8
     TF_Default
 };
 
-UCLASS(Config = FogOfWar, defaultconfig, meta = (DisplayName = "Fog Of War Settings"))
+UCLASS(Config = FogOfWar, defaultconfig)
 class FOGOFWAR_API UFogOfWarSettings : public UDeveloperSettings
 {
     GENERATED_BODY()
@@ -73,4 +73,22 @@ public:
             return TF_Default;
         }
     }
+
+public:
+    // 1. 指定顶级容器：通常为 "Project"（项目设置）或 "Editor"
+    virtual FORCEINLINE FName GetContainerName() const override { return FName("Project"); }
+
+    // 2. 指定左侧大类：例如 "Plugins" 或 "Game"
+    virtual FORCEINLINE FName GetCategoryName() const override { return FName("Plugins"); }
+
+    // 3. 指定左侧子项名称（Section）
+    virtual FORCEINLINE FName GetSectionName() const override { return FName("FogOfWar"); }
+
+#if WITH_EDITOR
+    // 4. 指定面板顶部显示的大标题（支持本地化/带空格名称）
+    virtual FORCEINLINE FText GetSectionText() const override { return NSLOCTEXT("Fog Of War", "Fog Of War Settings Name", "Fog Of War"); }
+    
+    // 5. 指定下方描述文字
+    virtual FORCEINLINE FText GetSectionDescription() const override { return NSLOCTEXT("Fog Of War", "Fog Of War Settings Desc", "Configure Fog of War module settings."); }
+#endif
 };

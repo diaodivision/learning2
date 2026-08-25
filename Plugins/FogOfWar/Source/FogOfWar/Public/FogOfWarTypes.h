@@ -188,7 +188,7 @@ struct FGridBoundsDataType
 	bool IsInsideXY(const FVector2f& Location) const;
 
 	FogOfWarTypes::GridIndexType GetGridIndexOnScreen(const FVector& Location, const FIntPoint& ScreenSize);
-	TOptional<FVector> GetGridLocationByIndex(const FogOfWarTypes::GridIndexType Index, const FIntPoint& ScreenSize);
+	// TOptional<FVector> GetGridLocationByIndex(const FogOfWarTypes::GridIndexType Index, const FIntPoint& ScreenSize);
 
 	FBox Box{ FogOfWarConst::kInvalidBox };
 

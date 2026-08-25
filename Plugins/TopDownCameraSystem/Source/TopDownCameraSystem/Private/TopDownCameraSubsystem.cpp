@@ -2,6 +2,7 @@
 
 
 #include "TopDownCameraSubsystem.h"
+#include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/WorldSettings.h"
@@ -12,9 +13,11 @@
 #include "GameFramework/PlayerController.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Engine/GameViewportClient.h"
+#include "UnrealClient.h"
 #include "Widgets/SViewport.h"
 #include "GameFramework/GameModeBase.h"
 #include "TopDownCameraSubsystemProviderInterface.h"
+#include "Configs/TopDownCameraSettings.h"
 
 bool UTopDownCameraSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 {
@@ -118,6 +121,11 @@ void UTopDownCameraSubsystem::OnPossessedPawnChanged(APawn* InOldPawn, APawn* In
 
 void UTopDownCameraSubsystem::SetupCameraForPlayerController(APlayerController* NewPlayerController)
 {
+	if (!NewPlayerController) { return; }
+
+	const UTopDownCameraSettings* TopDownCameraSettings{ GetDefault<UTopDownCameraSettings>() };
+	if (!TopDownCameraSettings) { return; }
+
 	if (!CameraActor)
 	{
 		const FTransform CameraTransform{ FRotator{ -90.f, 0.f, 0.f }.Quaternion(), FVector::ZAxisVector * 2000.f };
@@ -128,11 +136,11 @@ void UTopDownCameraSubsystem::SetupCameraForPlayerController(APlayerController* 
 		{
 			CameraComponent->PrimaryComponentTick.bCanEverTick = false;
 			CameraComponent->ProjectionMode = ECameraProjectionMode::Orthographic;
-			CameraComponent->OrthoWidth = 3000.f;
+			CameraComponent->OrthoWidth = TopDownCameraSettings->OrthoWidth;
 			CameraComponent->bConstrainAspectRatio = false;
 			CameraComponent->SetAutoCalculateOrthoPlanes(false);
-			CameraComponent->SetOrthoNearClipPlane(-5000.f);
-			CameraComponent->SetOrthoFarClipPlane(1e7);
+			CameraComponent->SetOrthoNearClipPlane(TopDownCameraSettings->OrthoNearClipPlane);
+			CameraComponent->SetOrthoFarClipPlane(TopDownCameraSettings->OrthoFarClipPlane);
 		}
 
 		CameraActor->FinishSpawning(CameraTransform);
@@ -153,6 +161,9 @@ void UTopDownCameraSubsystem::SetupCameraForPlayerController(APlayerController* 
 
 void UTopDownCameraSubsystem::Tick(float DeltaTime)
 {
+	if (!CameraActor) { SetupCameraForPlayerController(GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr); }
+	if (!ViewportInfo.IsSet()) { InitializeViewportInfo(); }
+
 	if (!CameraActor || !ViewportInfo.IsSet()) { return; }
 
 	const ACameraBoundsVolume* Volume{ GetCameraBoundsVolume() };

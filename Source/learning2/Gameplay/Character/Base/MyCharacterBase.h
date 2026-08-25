@@ -195,10 +195,10 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Character Death"))
 	void K2_OnCharacterDeath();
 
-private:
-	void CreateAndSetupComponents();
-
 	virtual void OnCharacterDeath_Internal();
+	
+private:
+	void CreateAndSetupComponents();	
 
 private:
 	EWeaponSlot CurrentTargetWeaponSlot{ EWeaponSlot::None };
