@@ -5,6 +5,11 @@
 #include "Battle/Interface/NavModifiedActorInterface.h"
 #include "AI/Navigation/NavigationRelevantData.h"
 
+UMyNavModifierComponent::UMyNavModifierComponent() : Super()
+{
+	bAutoActivate = true;
+}
+
 void UMyNavModifierComponent::GetNavigationData(FNavigationRelevantData& Data) const
 {
 	if (INavModifiedActorInterface* NavModifiedActorInterface = Cast<INavModifiedActorInterface>(GetOwner()))

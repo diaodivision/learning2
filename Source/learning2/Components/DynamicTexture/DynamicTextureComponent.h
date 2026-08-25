@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include <concepts>
 #include "DynamicTextureComponent.generated.h"
+#include "Misc/CoreMiscDefines.h"
 
 class BresenhamAlgo
 {
@@ -42,7 +43,7 @@ template<typename T>
 concept SupportedType = std::same_as<T, uint8> || std::same_as<T, FColor>;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class LEARNING2_API UDynamicTextureComponent : public UActorComponent
+class UE_DEPRECATED(5.7, "Use FogOfWarSystem plugin insteaded") LEARNING2_API UDynamicTextureComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
@@ -110,9 +111,9 @@ protected:
 
 	static bool IsGridVisible(const FColor& ColorNode) { return static_cast<bool>(ColorNode.R); };
 
-	// Áî (VisionStartPos - GridPos) ÎªÏòÁ¿ a, ÏòÁ¿ a ºÍµ¥Î»ÏòÁ¿ direction µÄ²æ»ýÎªÒÔËüÃÇÎª±ßµÄÆ½ÐÐËÄ±ßÐÎµÄÃæ»ý.
-	// Éè GridPos µ½ÏòÁ¿ direction ËùÔÚÖ±ÏßµÄ¾àÀëÎª d. ÒÑÖªÉÏÊöÆ½ÐÐËÄ±ßÐÎµÄÃæ»ý S = d * |direction|, ÓÖÓÉÓÚ |direction| = 1
-	// ËùÒÔ S = d
+	// ï¿½ï¿½ (VisionStartPos - GridPos) Îªï¿½ï¿½ï¿½ï¿½ a, ï¿½ï¿½ï¿½ï¿½ a ï¿½Íµï¿½Î»ï¿½ï¿½ï¿½ï¿½ direction ï¿½Ä²ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ßµï¿½Æ½ï¿½ï¿½ï¿½Ä±ï¿½ï¿½Îµï¿½ï¿½ï¿½ï¿½.
+	// ï¿½ï¿½ GridPos ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ direction ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ßµÄ¾ï¿½ï¿½ï¿½Îª d. ï¿½ï¿½Öªï¿½ï¿½ï¿½ï¿½Æ½ï¿½ï¿½ï¿½Ä±ï¿½ï¿½Îµï¿½ï¿½ï¿½ï¿½ S = d * |direction|, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ |direction| = 1
+	// ï¿½ï¿½ï¿½ï¿½ S = d
 	static float GridDistanceToEdge(const FIntVector2& GridPos, const FIntVector2& VisionStartPos, const FVector2f& EdgeVector);
 
 	float GetNormalizedDistanceToBoundary(const FIntVector2& GridPos, const FIntVector2& VisionStartPos, const FVector2f& EdgeVector, const FVector2f& DirectionToEdge) const;

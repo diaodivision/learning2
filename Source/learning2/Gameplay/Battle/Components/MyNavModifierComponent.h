@@ -14,5 +14,9 @@ class LEARNING2_API UMyNavModifierComponent : public UNavModifierComponent
 {
 	GENERATED_BODY()
 
+public:
+	UMyNavModifierComponent();
+
+private:
 	virtual void GetNavigationData(FNavigationRelevantData& Data) const override;
 };

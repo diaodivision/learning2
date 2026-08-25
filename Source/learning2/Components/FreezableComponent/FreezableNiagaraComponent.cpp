@@ -4,6 +4,11 @@
 #include "FreezableNiagaraComponent.h"
 #include "WorldPauseSubsystem.h"
 
+UFreezableNiagaraComponent::UFreezableNiagaraComponent() : Super()
+{
+	bAutoActivate = true;
+}
+
 void UFreezableNiagaraComponent::Freeze_Implementation()
 {
 	SetCustomTimeDilation(0.f);

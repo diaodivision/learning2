@@ -18,6 +18,8 @@ class LEARNING2_API UCharacterWidgetComponent : public UWidgetComponent
 	GENERATED_BODY()
 
 public:
+	UCharacterWidgetComponent();
+
 	UFUNCTION(BlueprintCallable)
 	void UpdateUICharacterInfo(const FUICharacterInfo& UICharacterInfo);
 

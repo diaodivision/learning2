@@ -306,6 +306,7 @@ void APlayerCharacterBase::OnCharacterDeath_Internal()
 	Super::OnCharacterDeath_Internal();
 
 	if (InputRecordComponent) { InputRecordComponent->Deactivate(); }
+	if (FogOfWarComponent) { FogOfWarComponent->Deactivate(); }
 }
 
 void APlayerCharacterBase::CreateAndSetupComponents()

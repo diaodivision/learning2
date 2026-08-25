@@ -16,6 +16,8 @@ class LEARNING2_API UFreezableNiagaraComponent : public UNiagaraComponent, publi
 	GENERATED_BODY()
 
 public:
+	UFreezableNiagaraComponent();
+
 	virtual void Freeze_Implementation() override;
 	virtual void Unfreeze_Implementation() override;
 	virtual FORCEINLINE bool IsFreezing_Implementation() override { return bIsFreezing; };

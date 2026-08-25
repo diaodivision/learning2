@@ -3,6 +3,11 @@
 
 #include "MyAbilitySystemComponent.h"
 
+UMyAbilitySystemComponent::UMyAbilitySystemComponent() : Super()
+{
+	bAutoActivate = true;
+}
+
 void UMyAbilitySystemComponent::OnGiveAbility(FGameplayAbilitySpec& AbilitySpec)
 {
 	Super::OnGiveAbility(AbilitySpec);

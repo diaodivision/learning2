@@ -24,7 +24,7 @@ class UInputAction;
 //};
 
 UCLASS(Blueprintable, ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class LEARNING2_API UMyInputRecordComponent : public UActorComponent
+class UE_DEPRECATED(5.7, "Use RewindSystem plugin insteaded") LEARNING2_API UMyInputRecordComponent : public UActorComponent
 {
 	GENERATED_BODY()
 

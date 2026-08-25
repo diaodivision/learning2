@@ -4,9 +4,10 @@
 #include "FogOfWarComponentStatics.h"
 #include "FogOfWarShaderTypes.ush"
 
-UFogOfWarComponent::UFogOfWarComponent()
+UFogOfWarComponent::UFogOfWarComponent() : Super()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	bAutoActivate = true;
 }
 
 void UFogOfWarComponent::BeginPlay()
@@ -19,6 +20,8 @@ void UFogOfWarComponent::BeginPlay()
 
 TOptional<FFogOfWarData> UFogOfWarComponent::GetFogOfWarData() const
 {
+	if (!IsActive()) { return NullOpt; }
+
 	const AActor* Owner = GetOwner();
 	if (!Owner) { return NullOpt; }
 

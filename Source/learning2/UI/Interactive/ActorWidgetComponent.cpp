@@ -7,6 +7,11 @@
 #include "ActorWidgetTypes.h"
 #include "ActorWidget.h"
 
+UActorWidgetComponent::UActorWidgetComponent() : Super()
+{
+	bAutoActivate = true;
+}
+
 void UActorWidgetComponent::BeginPlay()
 {
 	Super::BeginPlay();

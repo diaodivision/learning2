@@ -9,11 +9,12 @@
 #include "HoverReactive/HoverReactiveInterface.h"
 
 // Sets default values for this component's properties
-UInteractiveTraceComponent::UInteractiveTraceComponent()
+UInteractiveTraceComponent::UInteractiveTraceComponent() : Super()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
+	bAutoActivate = true;
 
 	// ...
 }
@@ -96,7 +97,7 @@ void UInteractiveTraceComponent::TickComponent(float DeltaTime, ELevelTick TickT
 		HoveredActor = HitActor;
 
 
-		////´¦ÀíÑ¡ÏîµÄÏÔÊ¾ºÍÒþ²Ø
+		////ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		//if (HitActor->Implements<UInteractableTargetInterface>())
 		//{
 		//	FInteractionQuery InteractQuery;
@@ -117,7 +118,7 @@ void UInteractiveTraceComponent::TickComponent(float DeltaTime, ELevelTick TickT
 		//}
 	}
 
-	////´¦Àí¹´±ßµÄÏÔÊ¾ºÍÒþ²Ø
+	////ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ßµï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	//if (HitActor->Implements<UHighLightInterface>())
 	//{
 	//	IHighLightInterface::Execute_HighLightActor(HitActor);

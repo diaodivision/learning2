@@ -18,6 +18,10 @@ class LEARNING2_API UActorWidgetComponent : public UWidgetComponent
 {
 	GENERATED_BODY()
 
+public:
+	UActorWidgetComponent();
+
+private:
 	virtual void BeginPlay() override;
 
 public:

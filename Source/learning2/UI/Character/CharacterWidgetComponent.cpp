@@ -4,6 +4,11 @@
 #include "CharacterWidgetTypes.h"
 #include "CharacterWidget.h"
 
+UCharacterWidgetComponent::UCharacterWidgetComponent() : Super()
+{
+	bAutoActivate = true;
+}
+
 void UCharacterWidgetComponent::UpdateUICharacterInfo(const FUICharacterInfo& UICharacterInfo)
 {
 	UCharacterWidget* CharacterWidget{ Cast<UCharacterWidget>(GetWidget()) };
