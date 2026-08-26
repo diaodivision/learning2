@@ -45,22 +45,22 @@ public:
 	void CreateUI();
 
 	UFUNCTION(BlueprintCallable, Category = Container)
-	UObject* SwitchObject(UObject* Object);
+	UObject* SwitchObject(const UObject* Object);
 
 	UFUNCTION(BlueprintCallable, Category = Container)
-	UObject* SwitchObjectByIndex(int32 Index);
+	UObject* SwitchObjectByIndex(const int32 Index);
 
 	UFUNCTION(BlueprintCallable, Category = Container)
 	[[nodiscard]] bool AddObject(UObject* Object);
 
 	UFUNCTION(BlueprintCallable, Category = Container)
-	[[nodiscard]] bool AddObjectByClass(TSubclassOf<UObject> ObjectClass);
+	[[nodiscard]] bool AddObjectByClass(const TSubclassOf<UObject> ObjectClass);
 
 	UFUNCTION(BlueprintCallable, Category = Container)
-	UObject* RemoveObject(UObject* Object);
+	UObject* RemoveObject(const UObject* Object);
 
 	UFUNCTION(BlueprintCallable, Category = Container)
-	UObject* RemoveObjectByIndex(int32 Index);
+	UObject* RemoveObjectByIndex(const int32 Index);
 
 	UFUNCTION(BlueprintCallable, Category = Container)
 	inline UObject* GetControlledObject() const { return ControlledObject.Get(); }
@@ -69,10 +69,16 @@ public:
 	inline int32 GetControlledObjectIndex() const { return GetControlledObjectIndex_Internal(); }
 
 	UFUNCTION(BlueprintCallable, Category = Container)
-	UObject* GetObjectByIndex(int32 Index) const;
+	UObject* GetObjectByIndex(const int32 Index) const;
 
 	UFUNCTION(BlueprintCallable, Category = Container)
 	UObject* GetObjectByPredicate(FPredicateFunction Predicate) const;
+
+	UFUNCTION(BlueprintPure)
+	int32 Find(const UObject* Object) const;
+
+	FORCEINLINE bool Contains(const UObject* Object) const { return IsValidIndex(Find(Object)); }
+	FORCEINLINE bool IsValidIndex(const int32 Index) const { return Collection.IsValidIndex(Index); }
 
 	UFUNCTION(BlueprintCallable, Category = "Array")
 	inline int32 Num() { return Collection.Num(); }
@@ -84,7 +90,7 @@ public:
 	inline bool IsEmpty() { return Collection.IsEmpty(); }
 
 	UFUNCTION(BlueprintCallable, Category = "Array")
-	virtual inline bool CanAddObject(TSubclassOf<UObject> InClass) const { return CanAddObject_Internal(InClass); };
+	virtual inline bool CanAddObject(const TSubclassOf<UObject> InClass) const { return CanAddObject_Internal(InClass); };
 
 	UFUNCTION(BlueprintCallable, Category = "Collection")
 	inline void EnableSort(FProjectionFunction InProjectionFunction)
@@ -113,18 +119,15 @@ protected:
 
 	virtual void AutoSwitch();
 
-	int32 Find(UObject* Object) const;
-	bool Contains(UObject* Object) const;
-
-	virtual UObject* SwitchObject_Internal(UObject* Object);
+	virtual UObject* SwitchObject_Internal(const UObject* Object);
 	[[nodiscard]] virtual bool AddObject_Internal(UObject* Object);
-	[[nodiscard]] virtual bool AddObject_Internal(TSubclassOf<UObject> ObjectClass);
-	virtual UObject* RemoveObject_Internal(int32 Index);
+	[[nodiscard]] virtual bool AddObject_Internal(const TSubclassOf<UObject> ObjectClass);
+	virtual UObject* RemoveObject_Internal(const int32 Index);
 	virtual inline UObject* GetControlledObject_Internal() const { return ControlledObject.Get(); }
 	virtual inline int32 GetControlledObjectIndex_Internal() const { return Find(ControlledObject.Get()); }
-	virtual UObject* GetObjectByIndex_Internal(int32 Index) const;
+	virtual UObject* GetObjectByIndex_Internal(const int32 Index) const;
 	virtual UObject* GetObjectByPredicate_Internal(FPredicateFunction Predicate) const;
-	virtual inline bool CanAddObject_Internal(TSubclassOf<UObject> InClass) const { return InClass->IsChildOf(RequiredClass); };
+	virtual inline bool CanAddObject_Internal(const TSubclassOf<UObject> InClass) const { return InClass->IsChildOf(RequiredClass); };
 
 	inline int32 TryExecuteProjection(const UObject* Object) const
 	{

@@ -108,11 +108,14 @@ public:
 
 	TArray<AWeaponActorBase*> GetWeapons() const;
 
+	UFUNCTION(BlueprintPure)
+	bool ContainsWeapon(const AWeaponActorBase* Weapon) const;
+
 	UFUNCTION(BlueprintCallable)
 	AWeaponActorBase* SwitchWeaponByIndex(const int32 Index);
 
 	UFUNCTION(BlueprintCallable)
-	AWeaponActorBase* SwitchWeaponByActor(AWeaponActorBase* Weapon);
+	AWeaponActorBase* SwitchWeaponByActor(const AWeaponActorBase* Weapon);
 
 	virtual void ShowCharacterWidget_Implementation(bool bIsShow) override;
 	virtual bool IsCharacterWidgetVisible_Implementation() const override;

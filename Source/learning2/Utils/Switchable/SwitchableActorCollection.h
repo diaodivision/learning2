@@ -20,22 +20,22 @@ class LEARNING2_API USwitchableActorCollection : public USwitchableCollection
 
 public:
 	UFUNCTION(BlueprintCallable, Category = Container)
-	AActor* SwitchActor(AActor* Actor);
+	AActor* SwitchActor(const AActor* Actor);
 
 	UFUNCTION(BlueprintCallable, Category = Container)
-	AActor* SwitchActorByIndex(int32 Index);
+	AActor* SwitchActorByIndex(const int32 Index);
 
 	UFUNCTION(BlueprintCallable, Category = Container)
 	[[nodiscard]] bool AddActor(AActor* Actor);
 
 	UFUNCTION(BlueprintCallable, Category = Container)
-	[[nodiscard]] bool AddActorByClass(TSubclassOf<AActor> ActorClass);
+	[[nodiscard]] bool AddActorByClass(const TSubclassOf<AActor> ActorClass);
 
 	UFUNCTION(BlueprintCallable, Category = Container)
-	AActor* RemoveActorByIndex(int32 Index);
+	AActor* RemoveActorByIndex(const int32 Index);
 
 	UFUNCTION(BlueprintCallable, Category = Container)
-	AActor* RemoveActor(AActor* Actor);
+	AActor* RemoveActor(const AActor* Actor);
 
 	UFUNCTION(BlueprintCallable, Category = Container)
 	inline AActor* GetControlledActor() const { return Cast<AActor>(GetControlledObject()); }
@@ -44,19 +44,19 @@ public:
 	int32 GetControlledActorIndex() const { return GetControlledObjectIndex(); };
 
 	UFUNCTION(BlueprintCallable, Category = Container)
-	inline AActor* GetActorByIndex(int32 Index) const { return Cast<AActor>(GetObjectByIndex(Index)); };
+	inline AActor* GetActorByIndex(const int32 Index) const { return Cast<AActor>(GetObjectByIndex(Index)); };
 
 	UFUNCTION(BlueprintCallable, Category = Container)
 	inline AActor* GetActorByPredicate(FPredicateFunction Predicate) const { return Cast<AActor>(GetObjectByPredicate(Predicate)); }
 
 	UFUNCTION(BlueprintCallable, Category = "Array")
-	virtual inline bool CanAddActor(TSubclassOf<AActor> InClass) const { return CanAddObject(InClass); };
+	virtual inline bool CanAddActor(const TSubclassOf<AActor> InClass) const { return CanAddObject(InClass); };
 
 protected:
-	virtual UObject* SwitchObject_Internal(UObject* Object) override;
+	virtual UObject* SwitchObject_Internal(const UObject* Object) override;
 	[[nodiscard]] virtual bool AddObject_Internal(UObject* Object) override;
-	[[nodiscard]] virtual bool AddObject_Internal(TSubclassOf<UObject> ObjectClass) override;
-	virtual UObject* RemoveObject_Internal(int32 Index) override;
+	[[nodiscard]] virtual bool AddObject_Internal(const TSubclassOf<UObject> ObjectClass) override;
+	virtual UObject* RemoveObject_Internal(const int32 Index) override;
 
 public:
 	UPROPERTY(BlueprintAssignable)

@@ -18,12 +18,12 @@ void USwitchableCollection::CreateUI()
 	}
 }
 
-UObject* USwitchableCollection::SwitchObject(UObject* Object)
+UObject* USwitchableCollection::SwitchObject(const UObject* Object)
 {
 	return SwitchObject_Internal(Object);
 }
 
-UObject* USwitchableCollection::SwitchObjectByIndex(int32 Index)
+UObject* USwitchableCollection::SwitchObjectByIndex(const int32 Index)
 {
 	return SwitchObject(GetObjectByIndex(Index));
 }
@@ -33,22 +33,22 @@ bool USwitchableCollection::AddObject(UObject* Object)
 	return AddObject_Internal(Object);
 }
 
-bool USwitchableCollection::AddObjectByClass(TSubclassOf<UObject> ObjectClass)
+bool USwitchableCollection::AddObjectByClass(const TSubclassOf<UObject> ObjectClass)
 {
 	return AddObject_Internal(ObjectClass);
 }
 
-UObject* USwitchableCollection::RemoveObject(UObject* Object)
+UObject* USwitchableCollection::RemoveObject(const UObject* Object)
 {
 	return RemoveObjectByIndex(Find(Object));
 }
 
-UObject* USwitchableCollection::RemoveObjectByIndex(int32 Index)
+UObject* USwitchableCollection::RemoveObjectByIndex(const int32 Index)
 {
 	return RemoveObject_Internal(Index);
 }
 
-UObject* USwitchableCollection::GetObjectByIndex(int32 Index) const
+UObject* USwitchableCollection::GetObjectByIndex(const int32 Index) const
 {
 	return GetObjectByIndex_Internal(Index);
 }
@@ -58,15 +58,7 @@ UObject* USwitchableCollection::GetObjectByPredicate(FPredicateFunction Predicat
 	return GetObjectByPredicate_Internal(Predicate);
 }
 
-void USwitchableCollection::AutoSwitch()
-{
-	if (!IsEmpty())
-	{
-		SwitchObjectByIndex(0);
-	}
-}
-
-int32 USwitchableCollection::Find(UObject* Object) const
+int32 USwitchableCollection::Find(const UObject* Object) const
 {
 	if (!Object) { return INDEX_NONE; }
 
@@ -77,25 +69,29 @@ int32 USwitchableCollection::Find(UObject* Object) const
 		return Algo::BinarySearchBy(Collection, Projection(Object), [&Projection](const TObjectPtr<UObject>& Element) {return Element ? Projection(Element) : 0; });
 	}
 
-	return Collection.Find(Object);
+	return Collection.IndexOfByPredicate([Object](const TObjectPtr<UObject>& Element) { return Element == Object; });
 }
 
-bool USwitchableCollection::Contains(UObject* Object) const
+void USwitchableCollection::AutoSwitch()
 {
-	if (Object) { return Find(Object) != INDEX_NONE; }
-
-	return false;
-}
-
-UObject* USwitchableCollection::SwitchObject_Internal(UObject* Object)
-{
-	if (UObject* OldObject{ ControlledObject.Get() }; Contains(Object) && (OldObject != Object || OldObject == nullptr))
+	if (!IsEmpty())
 	{
-		ControlledObject = Object;
-		if (OldObject) { ISwitchableInterface::Execute_OnControlReleased(OldObject); }
+		SwitchObjectByIndex(0);
+	}
+}
 
-		ISwitchableInterface::Execute_OnControl(ControlledObject.Get(), Owner);
-		OnControlledObjectChangedDelegate.Broadcast(OldObject, ControlledObject.Get());
+UObject* USwitchableCollection::SwitchObject_Internal(const UObject* Object)
+{
+	if (!Object || Object == ControlledObject.Get()) { return ControlledObject.Get(); }
+	
+	UObject* OldObject{ ControlledObject.Get() };
+	if (const int32 Index{ Find(Object) }; IsValidIndex(Index))
+	{
+		UObject* NewObject{ Collection[Index] };
+		ControlledObject = NewObject;
+		if (OldObject) { ISwitchableInterface::Execute_OnControlReleased(OldObject); }
+		ISwitchableInterface::Execute_OnControl(NewObject, Owner);
+		OnControlledObjectChangedDelegate.Broadcast(OldObject, NewObject);
 	}
 
 	return ControlledObject.Get();
@@ -130,7 +126,7 @@ bool USwitchableCollection::AddObject_Internal(UObject* Object)
 	return true;
 }
 
-bool USwitchableCollection::AddObject_Internal(TSubclassOf<UObject> ObjectClass)
+bool USwitchableCollection::AddObject_Internal(const TSubclassOf<UObject> ObjectClass)
 {
 	if (CanAddObject_Internal(ObjectClass))
 	{
@@ -140,7 +136,7 @@ bool USwitchableCollection::AddObject_Internal(TSubclassOf<UObject> ObjectClass)
 	return false;
 }
 
-UObject* USwitchableCollection::RemoveObject_Internal(int32 Index)
+UObject* USwitchableCollection::RemoveObject_Internal(const int32 Index)
 {
 	if (UObject* RemovedObject = GetObjectByIndex_Internal(Index))
 	{
@@ -159,7 +155,7 @@ UObject* USwitchableCollection::RemoveObject_Internal(int32 Index)
 	return nullptr;
 }
 
-UObject* USwitchableCollection::GetObjectByIndex_Internal(int32 Index) const
+UObject* USwitchableCollection::GetObjectByIndex_Internal(const int32 Index) const
 {
 	if (Collection.IsValidIndex(Index)) { return Collection[Index]; }
 

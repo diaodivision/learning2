@@ -201,12 +201,17 @@ TArray<AWeaponActorBase*> AMyCharacterBase::GetWeapons() const
 	return OutWeapons;
 }
 
+bool AMyCharacterBase::ContainsWeapon(const AWeaponActorBase* Weapon) const 
+{ 
+	return Weapons->Contains(Weapon);
+}
+
 AWeaponActorBase* AMyCharacterBase::SwitchWeaponByIndex(const int32 Index)
 {
 	return Cast<AWeaponActorBase>(Weapons->SwitchActorByIndex(Index));
 }
 
-AWeaponActorBase* AMyCharacterBase::SwitchWeaponByActor(AWeaponActorBase* Weapon)
+AWeaponActorBase* AMyCharacterBase::SwitchWeaponByActor(const AWeaponActorBase* Weapon)
 {
 	return Cast<AWeaponActorBase>(Weapons->SwitchActor(Weapon));
 }

@@ -3,12 +3,12 @@
 
 #include "SwitchableActorCollection.h"
 
-AActor* USwitchableActorCollection::SwitchActorByIndex(int32 Index)
+AActor* USwitchableActorCollection::SwitchActorByIndex(const int32 Index)
 {
 	return SwitchActor(GetActorByIndex(Index));
 }
 
-AActor* USwitchableActorCollection::SwitchActor(AActor* Actor)
+AActor* USwitchableActorCollection::SwitchActor(const AActor* Actor)
 {
 	return Cast<AActor>(SwitchObject(Actor));
 }
@@ -18,22 +18,22 @@ bool USwitchableActorCollection::AddActor(AActor* Actor)
 	return AddObject(Actor);
 }
 
-bool USwitchableActorCollection::AddActorByClass(TSubclassOf<AActor> ActorClass)
+bool USwitchableActorCollection::AddActorByClass(const TSubclassOf<AActor> ActorClass)
 {
 	return AddObjectByClass(ActorClass);
 }
 
-AActor* USwitchableActorCollection::RemoveActorByIndex(int32 Index)
+AActor* USwitchableActorCollection::RemoveActorByIndex(const int32 Index)
 {
 	return Cast<AActor>(RemoveObjectByIndex(Index));
 }
 
-AActor* USwitchableActorCollection::RemoveActor(AActor* Actor)
+AActor* USwitchableActorCollection::RemoveActor(const AActor* Actor)
 {
 	return Cast<AActor>(RemoveObject(Actor));
 }
 
-UObject* USwitchableActorCollection::SwitchObject_Internal(UObject* Object)
+UObject* USwitchableActorCollection::SwitchObject_Internal(const UObject* Object)
 {
 	const UObject* OldObject{ GetControlledObject() };
 	const UObject* NewObject{ Super::SwitchObject_Internal(Object) };
@@ -43,7 +43,7 @@ UObject* USwitchableActorCollection::SwitchObject_Internal(UObject* Object)
 		OnControlledActorChangedDelegate.Broadcast(const_cast<AActor*>(Cast<AActor>(OldObject)), const_cast<AActor*>(Cast<AActor>(NewObject)));
 	}
 
-	return const_cast<UObject*>(NewObject);
+	return GetControlledObject();
 }
 
 bool USwitchableActorCollection::AddObject_Internal(UObject* Object)
@@ -60,7 +60,7 @@ bool USwitchableActorCollection::AddObject_Internal(UObject* Object)
 	return false;
 }
 
-bool USwitchableActorCollection::AddObject_Internal(TSubclassOf<UObject> ObjectClass)
+bool USwitchableActorCollection::AddObject_Internal(const TSubclassOf<UObject> ObjectClass)
 {
 	if (CanAddObject_Internal(ObjectClass))
 	{
@@ -72,7 +72,7 @@ bool USwitchableActorCollection::AddObject_Internal(TSubclassOf<UObject> ObjectC
 	return false;
 }
 
-UObject* USwitchableActorCollection::RemoveObject_Internal(int32 Index)
+UObject* USwitchableActorCollection::RemoveObject_Internal(const int32 Index)
 {
 	AActor* RemovedActor = Cast<AActor>(Super::RemoveObject_Internal(Index));
 	if (RemovedActor) { OnActorRemovedDelegate.Broadcast(RemovedActor); }
