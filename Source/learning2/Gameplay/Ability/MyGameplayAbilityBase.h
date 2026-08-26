@@ -39,6 +39,10 @@ public:
 
 	bool IsBound() const;
 
+	FORCEINLINE virtual void PreActivateInteractiveOption() { K2_PreActivateInteractiveOption(); }
+	UFUNCTION(BlueprintImplementableEvent)
+	void K2_PreActivateInteractiveOption();
+
 	UFUNCTION(BlueprintCallable, Category = "Combinable Ability")
 	bool CanBindWith(const UMyGameplayAbilityBase* OtherGA) const;
 	static bool CanBindWith(const UMyGameplayAbilityBase* Instigator, const UMyGameplayAbilityBase* Target);
@@ -116,6 +120,8 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Combinable Ability", meta = (DisplayName = "Execute Bind Ability"))
 	void K2_ExecuteBindAbility(UPARAM(ref)FGameplayEventData& GameplayEventData);
 
+	virtual FORCEINLINE void PostExecuteBindAbility() {}
+
 #if WITH_EDITOR
 	virtual void HandleFailToExecuteBindAbility(const FString& InReason);
 #endif
@@ -148,11 +154,11 @@ private:
 	static bool GetGameplayAbilityID(GameplayAbilityIDType& ID, const UAbilitySystemComponent& ASC, const UMyGameplayAbilityBase* GA);
 
 public:
-	//ÐèÒªÓÐÒÔÏÂ Tag ²ÅÄÜ°ó¶¨µ½¸Ã¼¼ÄÜ
+	//ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Tag ï¿½ï¿½ï¿½Ü°ó¶¨µï¿½ï¿½Ã¼ï¿½ï¿½ï¿½
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Tags)
 	FGameplayTag BindTag;
 
-	//¸Ã¼¼ÄÜ½«»á±»°ó¶¨µ½ÓµÓÐÒÔÏÂ tag µÄ¼¼ÄÜ
+	//ï¿½Ã¼ï¿½ï¿½Ü½ï¿½ï¿½á±»ï¿½ó¶¨µï¿½Óµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ tag ï¿½Ä¼ï¿½ï¿½ï¿½
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Tags)
 	FGameplayTag TagToBind;
 

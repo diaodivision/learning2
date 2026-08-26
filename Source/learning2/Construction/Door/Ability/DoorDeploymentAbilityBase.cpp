@@ -20,6 +20,7 @@ void UDoorDeploymentAbilityBase::Record()
 	FRecordedCombinableAbilityDataPayloadBase& RecordedCombinableAbilityDataPayload = Data->Payload.RecordedCombinableAbilityData.Payload;
 	Payload.WeaponOwner = AvatarActor;
 	Payload.GrenadeActor = Cast<AGrenadeActorBase>(Cast<AGrenadeActorBase>(AvatarActor->GetControlledWeapon()));
+	Payload.LastControlWeapon = LastControlWeapon;
 	Payload.RecordedCombinableAbilityData = MakeRecordedCombinableAbilityData();
 	if (const URecordedGrenadeFireAbilityData * AbilityData{ Cast<URecordedGrenadeFireAbilityData>(RecordedCombinableAbilityDataPayload.EventDataToBoundAbility->OptionalObject) })
 	{
@@ -27,6 +28,7 @@ void UDoorDeploymentAbilityBase::Record()
 		Payload.TargetLocation = AbilityData->CursorLocation;
 		RecordedCombinableAbilityDataPayload.EventDataToBoundAbility->OptionalObject = nullptr;
 	}
+	if (BoundAbilityInfo.IsValid()) { Payload.RedoBindCallback = BoundAbilityInfo.RedoBindCallback; }
 
 	FRecordedDataObjectHandle RecordedDataObjectHandle = System->Record(MoveTemp(Data), *AvatarActor,
 		[WeakThis = MakeWeakObjectPtr(this)](const FRecordedDataObjectHandle& Handle)
@@ -35,6 +37,12 @@ void UDoorDeploymentAbilityBase::Record()
 
 			for (FCombinedAbilityIterator It{ *WeakThis }; It; ++It) { UMyGameplayAbilityBase::InvokePostRecord(*It, Handle); }
 		});
+	
+	if (LastControlWeapon.IsValid())
+	{
+		AvatarActor->SwitchWeaponByActor(LastControlWeapon.Get());
+		LastControlWeapon = nullptr;
+	}
 }
 
 bool UDoorDeploymentAbilityBase::TryHandleRecordedData(TSharedPtr<IRecordedDataObjectInterface, ESPMode::NotThreadSafe> InRecordedData)
@@ -62,6 +70,8 @@ bool UDoorDeploymentAbilityBase::TryHandleRecordedData(TSharedPtr<IRecordedDataO
 		bActivateAbilitySuccessful = RecordedCombinableAbilityDataPayload.AbilityComponent->TryActivateAbilityByClass(RecordedCombinableAbilityDataPayload.AbilityClass);
 	}
 
+	LastControlWeapon = Payload.LastControlWeapon;
+
 	if (bActivateAbilitySuccessful)
 	{
 		NotifyStartDurativeAction(InRecordedData);
@@ -87,5 +97,32 @@ void UDoorDeploymentAbilityBase::OnPreview(const bool bIsPreview, const IRecorde
 			Door->NotifyOptionActivate();
 		}
 		else { Door->HidePredictionLine(); }
+	}
+}
+
+void UDoorDeploymentAbilityBase::PreActivateInteractiveOption()
+{
+	if (!BoundAbilityInfo.Ability.IsValid()) { return; }
+	
+ 	if (AMyCharacterBase* Character{ Cast<AMyCharacterBase>(BoundAbilityInfo.Ability->GetAvatarActorFromActorInfo()) })
+	{
+		LastControlWeapon = Character->GetControlledWeapon();
+		Character->SwitchWeaponByClass(AGrenadeActorBase::StaticClass());
+		Super::PreActivateInteractiveOption();
+	}
+}
+
+void UDoorDeploymentAbilityBase::PostExecuteBindAbility()
+{
+	Super::PostExecuteBindAbility();
+
+	if (LastControlWeapon.IsValid())
+	{
+		if (AMyCharacterBase* Character{ Cast<AMyCharacterBase>(BoundAbilityInfo.Ability->GetAvatarActorFromActorInfo()) })
+		{
+			Character->SwitchWeaponByClass(LastControlWeapon->GetClass());
+		}
+
+		LastControlWeapon = nullptr;
 	}
 }

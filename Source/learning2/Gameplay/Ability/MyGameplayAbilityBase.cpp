@@ -407,16 +407,8 @@ void UMyGameplayAbilityBase::ExecuteBindAbility()
 
 		ASC->HandleGameplayEvent(BindTag, &TriggerEventData);
 	}
-	//if (EventDataToBoundAbility)
-	//{
-	//	const FGameplayEventData TriggerEventData = EventDataToBoundAbility.Release()->Pin();
 
-	//	ASC->HandleGameplayEvent(BindTag, &TriggerEventData);
-	//}
-	//else
-	//{
-	//	ASC->TryActivateAbilitiesByTag(UBlueprintGameplayTagLibrary::MakeGameplayTagContainerFromTag(BindTag));
-	//}
+	PostExecuteBindAbility();
 }
 
 #if WITH_EDITOR

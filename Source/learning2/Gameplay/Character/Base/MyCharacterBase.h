@@ -117,6 +117,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	AWeaponActorBase* SwitchWeaponByActor(const AWeaponActorBase* Weapon);
 
+	UFUNCTION(BlueprintCallable)
+	AWeaponActorBase* SwitchWeaponByClass(const TSubclassOf<AWeaponActorBase> WeaponClass);
+
 	virtual void ShowCharacterWidget_Implementation(bool bIsShow) override;
 	virtual bool IsCharacterWidgetVisible_Implementation() const override;
 

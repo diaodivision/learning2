@@ -125,6 +125,8 @@ bool UInteractionAbilityOption::Activate()
 	UAbilitySystemComponent* AbilitySystemComponent{ AbilityInstance->GetAbilitySystemComponentFromActorInfo() };
 	if (!ensure(AbilitySystemComponent)) { return false; }
 
+	if (UMyGameplayAbilityBase* MyGA{ Cast<UMyGameplayAbilityBase>(AbilityInstance) }) { MyGA->PreActivateInteractiveOption(); }
+
 	//return AbilitySystemComponent->HandleGameplayEvent(GameplayEventData->EventTag, GameplayEventData.Get()) > 0;
 	if (GameplayEventData && GameplayEventData->EventTag.IsValid())
 	{

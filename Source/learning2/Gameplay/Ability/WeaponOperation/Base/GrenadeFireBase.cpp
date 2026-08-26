@@ -8,7 +8,7 @@
 
 void UGrenadeFireBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
-	const AMyCharacterBase* AvatarCharacter = Cast<AMyCharacterBase>(GetAvatarActorFromActorInfo());
+	AMyCharacterBase* AvatarCharacter = Cast<AMyCharacterBase>(GetAvatarActorFromActorInfo());
 	AGrenadeActorBase* GrenadeWeapon = AvatarCharacter ? Cast<AGrenadeActorBase>(AvatarCharacter->GetControlledWeapon()) : nullptr;
 	if (!GrenadeWeapon)
 	{
@@ -25,6 +25,12 @@ void UGrenadeFireBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
 	else
 	{
 		if (!CanExecuteShoot() && !(!TriggerEventData || TriggerEventData->OptionalObject.IsA<URecordedGrenadeFireAbilityData>()))
+		{
+			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+			return;
+		}
+
+		if (Instigator->SwitchWeaponByActor(Weapon.Get()) != Weapon.Get()) 
 		{
 			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 			return;

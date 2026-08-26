@@ -14,6 +14,7 @@
 #include "Interactive/ActorWidget.h"
 #include "Interactive/ItemIconProviderInterface.h"
 #include "Interactable/InteractableTargetUIInterface.h"
+#include "TimerManager.h"
 #include "WorldPauseSubsystem.h"
 #include "InputRecordComponent.h"
 
@@ -97,6 +98,13 @@ void AInteractableActorBase::ShowOptions_Implementation(const FInteractionQuery&
 
 	WidgetComponent->SetVisibility(true);
 
+	if (DelayClearAllInactiveOptionTimerHandle.IsValid())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(DelayClearAllInactiveOptionTimerHandle);
+		OptionsBuilder.ClearAllInactiveOption();
+		OnInteractionOptionsUpdated();
+	}
+
 	IInteractableTargetInterface::Execute_GatherInteractionOptions(this, InteractionQuery);
 
 	{
@@ -129,8 +137,7 @@ void AInteractableActorBase::HideOptions_Implementation()
 		}
 	}
 
-	OptionsBuilder.ClearAllInactiveOption();
-	OnInteractionOptionsUpdated();
+	GetWorld()->GetTimerManager().SetTimer(DelayClearAllInactiveOptionTimerHandle, this, &AInteractableActorBase::ClearAllInactiveOptionDelay, 2.f, false);
 
 	RequestingAvatar.Reset();
 	CachedInteractionQuery.Reset();
@@ -376,6 +383,12 @@ void AInteractableActorBase::PostAbilityOptionRecorded(UInteractionOptionBase* O
 
 			WeakOption->SetWillBeActivate(bIsPreview);
 		});
+}
+
+void AInteractableActorBase::ClearAllInactiveOptionDelay()
+{
+	OptionsBuilder.ClearAllInactiveOption();
+	OnInteractionOptionsUpdated();
 }
 
 InteractionOptionTypes::OptionGroupIDType AInteractableActorBase::GetOptionGroupIDByAbilityInstance(const UGameplayAbility* AbilityInstance) const

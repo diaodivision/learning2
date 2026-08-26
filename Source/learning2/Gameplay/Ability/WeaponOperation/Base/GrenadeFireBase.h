@@ -32,7 +32,7 @@ class LEARNING2_API UGrenadeFireBase : public UWeaponFireAbilityBase
 
 protected:
 	UPROPERTY(BlueprintReadOnly)
-	TWeakObjectPtr<const AMyCharacterBase> Instigator;
+	TWeakObjectPtr<AMyCharacterBase> Instigator;
 	UPROPERTY(BlueprintReadOnly)
 	TWeakObjectPtr<AWeaponActorBase> Weapon;
 	TOptional<FGameplayEventData> CachedTriggerEventData;

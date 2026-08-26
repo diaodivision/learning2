@@ -40,7 +40,7 @@ bool USwitchableCollection::AddObjectByClass(const TSubclassOf<UObject> ObjectCl
 
 UObject* USwitchableCollection::RemoveObject(const UObject* Object)
 {
-	return RemoveObjectByIndex(Find(Object));
+	return RemoveObjectByIndex(IndexOf(Object));
 }
 
 UObject* USwitchableCollection::RemoveObjectByIndex(const int32 Index)
@@ -58,7 +58,7 @@ UObject* USwitchableCollection::GetObjectByPredicate(FPredicateFunction Predicat
 	return GetObjectByPredicate_Internal(Predicate);
 }
 
-int32 USwitchableCollection::Find(const UObject* Object) const
+int32 USwitchableCollection::IndexOf(const UObject* Object) const
 {
 	if (!Object) { return INDEX_NONE; }
 
@@ -85,7 +85,7 @@ UObject* USwitchableCollection::SwitchObject_Internal(const UObject* Object)
 	if (!Object || Object == ControlledObject.Get()) { return ControlledObject.Get(); }
 	
 	UObject* OldObject{ ControlledObject.Get() };
-	if (const int32 Index{ Find(Object) }; IsValidIndex(Index))
+	if (const int32 Index{ IndexOf(Object) }; IsValidIndex(Index))
 	{
 		UObject* NewObject{ Collection[Index] };
 		ControlledObject = NewObject;

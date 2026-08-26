@@ -92,6 +92,8 @@ protected:
 
 	virtual void PostAbilityOptionRecorded(UInteractionOptionBase* Option, const FRecordedDataObjectHandle Handle);
 
+	void ClearAllInactiveOptionDelay();
+
 protected:
 	InteractionOptionTypes::OptionGroupIDType GetOptionGroupIDByAbilityInstance(const UGameplayAbility* AbilityInstance) const;
 
@@ -162,4 +164,7 @@ protected:
 	TMap<TWeakObjectPtr<UInteractionOptionBase>, int32> OptionToAbilityIndexMap;
 
 	bool bIsFreezing{ false };
+
+private:
+	FTimerHandle DelayClearAllInactiveOptionTimerHandle;
 };

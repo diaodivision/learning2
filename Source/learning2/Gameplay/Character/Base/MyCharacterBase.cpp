@@ -216,6 +216,13 @@ AWeaponActorBase* AMyCharacterBase::SwitchWeaponByActor(const AWeaponActorBase* 
 	return Cast<AWeaponActorBase>(Weapons->SwitchActor(Weapon));
 }
 
+AWeaponActorBase* AMyCharacterBase::SwitchWeaponByClass(const TSubclassOf<AWeaponActorBase> WeaponClass)
+{
+	const int32 Index{ Weapons->IndexOfByPredicate([WeaponClass](const UObject* Weapon){ return Weapon->IsA(WeaponClass); }) };
+	if (Weapons->IsValidIndex(Index)) { return Cast<AWeaponActorBase>(Weapons->SwitchActorByIndex(Index)); }
+	return nullptr;
+}
+
 void AMyCharacterBase::ShowCharacterWidget_Implementation(bool bIsShow)
 {
 	const bool bIsVisible{ ICharacterWidgetControllableInterface::Execute_IsCharacterWidgetVisible(this) };

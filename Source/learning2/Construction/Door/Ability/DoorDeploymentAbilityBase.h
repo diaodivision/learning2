@@ -5,6 +5,7 @@
 #include "DoorDeploymentAbilityBase.generated.h"
 
 struct IRecordedDataObjectInterface;
+class AWeaponActorBase;
 
 UCLASS(BlueprintType, Blueprintable, Abstract)
 class UDoorDeploymentAbilityBase : public UMyGameplayAbilityBase
@@ -16,4 +17,11 @@ class UDoorDeploymentAbilityBase : public UMyGameplayAbilityBase
 	virtual bool TryHandleRecordedData(TSharedPtr<IRecordedDataObjectInterface, ESPMode::NotThreadSafe> InRecordedData) override;
 
 	virtual void OnPreview(const bool bIsPreview, const IRecordedDataObjectInterface* InRecordedData) override;
+
+	virtual void PreActivateInteractiveOption() override;
+
+	virtual void PostExecuteBindAbility() override;
+
+private:
+	TWeakObjectPtr<AWeaponActorBase> LastControlWeapon;
 };

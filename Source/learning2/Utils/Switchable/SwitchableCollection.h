@@ -75,9 +75,20 @@ public:
 	UObject* GetObjectByPredicate(FPredicateFunction Predicate) const;
 
 	UFUNCTION(BlueprintPure)
-	int32 Find(const UObject* Object) const;
+	int32 IndexOf(const UObject* Object) const;
 
-	FORCEINLINE bool Contains(const UObject* Object) const { return IsValidIndex(Find(Object)); }
+	UFUNCTION(BlueprintPure)
+	FORCEINLINE int32 K2_IndexOfByPredicate(FPredicateFunction Predicate) const 
+	{
+		if (!Predicate.IsBound()){ return INDEX_NONE; }
+
+    return Collection.IndexOfByPredicate([&Predicate](const TObjectPtr<UObject>& Element){ return Predicate.Execute(Element);});
+	}
+
+	template <typename PredicateType>
+	FORCEINLINE int32 IndexOfByPredicate(PredicateType Predicate) const { return Collection.IndexOfByPredicate(Predicate); }
+
+	FORCEINLINE bool Contains(const UObject* Object) const { return IsValidIndex(IndexOf(Object)); }
 	FORCEINLINE bool IsValidIndex(const int32 Index) const { return Collection.IsValidIndex(Index); }
 
 	UFUNCTION(BlueprintCallable, Category = "Array")
@@ -124,7 +135,7 @@ protected:
 	[[nodiscard]] virtual bool AddObject_Internal(const TSubclassOf<UObject> ObjectClass);
 	virtual UObject* RemoveObject_Internal(const int32 Index);
 	virtual inline UObject* GetControlledObject_Internal() const { return ControlledObject.Get(); }
-	virtual inline int32 GetControlledObjectIndex_Internal() const { return Find(ControlledObject.Get()); }
+	virtual inline int32 GetControlledObjectIndex_Internal() const { return IndexOf(ControlledObject.Get()); }
 	virtual UObject* GetObjectByIndex_Internal(const int32 Index) const;
 	virtual UObject* GetObjectByPredicate_Internal(FPredicateFunction Predicate) const;
 	virtual inline bool CanAddObject_Internal(const TSubclassOf<UObject> InClass) const { return InClass->IsChildOf(RequiredClass); };

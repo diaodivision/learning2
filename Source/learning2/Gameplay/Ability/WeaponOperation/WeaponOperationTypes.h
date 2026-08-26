@@ -9,6 +9,7 @@
 
 class AMyCharacterBase;
 class AGrenadeActorBase;
+class AWeaponActorBase;
 
 namespace WeaponOperationTypesPublic
 {
@@ -36,11 +37,15 @@ struct FRecordedGrenadeFireAbilityDataPayload
 
 	TWeakObjectPtr<AGrenadeActorBase> GrenadeActor;
 
+	TWeakObjectPtr<AWeaponActorBase> LastControlWeapon;
+
 	FVector GrenadeSpawnsLocation;
 
 	FVector TargetLocation;
 
 	FRecordedCombinableAbilityData RecordedCombinableAbilityData;
+
+	TFunction<void()> RedoBindCallback;
 };
 
 struct FRecordedGrenadeFireAbilityData :

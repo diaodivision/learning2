@@ -24,9 +24,11 @@ bool FRecordedGrenadeFireAbilityData::PrepareToHandleRecordedData()
 	AGrenadeActorBase* GrenadeActor{ Payload.GrenadeActor.Get() };
 	if (!GrenadeActor || !WeaponOwner) { return false; }
 
-	if (WeaponOwner->GetControlledWeapon() == GrenadeActor) { return true; }
+	if (WeaponOwner->GetControlledWeapon() != GrenadeActor) { WeaponOwner->SwitchWeaponByActor(GrenadeActor); }
+	
+	if (Payload.RedoBindCallback) { Payload.RedoBindCallback(); }
 
-	return GrenadeActor == WeaponOwner->SwitchWeaponByActor(GrenadeActor);
+	return GrenadeActor == WeaponOwner->GetControlledWeapon();
 }
 
 bool FRecordedGrenadeFireAbilityData::ConsumeAndTryHandlePayload(TSharedPtr<IRecordedDataObjectInterface, ESPMode::NotThreadSafe> RecordedData)
