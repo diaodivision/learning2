@@ -32,3 +32,10 @@ void UCharacterWidgetComponent::ShowCharacterUI(bool bIsShow)
 
 	CharacterWidget->ShowCharacterUI(bIsShow);
 }
+
+void UCharacterWidgetComponent::Deactivate()
+{
+	Super::Deactivate();
+
+	if (GetWidget()) { GetWidget()->SetVisibility(ESlateVisibility::Hidden); }
+}

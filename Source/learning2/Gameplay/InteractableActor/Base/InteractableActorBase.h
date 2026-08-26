@@ -113,7 +113,7 @@ protected:
 			const TStrongObjectPtr<UInteractionOptionBase>& Option{ (*It) };
 			if (Option.IsValid() && Option->IsActivating())
 			{
-				if (!ensureAlways(GroupIDToActivatingOptionMap.Contains(Option->GetGroupID()))) { return; }
+				if (!GroupIDToActivatingOptionMap.Contains(Option->GetGroupID())) { return; }
 				GroupIDToActivatingOptionMap.Add(Option->GetGroupID(), Option.Get());
 			}
 		}

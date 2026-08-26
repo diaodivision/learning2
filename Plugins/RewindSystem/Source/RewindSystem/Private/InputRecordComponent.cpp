@@ -318,7 +318,7 @@ void UInputRecordComponent::OnStateChanged(const ERecordState OldState, const ER
 IRecordedDataObjectInterface* UInputRecordComponent::GetRecordDataByHandle(const FRecordedDataObjectHandle& RecordedDataObjectHandle)
 {
 	if (RecordedDataList.IsEmpty() || !RecordedDataObjectHandle.IsValid()) { return nullptr; }
-	if (RecordedDataList[0]->Handle.GetHandle() > RecordedDataObjectHandle.GetHandle()) { return nullptr; }
+	if (!RecordedDataList[0] || RecordedDataList[0]->Handle.GetHandle() > RecordedDataObjectHandle.GetHandle()) { return nullptr; }
 
 	TArrayView<TUniquePtr<IRecordedDataObjectInterface>> DataList = GetRecordDataByTick(RecordedDataObjectHandle.GetTick());
 	for (const TUniquePtr<IRecordedDataObjectInterface>& DataPtr : DataList)

@@ -693,7 +693,6 @@ void AMyCharacterBase::OnCharacterDeath()
 
 void AMyCharacterBase::OnCharacterDeath_Internal()
 {
-	UE_LOG(LogTemp, Error, TEXT("AMyCharacterBase::OnCharacterDeath_Internal CurrentController %s"), *GetNameSafe(GetController()));
 	if (AController* CurrentController{ GetController() }) 
 	{ 
 		if (UBehaviorTreeComponent* BehaviorTreeComponent{ CurrentController->FindComponentByClass<UBehaviorTreeComponent>() })
@@ -710,7 +709,8 @@ void AMyCharacterBase::OnCharacterDeath_Internal()
 		
 		CurrentController->UnPossess();
 	}
-	UE_LOG(LogTemp, Error, TEXT("AMyCharacterBase::OnCharacterDeath_Internal 222 CurrentController %s"), *GetNameSafe(GetController()));
+
+	if (CharacterWidgetComponent) { CharacterWidgetComponent->Deactivate(); }
 }
 
 void AMyCharacterBase::CreateAndSetupComponents()

@@ -118,6 +118,8 @@ bool AWeaponActorBase::Fire()
 
 bool AWeaponActorBase::ExecuteFireOnce()
 {
+	if (!AvatarAbilitySystemComponent.IsValid()) { return false; }
+
 	OnShoot();
 	UE_LOG(LogTemp, Error, TEXT("AvatarAbilitySystemComponent->HasMatchingGameplayTag(GetOnShootTag()) %d"), AvatarAbilitySystemComponent->HasMatchingGameplayTag(GetOnShootTag()));
 	UE_LOG(LogTemp, Error, TEXT("AvatarAbilitySystemComponent %d"), AvatarAbilitySystemComponent->GetUniqueID());

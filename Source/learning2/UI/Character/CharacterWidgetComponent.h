@@ -28,4 +28,6 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ShowCharacterUI(bool bIsShow);
+
+	virtual void Deactivate() override;
 };

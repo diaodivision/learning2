@@ -35,6 +35,31 @@ bool AFirearmActorBase::Reload() const
 	return false;
 }
 
+void AFirearmActorBase::NotifyShootCooldownFinished() const
+{
+	OnShootCooldownFinishedDelegate.Broadcast();
+}
+
+void AFirearmActorBase::NotifyExecutingShoot()
+{
+	OnShoot();
+}
+
+void AFirearmActorBase::NotifyShootFinish()
+{
+	OnShootStop();
+}
+
+bool AFirearmActorBase::ExecuteFireOnce()
+{
+	if (!AvatarAbilitySystemComponent.IsValid()) { return false; }
+
+	OnShoot();
+	const FGameplayAbilitySpec* Spec{ AvatarAbilitySystemComponent->FindAbilitySpecFromHandle(FireAbilityHandle) };
+	if (const UGameplayAbility* Instance{ Spec->GetPrimaryInstance() }; Instance && Instance->IsActive()){ return true; }
+	else { return AvatarAbilitySystemComponent->TryActivateAbility(FireAbilityHandle); }
+}
+
 AActor* AFirearmActorBase::SpawnBullet_Implementation() const
 {
 	AFireArmBulletBase* Bullet = Cast<AFireArmBulletBase>(UWeaponActorBlueprintLibrary::SpawnActorDeferredFromPool(this, BulletClass, GetActorTransform()));

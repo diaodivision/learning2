@@ -1,5 +1,6 @@
 #include "WeaponFireBase.h"
 #include "Character/Base/MyCharacterBase.h"
+#include "Weapon/WeaponBase/FirearmActorBase.h"
 #include "Weapon/WeaponBase/WeaponActorBase.h"
 #include "AbilitySystemComponent.h"
 
@@ -24,8 +25,12 @@ void UWeaponFireBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 		}
 
 		if (TriggerEventData) { CachedTriggerEventData = *TriggerEventData; }
-		RegisterGameplayTagEventHandle = ASC->RegisterGameplayTagEvent(OnShootTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UWeaponFireBase::ExecuteFire);
-		World->GetTimerManager().SetTimer(WaitForTagTimeOutHandle, FTimerDelegate::CreateUObject(this, &UWeaponFireBase::OnWaitForTagTimeOut), .2f, false);
+		if (ASC->HasMatchingGameplayTag(OnShootTag)) { ExecuteFire(OnShootTag, ASC->GetTagCount(OnShootTag)); }
+		else
+		{
+			RegisterGameplayTagEventHandle = ASC->RegisterGameplayTagEvent(OnShootTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UWeaponFireBase::ExecuteFire);
+			World->GetTimerManager().SetTimer(WaitForTagTimeOutHandle, FTimerDelegate::CreateUObject(this, &UWeaponFireBase::OnWaitForTagTimeOut), .2f, false);
+		}
 	}
 }
 
@@ -88,19 +93,28 @@ void UWeaponFireBase::ExecuteFire(const FGameplayTag Tag, const int32 NewCount)
 	}
 
 	World->GetTimerManager().SetTimer(FireLoopHandle, FTimerDelegate::CreateUObject(this, &UWeaponFireBase::ExecuteFire_Internal), 1.f / Weapon->GetFireRate(), true);
+	if (AFirearmActorBase* Firearm = Cast<AFirearmActorBase>(Weapon.Get())) { Firearm->NotifyExecutingShoot(); }
 	ExecuteFire_Internal();
 }
 
 void UWeaponFireBase::ExecuteFire_Internal()
 {
+	if (AFirearmActorBase* Firearm = Cast<AFirearmActorBase>(Weapon.Get()))
+	{
+		Firearm->NotifyShootCooldownFinished();
+	}
+
 	if (!Instigator.IsValid() || !Weapon.IsValid() || !CanExecuteShoot() || !CheckCost(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), nullptr))
 	{
+		if (AFirearmActorBase* Firearm = Cast<AFirearmActorBase>(Weapon.Get())) { Firearm->NotifyShootFinish(); }
 		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfoRef(), true, true);
 		return;
 	}
 
 	OnExecuteShoot();
 	Super::ActivateAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfoRef(), CachedTriggerEventData.GetPtrOrNull());
+
+	if (AFirearmActorBase* Firearm = Cast<AFirearmActorBase>(Weapon.Get())) { Firearm->NotifyShootFinish(); }
 }
 
 void UWeaponFireBase::FinishShoot()
