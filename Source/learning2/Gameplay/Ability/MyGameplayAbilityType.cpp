@@ -70,32 +70,33 @@ void FBoundAbilityInfo::Reset()
 	RedoBindCallback.Reset();
 }
 
-UInteractionAbilityOption* UInteractionAbilityOption::CreateInteractionAbilityOption(UGameplayAbility* InAbilityInstance, const int32 GroupID)
+UInteractionAbilityOption* UInteractionAbilityOption::CreateInteractionAbilityOption(UGameplayAbility* InAbilityInstance, const int32 GroupID, ACharacter* InInstigator)
 {
 	if (!InAbilityInstance) { return nullptr; }
 
 	UInteractionAbilityOption* Option{ NewObject<UInteractionAbilityOption>() };
-	CreateInteractionAbilityOption(*Option, InAbilityInstance, GroupID);
+	CreateInteractionAbilityOption(*Option, InAbilityInstance, GroupID, InInstigator);
 
 	return Option;
 }
 
-UInteractionAbilityOption* UInteractionAbilityOption::CreateInteractionAbilityOption(FCombinedAbilityHandle&& Handle, const int32 GroupID, TSoftObjectPtr<UTexture2D> InIcon)
+UInteractionAbilityOption* UInteractionAbilityOption::CreateInteractionAbilityOption(FCombinedAbilityHandle&& Handle, const int32 GroupID, ACharacter* InInstigator, TSoftObjectPtr<UTexture2D> InIcon)
 {
 	if (!Handle.IsValid()) { return nullptr; }
 
 	UInteractionAbilityOption* Option{ NewObject<UInteractionAbilityOption>() };
-	CreateInteractionAbilityOption(*Option, MoveTemp(Handle), GroupID,InIcon);
+	CreateInteractionAbilityOption(*Option, MoveTemp(Handle), GroupID, InInstigator, InIcon);
 
 	return Option;
 }
 
-void UInteractionAbilityOption::CreateInteractionAbilityOption(UInteractionAbilityOption& Option, UGameplayAbility* InAbilityInstance, const int32 GroupID)
+void UInteractionAbilityOption::CreateInteractionAbilityOption(UInteractionAbilityOption& Option, UGameplayAbility* InAbilityInstance, const int32 GroupID, ACharacter* InInstigator)
 {
 	if (!InAbilityInstance) { return; }
 
 	Option.AbilityInstance = InAbilityInstance;
 	Option.GroupID = GroupID;
+	Option.Instigator = InInstigator;
 
 	if (InAbilityInstance && InAbilityInstance->Implements<UAbilityIconProviderInterface>())
 	{
@@ -103,12 +104,13 @@ void UInteractionAbilityOption::CreateInteractionAbilityOption(UInteractionAbili
 	}
 }
 
-void UInteractionAbilityOption::CreateInteractionAbilityOption(UInteractionAbilityOption& Option, FCombinedAbilityHandle&& Handle, const int32 GroupID, TSoftObjectPtr<UTexture2D> InIcon)
+void UInteractionAbilityOption::CreateInteractionAbilityOption(UInteractionAbilityOption& Option, FCombinedAbilityHandle&& Handle, const int32 GroupID, ACharacter* InInstigator, TSoftObjectPtr<UTexture2D> InIcon)
 {
 	if (!Handle.IsValid()) { return; }
 
 	Option.AbilityInstance = Handle.AbilityInstance;
 	Option.GroupID = GroupID;
+	Option.Instigator = InInstigator;
 	Option.GameplayEventData = MoveTemp(Handle.GameplayEventData);
 
 	if (!InIcon.IsNull()) { Option.Icon = InIcon; }
@@ -128,11 +130,22 @@ bool UInteractionAbilityOption::Activate()
 	if (UMyGameplayAbilityBase* MyGA{ Cast<UMyGameplayAbilityBase>(AbilityInstance) }) { MyGA->PreActivateInteractiveOption(); }
 
 	//return AbilitySystemComponent->HandleGameplayEvent(GameplayEventData->EventTag, GameplayEventData.Get()) > 0;
-	if (GameplayEventData && GameplayEventData->EventTag.IsValid())
-	{
-		return AbilitySystemComponent->HandleGameplayEvent(GameplayEventData->EventTag, GameplayEventData.Get()) > 0;
-	}
-	else { return AbilitySystemComponent->TryActivateAbility(AbilityInstance->GetCurrentAbilitySpecHandle()); }
+
+	if (!GameplayEventData) { GameplayEventData = MakeUnique<FGameplayEventData>(); }
+	if (!GameplayEventData->Instigator) { GameplayEventData->Instigator = Instigator.Get(); }
+
+	return AbilitySystemComponent->TriggerAbilityFromGameplayEvent(
+		AbilityInstance->GetCurrentAbilitySpecHandle(), 
+		AbilitySystemComponent->AbilityActorInfo.Get(), 
+		GameplayEventData->EventTag.IsValid() ? GameplayEventData->EventTag : FGameplayTag::EmptyTag, 
+		GameplayEventData.Get(), 
+		*AbilitySystemComponent);
+
+	// if (GameplayEventData && GameplayEventData->EventTag.IsValid())
+	// {
+	// 	return AbilitySystemComponent->HandleGameplayEvent(GameplayEventData->EventTag, GameplayEventData.Get()) > 0;
+	// }
+	// else { return AbilitySystemComponent->TryActivateAbility(AbilityInstance->GetCurrentAbilitySpecHandle()); }
 }
 
 bool UInteractionAbilityOption::CanDestroy()

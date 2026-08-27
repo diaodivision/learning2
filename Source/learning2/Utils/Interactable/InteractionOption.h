@@ -7,6 +7,7 @@
 
 class UTexture2D;
 class UGameplayAbility;
+class ACharacter;
 
 namespace InteractionOptionTypes
 {
@@ -114,6 +115,8 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Delegate")
 	FOnInteractiveOptionStateChangedDelegate OnInteractiveOptionStateChangedDelegate;
 
+	TWeakObjectPtr<ACharacter> Instigator;
+
 protected:
 	int32 GroupID{ INDEX_NONE };
 	static_assert(std::is_same_v<InteractionOptionTypes::OptionGroupIDType, decltype(GroupID)>);
@@ -206,7 +209,7 @@ struct FOptionInfo
 //
 //	inline bool IsValid() const { return AbilityInstance.IsValid() && TargetAbilitySystem.IsValid() && TargetInteractionAbilityHandle.IsValid(); }
 //
-//	/** ÔÚ»¥¶¯¶ÔÏóÉÏ¼¤»îÄÜÁ¦ */
+//	/** ï¿½Ú»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 //	UPROPERTY(BlueprintReadWrite)
 //	TWeakObjectPtr<UAbilitySystemComponent> TargetAbilitySystem{ nullptr };
 //

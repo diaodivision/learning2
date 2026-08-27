@@ -8,6 +8,7 @@
 //#include "AbilitySystemComponent.h"
 #include "Ability/AbilitySystemComponent/MyAbilitySystemComponent.h"
 //#include "Components/WidgetComponent.h"
+#include "Interactable/InteractionOption.h"
 #include "Interactive/ActorWidgetComponent.h"
 #include "Components/ShapeComponent.h"
 #include "Components/BoxComponent.h"
@@ -51,19 +52,28 @@ void AInteractableActorBase::GatherInteractionOptions_Implementation(const FInte
 
 		if (UMyGameplayAbilityBase* GA = Cast<UMyGameplayAbilityBase>(Instance))
 		{
-			for (const FGameplayAbilitySpec& OtherSpec : OtherASC->GetActivatableAbilities())
+			if (GA->NeedToBind())
 			{
-				if (UMyGameplayAbilityBase* OtherGA = Cast<UMyGameplayAbilityBase>(OtherSpec.GetPrimaryInstance()))
+				for (const FGameplayAbilitySpec& OtherSpec : OtherASC->GetActivatableAbilities())
 				{
-					//UE_LOG(LogTemp, Error, TEXT("AWeaponActorBase::OnControl GA %s"), *GetNameSafe(GA));
-					//UE_LOG(LogTemp, Error, TEXT("AWeaponActorBase::OnControl OtherGA %s"), *GetNameSafe(OtherGA));
-					//UE_LOG(LogTemp, Error, TEXT("AWeaponActorBase::OnControl GA->IsBound() %d"), GA->IsBound());
-					//UE_LOG(LogTemp, Error, TEXT("AWeaponActorBase::OnControl GA->CanBindWith(OtherGA) %d"), GA->CanBindWith(OtherGA));
-					if (!GA->IsBound() && GA->CanBindWith(OtherGA))
+					if (UMyGameplayAbilityBase* OtherGA = Cast<UMyGameplayAbilityBase>(OtherSpec.GetPrimaryInstance()))
 					{
-						BindAbility(*GA, *AbilitySystemComponent, *OtherGA, *OtherASC, InteractionQuery);
+						//UE_LOG(LogTemp, Error, TEXT("AWeaponActorBase::OnControl GA %s"), *GetNameSafe(GA));
+						//UE_LOG(LogTemp, Error, TEXT("AWeaponActorBase::OnControl OtherGA %s"), *GetNameSafe(OtherGA));
+						//UE_LOG(LogTemp, Error, TEXT("AWeaponActorBase::OnControl GA->IsBound() %d"), GA->IsBound());
+						//UE_LOG(LogTemp, Error, TEXT("AWeaponActorBase::OnControl GA->CanBindWith(OtherGA) %d"), GA->CanBindWith(OtherGA));
+						if (!GA->IsBound() && GA->CanBindWith(OtherGA))
+						{
+							BindAbility(*GA, *AbilitySystemComponent, *OtherGA, *OtherASC, InteractionQuery);
+						}
 					}
 				}
+			}
+			else
+			{
+				UInteractionOptionBase* Option{ UInteractionAbilityOption::CreateInteractionAbilityOption(Instance, GetOptionGroupIDByAbilityInstance(Instance)) };
+				OptionsBuilder.AddInteractionOption(Option);
+				OptionToAbilityIndexMap.Add(Option, Index);
 			}
 		}
 		else
@@ -139,6 +149,7 @@ void AInteractableActorBase::HideOptions_Implementation()
 
 	GetWorld()->GetTimerManager().SetTimer(DelayClearAllInactiveOptionTimerHandle, this, &AInteractableActorBase::ClearAllInactiveOptionDelay, 2.f, false);
 
+	WidgetComponent->UpdateInteractionOptions(TArray<UInteractionOptionBase*>{});
 	RequestingAvatar.Reset();
 	CachedInteractionQuery.Reset();
 

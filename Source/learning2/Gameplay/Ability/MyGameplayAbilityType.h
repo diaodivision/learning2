@@ -166,10 +166,10 @@ public:
 	//void InitializeObject(UGameplayAbility* InAbilityInstance);
 	//void InitializeObject(FCombinedAbilityHandle&& Handle, TSoftObjectPtr<UTexture2D> InIcon);
 
-	static UInteractionAbilityOption* CreateInteractionAbilityOption(UGameplayAbility* InAbilityInstance, const int32 GroupID);
-	static UInteractionAbilityOption* CreateInteractionAbilityOption(FCombinedAbilityHandle&& Handle, const int32 GroupID, TSoftObjectPtr<UTexture2D> InIcon = nullptr);
-	static void CreateInteractionAbilityOption(UInteractionAbilityOption& Option, UGameplayAbility* InAbilityInstance, const int32 GroupID);
-	static void CreateInteractionAbilityOption(UInteractionAbilityOption& Option, FCombinedAbilityHandle&& Handle, const int32 GroupID, TSoftObjectPtr<UTexture2D> InIcon = nullptr);
+	static UInteractionAbilityOption* CreateInteractionAbilityOption(UGameplayAbility* InAbilityInstance, const int32 GroupID, ACharacter* InInstigator);
+	static UInteractionAbilityOption* CreateInteractionAbilityOption(FCombinedAbilityHandle&& Handle, const int32 GroupID, ACharacter* InInstigator, TSoftObjectPtr<UTexture2D> InIcon = nullptr);
+	static void CreateInteractionAbilityOption(UInteractionAbilityOption& Option, UGameplayAbility* InAbilityInstance, const int32 GroupID, ACharacter* InInstigator);
+	static void CreateInteractionAbilityOption(UInteractionAbilityOption& Option, FCombinedAbilityHandle&& Handle, const int32 GroupID, ACharacter* InInstigator, TSoftObjectPtr<UTexture2D> InIcon = nullptr);
 
 	virtual bool Activate() override;
 
