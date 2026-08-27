@@ -18,6 +18,7 @@
 #include "TimerManager.h"
 #include "WorldPauseSubsystem.h"
 #include "InputRecordComponent.h"
+#include "RewindSystemStatics.h"
 
 // Sets default values
 AInteractableActorBase::AInteractableActorBase()
@@ -43,6 +44,8 @@ void AInteractableActorBase::GatherInteractionOptions_Implementation(const FInte
 
 	UAbilitySystemComponent* OtherASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(InteractionQuery.RequestingAvatar.Get());
 	if (!OtherASC) { return; }
+
+	const ERecordState RecordState{ URewindSystemStatics::GetRewindSubsystemState(this) };
 
 	for (int32 Index{ 0 }; Index < AbilitySystemComponent->GetActivatableAbilities().Num(); Index++)
 	{
@@ -71,14 +74,14 @@ void AInteractableActorBase::GatherInteractionOptions_Implementation(const FInte
 			}
 			else
 			{
-				UInteractionOptionBase* Option{ UInteractionAbilityOption::CreateInteractionAbilityOption(Instance, GetOptionGroupIDByAbilityInstance(Instance)) };
+				UInteractionOptionBase* Option{ UInteractionAbilityOption::CreateInteractionAbilityOption(Instance, GetOptionGroupIDByAbilityInstance(Instance), InteractionQuery.RequestingAvatar.Get()) };
 				OptionsBuilder.AddInteractionOption(Option);
 				OptionToAbilityIndexMap.Add(Option, Index);
 			}
 		}
-		else
+		else if (RecordState == ERecordState::Idle)
 		{
-			UInteractionOptionBase* Option{ UInteractionAbilityOption::CreateInteractionAbilityOption(Instance, GetOptionGroupIDByAbilityInstance(Instance)) };
+			UInteractionOptionBase* Option{ UInteractionAbilityOption::CreateInteractionAbilityOption(Instance, GetOptionGroupIDByAbilityInstance(Instance), InteractionQuery.RequestingAvatar.Get()) };
 			OptionsBuilder.AddInteractionOption(Option);
 			OptionToAbilityIndexMap.Add(Option, Index);
 		}
@@ -260,7 +263,7 @@ void AInteractableActorBase::OnGiveAbility_Implementation(const FGameplayAbility
 	{
 		if (InAbilitySystemComponent == AbilitySystemComponent)
 		{
-			UInteractionOptionBase* Option{ UInteractionAbilityOption::CreateInteractionAbilityOption(Instance, GetOptionGroupIDByAbilityInstance(Instance)) };
+			UInteractionOptionBase* Option{ UInteractionAbilityOption::CreateInteractionAbilityOption(Instance, GetOptionGroupIDByAbilityInstance(Instance), this)};
 			OptionsBuilder.AddInteractionOption(Option);
 			OptionToAbilityIndexMap.Add(Option, OptionIndex);
 
@@ -360,7 +363,7 @@ void AInteractableActorBase::BindAbility(UMyGameplayAbilityBase& GA1, UAbilitySy
 		Handle.GameplayEventData->Instigator = InteractionQuery.RequestingAvatar.Get();
 		const TSoftObjectPtr<UTexture2D> Icon{ IAbilityIconProviderInterface::Execute_GetItemIcon(&GA1, &ASC1) };
 
-		UInteractionAbilityOption::CreateInteractionAbilityOption(*Option, MoveTemp(Handle), GetOptionGroupIDByAbilityInstance(Handle.AbilityInstance.Get()), Icon);
+		UInteractionAbilityOption::CreateInteractionAbilityOption(*Option, MoveTemp(Handle), GetOptionGroupIDByAbilityInstance(Handle.AbilityInstance.Get()), InteractionQuery.RequestingAvatar.Get(), Icon);
 		OptionsBuilder.AddInteractionOption(Option);
 		OptionToAbilityIndexMap.Add(Option, OptionClasses.IndexOfByPredicate([&Handle](const FOptionInfo& Option)
 			{ return Option.AbilityClass == Handle.AbilityInstance->StaticClass(); }));

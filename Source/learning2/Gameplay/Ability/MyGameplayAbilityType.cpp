@@ -3,6 +3,7 @@
 #include "Abilities/GameplayAbility.h"
 #include "MyGameplayAbilityBase.h"
 #include "AbilitySystemComponent.h"
+#include "Abilities/GameplayAbilityTypes.h"
 
 FCombinedAbilityHandle::FCombinedAbilityHandle(UMyGameplayAbilityBase* InAbilityInstance) : AbilityInstance(InAbilityInstance)
 {
@@ -70,7 +71,7 @@ void FBoundAbilityInfo::Reset()
 	RedoBindCallback.Reset();
 }
 
-UInteractionAbilityOption* UInteractionAbilityOption::CreateInteractionAbilityOption(UGameplayAbility* InAbilityInstance, const int32 GroupID, ACharacter* InInstigator)
+UInteractionAbilityOption* UInteractionAbilityOption::CreateInteractionAbilityOption(UGameplayAbility* InAbilityInstance, const int32 GroupID, AActor* InInstigator)
 {
 	if (!InAbilityInstance) { return nullptr; }
 
@@ -80,7 +81,7 @@ UInteractionAbilityOption* UInteractionAbilityOption::CreateInteractionAbilityOp
 	return Option;
 }
 
-UInteractionAbilityOption* UInteractionAbilityOption::CreateInteractionAbilityOption(FCombinedAbilityHandle&& Handle, const int32 GroupID, ACharacter* InInstigator, TSoftObjectPtr<UTexture2D> InIcon)
+UInteractionAbilityOption* UInteractionAbilityOption::CreateInteractionAbilityOption(FCombinedAbilityHandle&& Handle, const int32 GroupID, AActor* InInstigator, TSoftObjectPtr<UTexture2D> InIcon)
 {
 	if (!Handle.IsValid()) { return nullptr; }
 
@@ -90,7 +91,7 @@ UInteractionAbilityOption* UInteractionAbilityOption::CreateInteractionAbilityOp
 	return Option;
 }
 
-void UInteractionAbilityOption::CreateInteractionAbilityOption(UInteractionAbilityOption& Option, UGameplayAbility* InAbilityInstance, const int32 GroupID, ACharacter* InInstigator)
+void UInteractionAbilityOption::CreateInteractionAbilityOption(UInteractionAbilityOption& Option, UGameplayAbility* InAbilityInstance, const int32 GroupID, AActor* InInstigator)
 {
 	if (!InAbilityInstance) { return; }
 
@@ -104,7 +105,7 @@ void UInteractionAbilityOption::CreateInteractionAbilityOption(UInteractionAbili
 	}
 }
 
-void UInteractionAbilityOption::CreateInteractionAbilityOption(UInteractionAbilityOption& Option, FCombinedAbilityHandle&& Handle, const int32 GroupID, ACharacter* InInstigator, TSoftObjectPtr<UTexture2D> InIcon)
+void UInteractionAbilityOption::CreateInteractionAbilityOption(UInteractionAbilityOption& Option, FCombinedAbilityHandle&& Handle, const int32 GroupID, AActor* InInstigator, TSoftObjectPtr<UTexture2D> InIcon)
 {
 	if (!Handle.IsValid()) { return; }
 

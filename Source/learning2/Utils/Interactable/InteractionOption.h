@@ -115,7 +115,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Delegate")
 	FOnInteractiveOptionStateChangedDelegate OnInteractiveOptionStateChangedDelegate;
 
-	TWeakObjectPtr<ACharacter> Instigator;
+	TWeakObjectPtr<AActor> Instigator;
 
 protected:
 	int32 GroupID{ INDEX_NONE };
