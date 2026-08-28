@@ -55,6 +55,8 @@ bool UDoorDeploymentAbilityBase::TryHandleRecordedData(TSharedPtr<IRecordedDataO
 	if (GetCombinedAbilityIDList(*this) != RecordedCombinableAbilityDataPayload.AbilityIDList) { return false; }
 
 	bool bActivateAbilitySuccessful{ false };
+	NotifyStartDurativeAction(InRecordedData);
+	SetAutoReleaseRecordedDataPolicy(EReleaseRecordedDataPolicy::ReleaseManual);
 	if (RecordedCombinableAbilityDataPayload.AbilityTriggerTag.IsSet())
 	{
 		FGameplayEventData EventData = RecordedCombinableAbilityDataPayload.EventDataToBoundAbility->Pin();
@@ -72,9 +74,9 @@ bool UDoorDeploymentAbilityBase::TryHandleRecordedData(TSharedPtr<IRecordedDataO
 
 	LastControlWeapon = Payload.LastControlWeapon;
 
-	if (bActivateAbilitySuccessful)
+	if (!bActivateAbilitySuccessful)
 	{
-		NotifyStartDurativeAction(InRecordedData);
+		NotifyEndDurativeAction();
 	}
 
 	return bActivateAbilitySuccessful;

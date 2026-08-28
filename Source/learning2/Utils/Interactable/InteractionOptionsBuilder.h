@@ -18,8 +18,8 @@ public:
 	FInteractionOptionsBuilder() = default;
 
 	/**
-	 * Ìí¼ÓÒ»¸ö»¥¶¯Ñ¡Ïî
-	 * @param Option ÒªÌí¼ÓµÄÑ¡Ïî
+	 * ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½
+	 * @param Option Òªï¿½ï¿½ï¿½Óµï¿½Ñ¡ï¿½ï¿½
 	 */
 	void AddInteractionOption(UInteractionOptionBase* Option)
 	{
@@ -62,6 +62,18 @@ public:
 			if (Option) { Result.Add(Option.Get()); }
 		}
 		return Result;
+	}
+
+	template <typename ElementType = UInteractionOptionBase, typename PredicateType>
+	FORCEINLINE ElementType* FindByPredicate(PredicateType Predicate) const 
+	{ 
+		const TStrongObjectPtr<UInteractionOptionBase>* FoundPtr = Options.FindByPredicate(
+        	[Predicate](const TStrongObjectPtr<UInteractionOptionBase>& Option) 
+        	{ 
+        	    return Option.IsValid() && Predicate(Cast<ElementType>(Option.Get())); 
+        	}
+    		);
+    	return FoundPtr ? Cast<ElementType>(FoundPtr->Get()) : nullptr;
 	}
 
 	inline bool ActivateOption(const int32 Index)
@@ -133,10 +145,10 @@ public:
 	//}
 
 	//private:
-		/** Õâ¸ö¹¹½¨Æ÷ËùÊôµÄ¿É»¥¶¯¶ÔÏó */
+		/** ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿É»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 	TScriptInterface<IInteractableTargetInterface> InteractableTarget;
 
-	/** Ö¸ÏòÕýÔÚ¹¹½¨µÄÑ¡ÏîÊý×éµÄÖ¸Õë */
+	/** Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½Ú¹ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ */
 	//UPROPERTY(BlueprintReadOnly)
 	TArray<TStrongObjectPtr<UInteractionOptionBase>> Options;
 

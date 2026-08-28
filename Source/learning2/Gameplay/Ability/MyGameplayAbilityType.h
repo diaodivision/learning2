@@ -196,6 +196,8 @@ public:
 	FORCEINLINE const FRecordedDataObjectHandle* GetRecordedDataObjectHandle() const { return RecordedDataObjectHandle.GetPtrOrNull(); }
 	FORCEINLINE const UInputRecordComponent* GetInputRecordComponent() const { return InputRecordComponent.Get(); }
 
+	FORCEINLINE UGameplayAbility* GetAbilityInstance() const { return AbilityInstance.Get(); }
+
 private:
 	/** 在互动对象上激活能力 */
 	//UPROPERTY(BlueprintReadWrite)

@@ -92,7 +92,16 @@ protected:
 
 	virtual void PostAbilityOptionRecorded(const FRecordedDataObjectHandle& Handle, TWeakObjectPtr<UInteractionAbilityOption> Option, FInteractionQuery InteractionQuery);
 
-	void ClearAllInactiveOptionDelay();
+	enum class EClearAllInactiveOptionDelay : uint8
+	{
+		Immediate,
+		Delayed
+	};
+	FORCEINLINE void ClearAllInactiveOptionDelay() { ClearAllInactiveOptionDelay(EClearAllInactiveOptionDelay::Delayed); }
+	void ClearAllInactiveOptionDelay(const EClearAllInactiveOptionDelay ClearAllInactiveOptionDelay);
+
+	void ConstructAndAddOption(UGameplayAbility& AbilityInstance, const FInteractionQuery& InteractionQuery, const int32 Index);
+	void ConstructAndAddOption(UInteractionAbilityOption& TargetOption, FCombinedAbilityHandle&& Handle, const FInteractionQuery& InteractionQuery, const int32 Index, const TSoftObjectPtr<UTexture2D> InIcon = nullptr);
 
 protected:
 	InteractionOptionTypes::OptionGroupIDType GetOptionGroupIDByAbilityInstance(const UGameplayAbility* AbilityInstance) const;

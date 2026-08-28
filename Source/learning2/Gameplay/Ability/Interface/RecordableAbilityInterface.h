@@ -96,6 +96,7 @@ protected:
 	TSharedPtr<IRecordedDataObjectInterface, ESPMode::NotThreadSafe> RecordedData;
 
 private:
+	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = true))
 	EReleaseRecordedDataPolicy ReleaseRecordedDataPolicy{ EReleaseRecordedDataPolicy::AutoReleaseOnEndAbility };
 };
 

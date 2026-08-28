@@ -2,6 +2,7 @@
 
 
 #include "InteractableActorBase.h"
+#include "Ability/MyGameplayAbilityType.h"
 #include "Components/StaticMeshComponent.h"
 #include "Ability/MyGameplayAbilityBase.h"
 #include "AbilitySystemGlobals.h"
@@ -74,16 +75,12 @@ void AInteractableActorBase::GatherInteractionOptions_Implementation(const FInte
 			}
 			else
 			{
-				UInteractionOptionBase* Option{ UInteractionAbilityOption::CreateInteractionAbilityOption(Instance, GetOptionGroupIDByAbilityInstance(Instance), InteractionQuery.RequestingAvatar.Get()) };
-				OptionsBuilder.AddInteractionOption(Option);
-				OptionToAbilityIndexMap.Add(Option, Index);
+				ConstructAndAddOption(*Instance, InteractionQuery, Index);
 			}
 		}
 		else if (RecordState == ERecordState::Idle)
 		{
-			UInteractionOptionBase* Option{ UInteractionAbilityOption::CreateInteractionAbilityOption(Instance, GetOptionGroupIDByAbilityInstance(Instance), InteractionQuery.RequestingAvatar.Get()) };
-			OptionsBuilder.AddInteractionOption(Option);
-			OptionToAbilityIndexMap.Add(Option, Index);
+			ConstructAndAddOption(*Instance, InteractionQuery, Index);
 		}
 	}
 
@@ -111,12 +108,7 @@ void AInteractableActorBase::ShowOptions_Implementation(const FInteractionQuery&
 
 	WidgetComponent->SetVisibility(true);
 
-	if (DelayClearAllInactiveOptionTimerHandle.IsValid())
-	{
-		GetWorld()->GetTimerManager().ClearTimer(DelayClearAllInactiveOptionTimerHandle);
-		OptionsBuilder.ClearAllInactiveOption();
-		OnInteractionOptionsUpdated();
-	}
+	ClearAllInactiveOptionDelay(EClearAllInactiveOptionDelay::Immediate);
 
 	IInteractableTargetInterface::Execute_GatherInteractionOptions(this, InteractionQuery);
 
@@ -130,6 +122,11 @@ void AInteractableActorBase::ShowOptions_Implementation(const FInteractionQuery&
 			OtherAbilitySystemComponent->OnGiveGameplayAbilityDelegate.AddDynamic(this, &AInteractableActorBase::OnGiveAbility);
 			OtherAbilitySystemComponent->OnRemoveGameplayAbilityDelegate.AddDynamic(this, &AInteractableActorBase::OnRemoveAbility);
 		}
+	}
+
+	if (OptionsBuilder.FindByPredicate([](const UInteractionOptionBase* Option) { return Option && Option->IsActivating(); }) != nullptr)
+	{
+		ClearAllInactiveOptionDelay(EClearAllInactiveOptionDelay::Immediate);
 	}
 }
 
@@ -149,8 +146,6 @@ void AInteractableActorBase::HideOptions_Implementation()
 			}
 		}
 	}
-
-	GetWorld()->GetTimerManager().SetTimer(DelayClearAllInactiveOptionTimerHandle, this, &AInteractableActorBase::ClearAllInactiveOptionDelay, 2.f, false);
 
 	WidgetComponent->UpdateInteractionOptions(TArray<UInteractionOptionBase*>{});
 	RequestingAvatar.Reset();
@@ -263,10 +258,7 @@ void AInteractableActorBase::OnGiveAbility_Implementation(const FGameplayAbility
 	{
 		if (InAbilitySystemComponent == AbilitySystemComponent)
 		{
-			UInteractionOptionBase* Option{ UInteractionAbilityOption::CreateInteractionAbilityOption(Instance, GetOptionGroupIDByAbilityInstance(Instance), this)};
-			OptionsBuilder.AddInteractionOption(Option);
-			OptionToAbilityIndexMap.Add(Option, OptionIndex);
-
+			ConstructAndAddOption(*Instance, CachedInteractionQuery.GetValue(), OptionIndex);
 			OnInteractionOptionsUpdated();
 		}
 		return;
@@ -360,10 +352,9 @@ void AInteractableActorBase::BindAbility(UMyGameplayAbilityBase& GA1, UAbilitySy
 			Handle.AbilityInstance->PostRecordDelegate.AddUObject(this, &AInteractableActorBase::PostAbilityOptionRecorded, MakeWeakObjectPtr(Option), InteractionQuery);
 		}
 
-		UInteractionAbilityOption::CreateInteractionAbilityOption(*Option, MoveTemp(Handle), GetOptionGroupIDByAbilityInstance(Handle.AbilityInstance.Get()), InteractionQuery.RequestingAvatar.Get(), Icon);
-		OptionsBuilder.AddInteractionOption(Option);
-		OptionToAbilityIndexMap.Add(Option, OptionClasses.IndexOfByPredicate([&Handle](const FOptionInfo& Option)
-			{ return Option.AbilityClass == Handle.AbilityInstance->StaticClass(); }));
+		const int32 Index{ OptionClasses.IndexOfByPredicate([&Handle](const FOptionInfo& Option)
+			{ return Option.AbilityClass == Handle.AbilityInstance->StaticClass(); }) };
+		ConstructAndAddOption(*Option, MoveTemp(Handle), InteractionQuery, Index, Icon);
 
 		OnInteractionOptionsUpdated();
 	}
@@ -390,18 +381,64 @@ void AInteractableActorBase::PostAbilityOptionRecorded(const FRecordedDataObject
 	UInputRecordComponent* InputRecordComponent{ InteractionQuery.RequestingAvatar.IsValid() ? InteractionQuery.RequestingAvatar->FindComponentByClass<UInputRecordComponent>() : nullptr };
 	WeakOption->SetRecordedDataObjectHandle(InputRecordComponent, Handle);
 
-	Handle.InputRecordComponent->OnOperationPreviewDelegate.AddWeakLambda(WeakOption.Get(), [WeakOption, Handle](const bool bIsPreview, const IRecordedDataObjectInterface* Data)
+	Handle.InputRecordComponent->OnOperationPreviewDelegate.AddWeakLambda(WeakOption.Get(), 
+	[WeakThis = MakeWeakObjectPtr(this), WeakOption, Handle](const bool bIsPreview, const IRecordedDataObjectInterface* Data)
 		{
 			if (Data->Handle != Handle) { return; }
 
 			WeakOption->SetWillBeActivate(bIsPreview);
+
+			if (WeakThis.IsValid()) { WeakThis->ClearAllInactiveOptionDelay(EClearAllInactiveOptionDelay::Immediate); }
 		});
 }
 
-void AInteractableActorBase::ClearAllInactiveOptionDelay()
+void AInteractableActorBase::ClearAllInactiveOptionDelay(const EClearAllInactiveOptionDelay ClearAllInactiveOptionDelay)
 {
-	OptionsBuilder.ClearAllInactiveOption();
-	OnInteractionOptionsUpdated();
+	if (ClearAllInactiveOptionDelay == EClearAllInactiveOptionDelay::Delayed && !GetWorld()->GetTimerManager().IsTimerActive(DelayClearAllInactiveOptionTimerHandle))
+	{
+		GetWorld()->GetTimerManager().SetTimer(DelayClearAllInactiveOptionTimerHandle, this, &AInteractableActorBase::ClearAllInactiveOptionDelay, 2.f, false);
+	}
+	else if (ClearAllInactiveOptionDelay == EClearAllInactiveOptionDelay::Immediate)
+	{
+		if (GetWorld()->GetTimerManager().IsTimerActive(DelayClearAllInactiveOptionTimerHandle))
+		{
+			GetWorld()->GetTimerManager().ClearTimer(DelayClearAllInactiveOptionTimerHandle);
+		}
+
+		for (UInteractionOptionBase* Option : OptionsBuilder.GetOptions())
+		{
+			if (UInteractionAbilityOption* AbilityOption{ Cast<UInteractionAbilityOption>(Option) }; AbilityOption && !AbilityOption->IsActivating()) 
+			{
+				if (UMyGameplayAbilityBase* MyGA{ Cast<UMyGameplayAbilityBase>(AbilityOption->GetAbilityInstance()) }) { MyGA->PostRecordDelegate.RemoveAll(this); }
+			}
+		}
+
+		OptionsBuilder.ClearAllInactiveOption();
+		OnInteractionOptionsUpdated();
+	}
+}
+
+void AInteractableActorBase::ConstructAndAddOption(UGameplayAbility& AbilityInstance, const FInteractionQuery& InteractionQuery, const int32 Index)
+{
+	UInteractionAbilityOption* Option{ UInteractionAbilityOption::CreateInteractionAbilityOption(&AbilityInstance, GetOptionGroupIDByAbilityInstance(&AbilityInstance), InteractionQuery.RequestingAvatar.Get()) };
+	OptionsBuilder.AddInteractionOption(Option);
+	OptionToAbilityIndexMap.Add(Option, Index);
+	if (UMyGameplayAbilityBase* MyGA{ Cast<UMyGameplayAbilityBase>(&AbilityInstance) }; MyGA && !MyGA->PostRecordDelegate.IsBoundToObject(this))
+	{
+		MyGA->PostRecordDelegate.AddUObject(this, &AInteractableActorBase::PostAbilityOptionRecorded, MakeWeakObjectPtr(Option), InteractionQuery);
+	}
+}
+
+void AInteractableActorBase::ConstructAndAddOption(UInteractionAbilityOption& TargetOption, FCombinedAbilityHandle&& Handle, const FInteractionQuery& InteractionQuery, const int32 Index, const TSoftObjectPtr<UTexture2D> InIcon)
+{
+	UInteractionAbilityOption::CreateInteractionAbilityOption(TargetOption, MoveTemp(Handle), GetOptionGroupIDByAbilityInstance(Handle.AbilityInstance.Get()), InteractionQuery.RequestingAvatar.Get(), InIcon);
+	OptionsBuilder.AddInteractionOption(&TargetOption);
+	OptionToAbilityIndexMap.Add(&TargetOption, Index);
+
+	if (Handle.IsValid() && !Handle.AbilityInstance->PostRecordDelegate.IsBoundToObject(this))
+	{
+		Handle.AbilityInstance->PostRecordDelegate.AddUObject(this, &AInteractableActorBase::PostAbilityOptionRecorded, MakeWeakObjectPtr(&TargetOption), InteractionQuery);
+	}
 }
 
 InteractionOptionTypes::OptionGroupIDType AInteractableActorBase::GetOptionGroupIDByAbilityInstance(const UGameplayAbility* AbilityInstance) const
@@ -412,18 +449,3 @@ InteractionOptionTypes::OptionGroupIDType AInteractableActorBase::GetOptionGroup
 	if (TargetOption) { return TargetOption->GroupID; }
 	else { return INDEX_NONE; }
 }
-//void AInteractableActorBase::OnUIInitialized_Implementation(UUserWidget* UserWidget)
-//{
-//	ActorWidget
-//}
-
-//void AInteractableActorBase::CreateUI()
-//{
-//	checkf(UIClass, TEXT("Need to specify UserWidget"));
-//	UI = CreateWidget<UUserWidget>(GetWorld(), UIClass);
-//
-//	if (UI->GetClass()->ImplementsInterface(UInteractableTargetUIInterface::StaticClass()))
-//	{
-//		IInteractableTargetUIInterface::Execute_SetUIOwner(UI, this);
-//	}
-//}

@@ -107,7 +107,7 @@ public:
 	};
 	virtual const UGameplayEffect* GetReverseCostGameplayEffect_Implementation() const;
 
-	inline bool IsFirstAbilityOfBindAbility() const { return !TagToBind.IsValid() && BindTag.IsValid(); }
+	inline bool IsFirstAbilityOfBindAbility() const { return !TagToBind.IsValid(); }
 
 	virtual TSoftObjectPtr<UTexture2D> GetItemIcon_Implementation(const UAbilitySystemComponent* ASC) const override;
 
