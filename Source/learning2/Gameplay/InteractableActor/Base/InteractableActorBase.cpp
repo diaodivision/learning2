@@ -347,21 +347,18 @@ void AInteractableActorBase::BindAbility(UMyGameplayAbilityBase& GA1, UAbilitySy
 			if (!WeakThis.IsValid()) { return; }
 
 			IInteractableTargetInterface::Execute_GatherInteractionOptions(WeakThis.Get(), InteractionQuery);
-		},
-		FPostRecordCallbackType::CreateWeakLambda(this,
-			[WeakThis = MakeWeakObjectPtr(this), WeakOption = MakeWeakObjectPtr(Option), InteractionQuery](FRecordedDataObjectHandle InRecordedDataObjectHandle) {
-				if (!InRecordedDataObjectHandle.IsValid() || !WeakOption.IsValid()) { return; }
-
-				UInputRecordComponent* InputRecordComponent{ InteractionQuery.RequestingAvatar.IsValid() ? InteractionQuery.RequestingAvatar->FindComponentByClass<UInputRecordComponent>() : nullptr };
-				WeakOption->SetRecordedDataObjectHandle(InputRecordComponent, InRecordedDataObjectHandle);
-				WeakThis->PostAbilityOptionRecorded(WeakOption.Get(), InRecordedDataObjectHandle);
-			})
+		}
 	);
 
 	if (Handle.IsValid())
 	{
 		Handle.GameplayEventData->Instigator = InteractionQuery.RequestingAvatar.Get();
 		const TSoftObjectPtr<UTexture2D> Icon{ IAbilityIconProviderInterface::Execute_GetItemIcon(&GA1, &ASC1) };
+
+		if (!Handle.AbilityInstance->PostRecordDelegate.IsBoundToObject(this))
+		{
+			Handle.AbilityInstance->PostRecordDelegate.AddUObject(this, &AInteractableActorBase::PostAbilityOptionRecorded, MakeWeakObjectPtr(Option), InteractionQuery);
+		}
 
 		UInteractionAbilityOption::CreateInteractionAbilityOption(*Option, MoveTemp(Handle), GetOptionGroupIDByAbilityInstance(Handle.AbilityInstance.Get()), InteractionQuery.RequestingAvatar.Get(), Icon);
 		OptionsBuilder.AddInteractionOption(Option);
@@ -386,12 +383,14 @@ void AInteractableActorBase::OnAbilityStateChanged(EActionState OldState, EActio
 	OnInteractionOptionsUpdated();
 }
 
-void AInteractableActorBase::PostAbilityOptionRecorded(UInteractionOptionBase* Option, const FRecordedDataObjectHandle Handle)
+void AInteractableActorBase::PostAbilityOptionRecorded(const FRecordedDataObjectHandle& Handle, TWeakObjectPtr<UInteractionAbilityOption> WeakOption, FInteractionQuery InteractionQuery)
 {
-	if (!Handle.IsValid()) { return; }
+	if (!Handle.IsValid() || !WeakOption.IsValid()) { return; }
+	
+	UInputRecordComponent* InputRecordComponent{ InteractionQuery.RequestingAvatar.IsValid() ? InteractionQuery.RequestingAvatar->FindComponentByClass<UInputRecordComponent>() : nullptr };
+	WeakOption->SetRecordedDataObjectHandle(InputRecordComponent, Handle);
 
-
-	Handle.InputRecordComponent->OnOperationPreviewDelegate.AddWeakLambda(Option, [WeakOption = MakeWeakObjectPtr(Option), Handle](const bool bIsPreview, const IRecordedDataObjectInterface* Data)
+	Handle.InputRecordComponent->OnOperationPreviewDelegate.AddWeakLambda(WeakOption.Get(), [WeakOption, Handle](const bool bIsPreview, const IRecordedDataObjectInterface* Data)
 		{
 			if (Data->Handle != Handle) { return; }
 

@@ -90,7 +90,7 @@ protected:
 
 	//virtual void OnUIInitialized_Implementation(UUserWidget* UserWidget) override;
 
-	virtual void PostAbilityOptionRecorded(UInteractionOptionBase* Option, const FRecordedDataObjectHandle Handle);
+	virtual void PostAbilityOptionRecorded(const FRecordedDataObjectHandle& Handle, TWeakObjectPtr<UInteractionAbilityOption> Option, FInteractionQuery InteractionQuery);
 
 	void ClearAllInactiveOptionDelay();
 

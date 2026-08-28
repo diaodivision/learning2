@@ -10,9 +10,12 @@
 #include "Interactable/InteractableTargetInterface.h"
 #include "InputRecordedDataTypes/RecordedDataDelegates.h"
 #include "Interactive/ItemIconProviderInterface.h"
+#include "Delegates/DelegateCombinations.h"
 #include "MyGameplayAbilityBase.generated.h"
 
 class URewindSubsystem;
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FPostRecordDelegate, const FRecordedDataObjectHandle& Handle);
 
 /**
  *
@@ -48,7 +51,7 @@ public:
 	static bool CanBindWith(const UMyGameplayAbilityBase* Instigator, const UMyGameplayAbilityBase* Target);
 
 	//UFUNCTION(BlueprintCallable, Category = "Combinable Ability")
-	static FCombinedAbilityHandle BindWith(const FBindAbilityParameter& InInstigator, const FBindAbilityParameter& InTarget, TFunction<void()> RedoCallback, FPostRecordCallbackType InPostRecordCallback);
+	static FCombinedAbilityHandle BindWith(const FBindAbilityParameter& InInstigator, const FBindAbilityParameter& InTarget, TFunction<void()> RedoCallback);
 	void Unbind();
 
 	bool NeedBound() const;
@@ -158,6 +161,8 @@ private:
 	static bool GetGameplayAbilityID(GameplayAbilityIDType& ID, const UAbilitySystemComponent& ASC, const UMyGameplayAbilityBase* GA);
 
 public:
+	FPostRecordDelegate PostRecordDelegate;
+
 	//��Ҫ������ Tag ���ܰ󶨵��ü���
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Tags)
 	FGameplayTag BindTag;

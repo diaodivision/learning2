@@ -37,5 +37,12 @@ void URecordableAbilityBase::EndAbility(const FGameplayAbilitySpecHandle Handle,
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 	
-	ReleaseRecordedData();
+	if (const EReleaseRecordedDataPolicy Policy{ GetAutoReleaseRecordedDataPolicy() }; Policy == EReleaseRecordedDataPolicy::AutoReleaseOnEndAbility) 
+	{ 
+		ReleaseRecordedData();
+	}
+	else if (Policy == EReleaseRecordedDataPolicy::ReleaseManual && RecordedData.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ReleaseRecordedDataPolicy was set to ReleaseManual but ReleaseRecordedData() was never been called."));
+	}
 }

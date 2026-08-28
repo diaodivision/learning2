@@ -17,7 +17,7 @@ class AActor;
 class UTexture2D;
 class UInputRecordComponent;
 
-using FPostRecordCallbackType = TDelegate<void(FRecordedDataObjectHandle Handle), FNotThreadSafeNotCheckedDelegateUserPolicy>;
+// using FPostRecordCallbackType = TDelegate<void(FRecordedDataObjectHandle Handle), FNotThreadSafeNotCheckedDelegateUserPolicy>;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAbilityStateChangedDelegate, EActionState, OldState, EActionState, NewState);
 
@@ -142,19 +142,19 @@ struct FBoundAbilityInfo
 
 struct FCombinableAbilityData
 {
-	FORCEINLINE bool IsValid() const { return EventDataToBoundAbility && PostRecordCallback.IsSet(); }
+	FORCEINLINE bool IsValid() const { return EventDataToBoundAbility.IsValid() /*&& PostRecordCallback.IsSet() */; }
 
-	FORCEINLINE bool IsNull() const { return  !EventDataToBoundAbility && !PostRecordCallback.IsSet(); }
+	FORCEINLINE bool IsNull() const { return  !EventDataToBoundAbility.IsValid() /*&& !PostRecordCallback.IsSet()*/; }
 
 	FORCEINLINE void Reset()
 	{
 		EventDataToBoundAbility.Reset();
-		PostRecordCallback.Reset();
+		// PostRecordCallback.Reset();
 	}
 
 	TUniquePtr<FGameplayEventWeakData> EventDataToBoundAbility;
 
-	TOptional<FPostRecordCallbackType> PostRecordCallback;
+	// TOptional<FPostRecordCallbackType> PostRecordCallback;
 };
 
 UCLASS(BlueprintType)

@@ -86,7 +86,7 @@ bool UMyGameplayAbilityBase::CanBindWith(const UMyGameplayAbilityBase* Instigato
 	return false;
 }
 
-FCombinedAbilityHandle UMyGameplayAbilityBase::BindWith(const FBindAbilityParameter& InInstigator, const FBindAbilityParameter& InTarget, TFunction<void()> RedoCallback, FPostRecordCallbackType InPostRecordCallback)
+FCombinedAbilityHandle UMyGameplayAbilityBase::BindWith(const FBindAbilityParameter& InInstigator, const FBindAbilityParameter& InTarget, TFunction<void()> RedoCallback)
 {
 	/*FBindAbilityParameter* InstigatorPtr = &Instigator;
 	FBindAbilityParameter* TargetPtr = &Target;*/
@@ -115,8 +115,6 @@ FCombinedAbilityHandle UMyGameplayAbilityBase::BindWith(const FBindAbilityParame
 	InstigatorGA->BoundAbilityInfo = FBoundAbilityInfo{ *Target, InInstigator, InTarget, RedoCallback };
 
 	UE_LOG(LogTemp, Display, TEXT("Ability %s bind with %s"), *GetNameSafe(InstigatorGA), *GetNameSafe(TargetGA));
-
-	Instigator->AbilityInstance->CombinableAbilityData.PostRecordCallback = InPostRecordCallback;
 
 	return FCombinedAbilityHandle{ *Instigator };
 }
@@ -204,8 +202,8 @@ void UMyGameplayAbilityBase::PostRecord(const FRecordedDataObjectHandle& Handle)
 {
 	Super::PostRecord(Handle);
 
+	PostRecordDelegate.Broadcast(Handle);
 	//Unbind();
-	if (CombinableAbilityData.PostRecordCallback.IsSet()) { CombinableAbilityData.PostRecordCallback.GetValue().ExecuteIfBound(Handle); }
 	//CombinableAbilityData.Reset();
 }
 

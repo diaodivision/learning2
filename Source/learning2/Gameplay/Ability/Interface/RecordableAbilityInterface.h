@@ -29,6 +29,13 @@
 //};
 class UGameplayEffect;
 
+UENUM(BlueprintType)
+enum class EReleaseRecordedDataPolicy : uint8
+{
+	ReleaseManual,
+	AutoReleaseOnEndAbility
+};
+
 UCLASS(Blueprintable, BlueprintType, Abstract)
 class LEARNING2_API URecordableAbilityBase : public UGameplayAbility, public IDurativeRecordableInterface
 {
@@ -76,6 +83,10 @@ protected:
 	const UGameplayEffect* GetReverseCostGameplayEffect() const;
 	virtual inline const UGameplayEffect* GetReverseCostGameplayEffect_Implementation() const { return nullptr; }
 
+public:
+	FORCEINLINE void SetAutoReleaseRecordedDataPolicy(const EReleaseRecordedDataPolicy InReleaseRecordedDataPolicy) { ReleaseRecordedDataPolicy = InReleaseRecordedDataPolicy; }
+	FORCEINLINE EReleaseRecordedDataPolicy GetAutoReleaseRecordedDataPolicy() const { return ReleaseRecordedDataPolicy; }
+
 protected:
 	virtual void NotifyStartDurativeAction(TSharedPtr<IRecordedDataObjectInterface, ESPMode::NotThreadSafe> InRecordedData) override final;
 	virtual void NotifyEndDurativeAction() override final;
@@ -83,6 +94,9 @@ protected:
 
 protected:
 	TSharedPtr<IRecordedDataObjectInterface, ESPMode::NotThreadSafe> RecordedData;
+
+private:
+	EReleaseRecordedDataPolicy ReleaseRecordedDataPolicy{ EReleaseRecordedDataPolicy::AutoReleaseOnEndAbility };
 };
 
 //class FRecordableAbilityBase : public FDurativeRecordableBase
