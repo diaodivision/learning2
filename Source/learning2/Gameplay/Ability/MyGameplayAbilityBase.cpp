@@ -19,7 +19,7 @@ bool UMyGameplayAbilityBase::CanActivateAbility(const FGameplayAbilitySpecHandle
 {
 	bool bCanActivate = Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags);
 
-	if (!NeedToBind()) { return bCanActivate; }
+	if (!NeedBound()) { return bCanActivate; }
 
 	return bCanActivate && IsBound() && CanActivateBoundAbility();
 }
@@ -133,9 +133,14 @@ void UMyGameplayAbilityBase::Unbind()
 	}
 }
 
-bool UMyGameplayAbilityBase::NeedToBind() const
+bool UMyGameplayAbilityBase::NeedBound() const
 {
 	return BindTag.IsValid();
+}
+
+bool UMyGameplayAbilityBase::NeedBindTo() const
+{
+	return TagToBind.IsValid();
 }
 
 ERecordableActionType UMyGameplayAbilityBase::GetActionType_Implementation() const
@@ -143,7 +148,7 @@ ERecordableActionType UMyGameplayAbilityBase::GetActionType_Implementation() con
 	return ERecordableActionType::HasDuration;
 }
 
-void UMyGameplayAbilityBase::Record()
+void UMyGameplayAbilityBase::Record(const FGameplayEventData* TriggerEventData)
 {
 	//UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponentFromActorInfo();
 	//if (!AbilitySystemComponent) { return; }
@@ -170,16 +175,21 @@ void UMyGameplayAbilityBase::Record()
 	TUniquePtr<FRecordedCombinableAbilityData> Data{ MakeUnique<FRecordedCombinableAbilityData>(MakeRecordedCombinableAbilityData()) };
 	if (!ensureAlways(Data->IsPayloadValid())) { return; }
 
-	Record_Internal(MoveTemp(Data));
+	Record_Internal(MoveTemp(Data), TriggerEventData);
 }
 
-void UMyGameplayAbilityBase::Record_Internal(TUniquePtr<IRecordedDataObjectInterface>&& Data)
+void UMyGameplayAbilityBase::Record_Internal(TUniquePtr<IRecordedDataObjectInterface>&& Data, const FGameplayEventData* TriggerEventData)
 {
 	URewindSubsystem* System = URewindSystemStatics::GetRewindSubsystem(this);
 	if (!System) { return; }
 
 	AActor* AvatarActor{ GetRecordAvatar() };
-	if (!AvatarActor) { return; }
+	if (!AvatarActor || !AvatarActor->FindComponentByClass<UInputRecordComponent>()) 
+	{ 
+		AvatarActor = TriggerEventData ? const_cast<AActor*>(TriggerEventData->Instigator.Get()) : nullptr; 
+	}
+	if (!AvatarActor || !AvatarActor->FindComponentByClass<UInputRecordComponent>()) { return; }
+
 
 	FRecordedDataObjectHandle RecordedDataObjectHandle = System->Record(MoveTemp(Data), *AvatarActor,
 		[WeakThis = MakeWeakObjectPtr(this)](const FRecordedDataObjectHandle& Handle)
@@ -207,25 +217,30 @@ bool UMyGameplayAbilityBase::TryHandleRecordedData(TSharedPtr<IRecordedDataObjec
 	const FRecordedCombinableAbilityDataPayloadBase& Payload = Data->Payload;
 
 	if (GetCombinedAbilityIDList(*this) != Payload.AbilityIDList) { return false; }
-
-	bool bActivateAbilitySuccessful{ false };
-	if (Payload.AbilityTriggerTag.IsSet())
+	
+	if (const FGameplayAbilitySpec* Spec{ Payload.AbilityComponent->FindAbilitySpecFromClass(Payload.AbilityClass) })
 	{
-		FGameplayEventData EventData = Payload.EventDataToBoundAbility->Pin();
+		TOptional<FGameplayEventData> EventData;
+		if (Payload.EventDataToBoundAbility) { EventData = Payload.EventDataToBoundAbility->Pin(); }
 
-		bActivateAbilitySuccessful = Payload.AbilityComponent->HandleGameplayEvent(Payload.AbilityTriggerTag.GetValue(), &EventData) > 0;
-	}
-	else
-	{
-		bActivateAbilitySuccessful = Payload.AbilityComponent->TryActivateAbilityByClass(Payload.AbilityClass);
-	}
-
-	if (bActivateAbilitySuccessful)
-	{
 		NotifyStartDurativeAction(InRecordedData);
+		const bool bActivateAbilitySuccessful{ Payload.AbilityComponent->TriggerAbilityFromGameplayEvent(
+			Spec->Handle, 
+			Payload.AbilityComponent->AbilityActorInfo.Get(), 
+			Payload.AbilityTriggerTag.Get(FGameplayTag::EmptyTag), 
+			EventData.GetPtrOrNull(),
+			*Payload.AbilityComponent
+		) };
+
+		if (!bActivateAbilitySuccessful)
+		{
+			NotifyEndDurativeAction();
+		}
+
+		return bActivateAbilitySuccessful;
 	}
 
-	return bActivateAbilitySuccessful;
+	return false;
 }
 
 void UMyGameplayAbilityBase::PreRecord()
@@ -333,7 +348,6 @@ void UMyGameplayAbilityBase::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 		CombinableAbilityData.EventDataToBoundAbility = MakeUnique<FGameplayEventWeakData>(FGameplayEventWeakData{ *TriggerEventData });
 	}
 
-
 	if (!IRecordableInterface::Execute_ShouldRecord(this))
 	{
 		Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
@@ -347,7 +361,7 @@ void UMyGameplayAbilityBase::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 		K2_PreRecord(*TriggerEventData);
 		if (bIsAutoRecordWhenShouldRecord)
 		{
-			Record();
+			Record(TriggerEventData);
 			EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 			return;
 		}

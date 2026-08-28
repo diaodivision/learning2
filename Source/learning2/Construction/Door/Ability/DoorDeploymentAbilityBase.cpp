@@ -7,7 +7,7 @@
 #include "Door/DoorBase.h"
 #include "WeaponBase/GrenadeActorBase.h"
 
-void UDoorDeploymentAbilityBase::Record()
+void UDoorDeploymentAbilityBase::Record(const FGameplayEventData* TriggerEventData)
 {
 	URewindSubsystem* System = URewindSystemStatics::GetRewindSubsystem(this);
 	if (!System) { return; }

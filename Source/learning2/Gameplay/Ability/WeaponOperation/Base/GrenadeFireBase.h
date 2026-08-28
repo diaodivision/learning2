@@ -22,7 +22,7 @@ class LEARNING2_API UGrenadeFireBase : public UWeaponFireAbilityBase
 	virtual bool ShouldRecord_Implementation() const override;
 	virtual FORCEINLINE bool ShouldStopWhenFailToHandleRecordedData_Implementation() const override { return true; }
 
-	virtual void Record() override;
+	virtual void Record(const FGameplayEventData* TriggerEventData) override;
 
 	virtual bool TryHandleRecordedData(TSharedPtr<IRecordedDataObjectInterface, ESPMode::NotThreadSafe> InRecordedData) override;
 

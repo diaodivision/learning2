@@ -55,7 +55,7 @@ void AInteractableActorBase::GatherInteractionOptions_Implementation(const FInte
 
 		if (UMyGameplayAbilityBase* GA = Cast<UMyGameplayAbilityBase>(Instance))
 		{
-			if (GA->NeedToBind())
+			if (GA->NeedBound() || GA->NeedBindTo())
 			{
 				for (const FGameplayAbilitySpec& OtherSpec : OtherASC->GetActivatableAbilities())
 				{

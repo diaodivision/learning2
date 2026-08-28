@@ -12,7 +12,7 @@ class UDoorDeploymentAbilityBase : public UMyGameplayAbilityBase
 {
 	GENERATED_BODY()
 
-	virtual void Record() override;
+	virtual void Record(const FGameplayEventData* TriggerEventData) override;
 
 	virtual bool TryHandleRecordedData(TSharedPtr<IRecordedDataObjectInterface, ESPMode::NotThreadSafe> InRecordedData) override;
 

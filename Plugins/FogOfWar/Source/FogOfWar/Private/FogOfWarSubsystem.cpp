@@ -79,8 +79,6 @@ void UFogOfWarSubsystem::Deinitialize()
 
 void UFogOfWarSubsystem::Tick(float DeltaTime)
 {
-	if (UGameplayStatics::IsGamePaused(this)) { return; }
-
 	if (bHasInvalidComponents)
 	{
 		bHasInvalidComponents = false;

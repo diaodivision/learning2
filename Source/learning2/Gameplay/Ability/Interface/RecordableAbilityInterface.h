@@ -42,7 +42,10 @@ public:
 
 protected:
 	virtual FORCEINLINE void PreRecord() override {}
-	virtual FORCEINLINE void Record() override
+	virtual FORCEINLINE void Record(const FGameplayEventData* TriggerEventData) {}
+
+	UE_DEPRECATED(5.7, "Record() without parameters is deprecated, use Record(const FGameplayEventData* TriggerEventData) instead.")
+	virtual FORCEINLINE void Record() override final
 	{
 		// Example: 
 

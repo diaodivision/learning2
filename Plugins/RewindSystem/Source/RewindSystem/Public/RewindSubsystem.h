@@ -32,6 +32,9 @@ public:
 
 	virtual bool IsTickable() const override { return !IsTemplate(); }//����CDO��Tick
 	virtual TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(URewindSubsystem, STATGROUP_Tickables); }
+	virtual FORCEINLINE bool IsTickableWhenPaused() const override { return false; }
+    virtual FORCEINLINE bool IsTickableInEditor() const override { return false; }
+	virtual FORCEINLINE UWorld* GetTickableGameObjectWorld() const override { return GetWorld(); }
 
 protected:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;

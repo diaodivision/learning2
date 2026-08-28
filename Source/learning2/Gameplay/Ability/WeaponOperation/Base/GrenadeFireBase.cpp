@@ -51,7 +51,7 @@ bool UGrenadeFireBase::ShouldRecord_Implementation() const
 	return Subsystem->GetCurrentState() == ERecordState::Recording;
 }
 
-void UGrenadeFireBase::Record()
+void UGrenadeFireBase::Record(const FGameplayEventData* TriggerEventData)
 {
 	URewindSubsystem* System = URewindSystemStatics::GetRewindSubsystem(this);
 	if (!System) { return; }
@@ -74,7 +74,7 @@ void UGrenadeFireBase::Record()
 
 	if (!ensureAlways(Data->IsPayloadValid())) { return; }
 
-	Record_Internal(MoveTemp(Data));
+	Record_Internal(MoveTemp(Data), TriggerEventData);
 }
 
 bool UGrenadeFireBase::TryHandleRecordedData(TSharedPtr<IRecordedDataObjectInterface, ESPMode::NotThreadSafe> InRecordedData)

@@ -29,7 +29,13 @@ void URecordableAbilityBase::ReleaseRecordedData()
 
 void URecordableAbilityBase::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+	if (!RecordedData.IsValid())
+	{ 
+		const AActor* Owner{ GetAvatarActorFromActorInfo() };
+		UE_LOG(LogTemp, Warning, TEXT("NotifyStartDurativeAction never been called. Owner: %s, Ability: %s"), *GetNameSafe(Owner), *GetNameSafe(this));
+	}
 
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+	
 	ReleaseRecordedData();
 }

@@ -51,7 +51,8 @@ public:
 	static FCombinedAbilityHandle BindWith(const FBindAbilityParameter& InInstigator, const FBindAbilityParameter& InTarget, TFunction<void()> RedoCallback, FPostRecordCallbackType InPostRecordCallback);
 	void Unbind();
 
-	bool NeedToBind() const;
+	bool NeedBound() const;
+	bool NeedBindTo() const;
 
 	virtual ERecordableActionType GetActionType_Implementation() const override;
 	virtual bool ShouldRecord_Implementation() const override;
@@ -65,9 +66,12 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	void K2_PreRecord(const FGameplayEventData& TriggerEventData);
 
-	UFUNCTION(BlueprintCallable, Category = "Recordable")
-	virtual void Record() override;
-	void Record_Internal(TUniquePtr<IRecordedDataObjectInterface>&& Data);
+	virtual void Record(const FGameplayEventData* TriggerEventData) override;
+	UFUNCTION(BlueprintCallable, Category = "Recordable", meta = (DisplayName = "Record"))
+	FORCEINLINE void K2_Record() { Record(nullptr); }
+	UFUNCTION(BlueprintCallable, Category = "Recordable", meta = (DisplayName = "Record From Event"))
+	FORCEINLINE void K2_RecordFromEvent(const FGameplayEventData& TriggerEventData) { Record(&TriggerEventData); }
+	void Record_Internal(TUniquePtr<IRecordedDataObjectInterface>&& Data, const FGameplayEventData* TriggerEventData);
 	virtual void PostRecord(const FRecordedDataObjectHandle& Handle) override;
 	FORCEINLINE static void InvokePostRecord(UMyGameplayAbilityBase* Target, const FRecordedDataObjectHandle& Handle)
 	{
