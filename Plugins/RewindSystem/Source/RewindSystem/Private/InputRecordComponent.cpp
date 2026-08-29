@@ -107,8 +107,7 @@ FRecordedDataObjectHandle UInputRecordComponent::Record(TUniquePtr<IRecordedData
 
 	//RecordedDataBase->PreviewOnHandlePayload(true);
 
-	if (RecordedDataBase->RecordableActionType == ERecordableActionType::HasDuration) { AdvanceCurrentTickOnRecordState(); }
-
+	const ERecordableActionType RecordableActionType{ RecordedDataBase->RecordableActionType };
 	const FRecordedDataObjectHandle& OutHandle = RecordedDataBase->Handle;
 
 	PostRecordCallable(OutHandle);
@@ -123,6 +122,9 @@ FRecordedDataObjectHandle UInputRecordComponent::Record(TUniquePtr<IRecordedData
 	}
 
 	RecordedDataList.Add(MoveTemp(RecordedDataBase));
+
+	if (RecordableActionType == ERecordableActionType::HasDuration) { AdvanceCurrentTickOnRecordState(); }
+
 	return OutHandle;
 }
 
@@ -359,7 +361,7 @@ void UInputRecordComponent::HandleDataOfTick(RewindSystemTickType Tick)
 		const bool bShouldStopRewindWhenHandleThisUnsuccessful{ Data->ShouldStopRewindWhenHandleThisUnsuccessful() };
 
 		TSharedPtr<IRecordedDataObjectInterface, ESPMode::NotThreadSafe> SharedPtr{ Data.Release() };
-		RecordedDataToken = SharedPtr;
+		RecordedDataToken = SharedPtr;	
 		if (SharedPtr->PrepareToHandleRecordedData()) { bHandlePayloadSuccessful = SharedPtr->ConsumeAndTryHandlePayload(SharedPtr); }
 
 		if (!bHandlePayloadSuccessful && bShouldStopRewindWhenHandleThisUnsuccessful)
