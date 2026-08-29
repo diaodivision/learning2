@@ -16,6 +16,11 @@ class LEARNING2_API AFogOfWarProxyActor : public AActor
 public:
 	AFogOfWarProxyActor();
 
+	virtual void SetActorHiddenInGame(bool bNewHidden) override;
+
+protected:
+	void BeginPlay() override;
+
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UFogOfWarComponent> FogOfWarComponent;

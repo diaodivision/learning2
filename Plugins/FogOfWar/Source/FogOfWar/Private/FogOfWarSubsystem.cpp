@@ -324,6 +324,8 @@ void UFogOfWarSubsystem::GetFogOfWarActorData(TArray<FIntPoint>& ActorPositions,
 			continue;
 		}
 
+		if (!WeakComponentPtr->IsActive()) { continue; }
+
 		const UFogOfWarComponent* Component = WeakComponentPtr.Get();
 
 		const TOptional<FFogOfWarData> Data{Component->GetFogOfWarData()};

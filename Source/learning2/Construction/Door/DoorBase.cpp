@@ -13,6 +13,8 @@
 #include "FogOfWarComponentStatics.h"
 #include "WorldHeightSubsystem.h"
 #include "FogOfWarTypes.h"
+#include "Components/ArrowComponent.h"
+#include "FogOfWarProxyActor/FogOfWarProxyActor.h"
 
 ADoorBase::ADoorBase()
 {
@@ -21,6 +23,9 @@ ADoorBase::ADoorBase()
 	NavLinkCustomComponent = CreateDefaultSubobject<UNavLinkCustomComponent>(TEXT("NavLinkCustomComponent"));
 	NavLinkCustomComponent->SetMoveReachedLink(this, &ADoorBase::NotifySmartLinkReached);
 	NavLinkCustomComponent->SetLinkData(FVector{ -150., 0., 0. }, FVector{ 150., 0., 0. }, ENavLinkDirection::BothWays);
+
+	FogOfWarProxyTarget1 = CreateDefaultSubobject<UArrowComponent>(TEXT("FogOfWarProxyTarget1"));
+	FogOfWarProxyTarget2 = CreateDefaultSubobject<UArrowComponent>(TEXT("FogOfWarProxyTarget2"));
 }
 
 void ADoorBase::BeginPlay()
@@ -45,6 +50,7 @@ void ADoorBase::BeginPlay()
 	DeactivateModify();
 
 	CreateGrenadeTargetActor();
+	CreateFogOfWarProxyActor();
 }
 
 FOrientedBox ADoorBase::GetBounds_Implementation() const
@@ -176,13 +182,27 @@ void ADoorBase::CreateGrenadeTargetActor()
 	//ActorSpawnParameters.Instigator = Cast<APawn>(GetOwner());
 	if (!GrenadeTargetActorClass.Get()) { return; }
 	GrenadeTargetActor = GetWorld()->SpawnActor<AGrenadeTargetActor>(GrenadeTargetActorClass, FTransform{ GetActorRotation(), GetActorLocation() }, ActorSpawnParameters);
-	GrenadeTargetActor->SetPredictionLineMesh(PredictionLineMesh);
-	GrenadeTargetActor->SetIterationNum(IterationNum);
+	if (ensureAlways(GrenadeTargetActor))
+	{
+		GrenadeTargetActor->SetPredictionLineMesh(PredictionLineMesh);
+		GrenadeTargetActor->SetIterationNum(IterationNum);
+	}
 	//GrenadeTargetActor->SetActorRotation(GetOwner()->GetActorRotation());
 	//const FAttachmentTransformRules AttachRules{
 	//EAttachmentRule::KeepWorld, EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, false
 	//};
 	//GrenadeTargetActor->AttachToActor(GetOwner(), AttachRules);
+}
+
+void ADoorBase::CreateFogOfWarProxyActor()
+{
+	FActorSpawnParameters ActorSpawnParameters;
+	ActorSpawnParameters.Owner = this;
+	FogOfWarProxyActor = GetWorld()->SpawnActor<AFogOfWarProxyActor>(AFogOfWarProxyActor::StaticClass(), FTransform{ GetActorRotation(), GetActorLocation() }, ActorSpawnParameters);
+	if (ensureAlways(FogOfWarProxyActor)) 
+	{ 
+		FogOfWarProxyActor->SetActorHiddenInGame(true);
+	}
 }
 
 void ADoorBase::OnDoorRotated(USceneComponent* SceneComponent, EUpdateTransformFlags Flags, ETeleportType TeleportType)
@@ -194,4 +214,29 @@ void ADoorBase::OnDoorRotated(USceneComponent* SceneComponent, EUpdateTransformF
 		WorldHeightSubsystem->RequestUpdateWorldHeightData(*this, FWorldHeightBoundsUpdateRequest::Type::Removed);
 		// WorldHeightSubsystem->RequestUpdateWorldHeightData(*this, FWorldHeightBoundsUpdateRequest::Type::Added);
 	}
+}
+
+void ADoorBase::ShowFogOfWarProxy(const AActor* InInstigator)
+{
+	if (!InInstigator || !FogOfWarProxyActor || !FogOfWarProxyTarget1 || !FogOfWarProxyTarget2) { return; }
+
+	const FVector InstigatorLocation{ InInstigator->GetActorLocation() };
+	const FVector ProxyTargetLocation1{ FogOfWarProxyTarget1->GetComponentLocation() };
+	const FVector ProxyTargetLocation2{ FogOfWarProxyTarget2->GetComponentLocation() };
+	if (FVector::DistSquaredXY(InstigatorLocation, ProxyTargetLocation1) > FVector::DistSquaredXY(InstigatorLocation, ProxyTargetLocation2))
+	{
+		FogOfWarProxyActor->SetActorLocation(ProxyTargetLocation1);
+		FogOfWarProxyActor->SetActorRotation(FogOfWarProxyTarget1->GetComponentRotation());
+	}
+	else
+	{
+		FogOfWarProxyActor->SetActorLocation(ProxyTargetLocation2);
+		FogOfWarProxyActor->SetActorRotation(FogOfWarProxyTarget2->GetComponentRotation());
+	}
+	FogOfWarProxyActor->SetActorHiddenInGame(false);
+}
+
+void ADoorBase::HideFogOfWarProxy()
+{
+	FogOfWarProxyActor->SetActorHiddenInGame(true);
 }

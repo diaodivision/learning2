@@ -43,7 +43,7 @@ public:
 	bool IsBound() const;
 
 	FORCEINLINE virtual void PreActivateInteractiveOption() { K2_PreActivateInteractiveOption(); }
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "Pre Activate Interactive Option"))
 	void K2_PreActivateInteractiveOption();
 
 	UFUNCTION(BlueprintCallable, Category = "Combinable Ability")
@@ -66,7 +66,7 @@ public:
 protected:
 	virtual void PreRecord() override;
 
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "Pre Record"))
 	void K2_PreRecord(const FGameplayEventData& TriggerEventData);
 
 	virtual void Record(const FGameplayEventData* TriggerEventData) override;
@@ -141,7 +141,7 @@ protected:
 
 	void PassRecordedToBoundAbility();
 
-	UFUNCTION(BlueprintCallable, Category = "Combinable Ability")
+	UFUNCTION(BlueprintCallable, Category = "Combinable Ability", meta = (DisplayName = "Notify End Durative Action"))
 	void K2_NotifyEndDurativeAction();
 
 	//UFUNCTION(BlueprintCallable, Category = "Recordable")

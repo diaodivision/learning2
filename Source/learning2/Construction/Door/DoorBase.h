@@ -17,6 +17,8 @@ class UNavLinkCustomComponent;
 class AGrenadeTargetActor;
 class AGrenadeBulletBase;
 class UMeshComponent;
+class UArrowComponent;
+class AFogOfWarProxyActor;
 
 UCLASS(BlueprintType, Blueprintable, Abstract)
 class ADoorBase :
@@ -68,6 +70,7 @@ protected:
 	void NotifyDoorOpened();
 
 	void CreateGrenadeTargetActor();
+	void CreateFogOfWarProxyActor();
 
 	UFUNCTION(BlueprintImplementableEvent)
 	UMeshComponent* GetDoorMesh() const;
@@ -77,6 +80,11 @@ protected:
 	
 	// UFUNCTION()
 	virtual void OnDoorRotated(USceneComponent* SceneComponent, EUpdateTransformFlags Flags, ETeleportType TeleportType);
+
+	UFUNCTION(BlueprintCallable)
+	void ShowFogOfWarProxy(const AActor* InInstigator);
+	UFUNCTION(BlueprintCallable)
+	void HideFogOfWarProxy();
 
 public:
 	UPROPERTY(BlueprintAssignable)
@@ -103,6 +111,15 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attribute|PredictionLine", meta = (AllowPrivateAccess = true))
 	TSubclassOf<AGrenadeTargetActor> GrenadeTargetActorClass;
-
+	
 	FRotator DoorLastRotation{ FRotator::ZeroRotator };
+	
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+	TObjectPtr<AFogOfWarProxyActor> FogOfWarProxyActor;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+	TObjectPtr<UArrowComponent> FogOfWarProxyTarget1;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+	TObjectPtr<UArrowComponent> FogOfWarProxyTarget2;
 };
