@@ -15,6 +15,7 @@
 #include "FogOfWarTypes.h"
 #include "Components/ArrowComponent.h"
 #include "FogOfWarProxyActor/FogOfWarProxyActor.h"
+#include "Ability/AbilitySystemComponent/MyAbilitySystemComponent.h"
 
 ADoorBase::ADoorBase()
 {
@@ -53,6 +54,8 @@ void ADoorBase::BeginPlay()
 
 	CreateGrenadeTargetActor();
 	CreateFogOfWarProxyActor();
+
+	FogOfWarProxyActor->OnFogOfWarProxyActorVisibilityChangedDelegate.AddUObject(this, &ADoorBase::OnFogOfWarProxyActorVisibilityChanged);
 }
 
 FOrientedBox ADoorBase::GetBounds_Implementation() const
@@ -239,4 +242,20 @@ void ADoorBase::ShowFogOfWarProxy(const AActor* InInstigator)
 void ADoorBase::HideFogOfWarProxy()
 {
 	FogOfWarProxyActor->SetActorHiddenInGame(true);
+}
+
+void ADoorBase::OnFogOfWarProxyActorVisibilityChanged(const bool bIsVisible)
+{
+	K2_OnFogOfWarProxyActorVisibilityChanged(bIsVisible);
+}
+
+void ADoorBase::CancelAbility(const TSubclassOf<UGameplayAbility> AbilityClass)
+{
+	if (AbilitySystemComponent)
+	{
+		if (const FGameplayAbilitySpec* Spec{ AbilitySystemComponent->FindAbilitySpecFromClass(AbilityClass) })
+		{
+			AbilitySystemComponent->CancelAbilityHandle(Spec->Handle);
+		}
+	}
 }

@@ -21,6 +21,7 @@ void AFogOfWarProxyActor::SetActorHiddenInGame(bool bNewHidden)
 	else { FogOfWarComponent->Activate(); }
 
 	if (FogOfWarProxyWidgetComponent) { FogOfWarProxyWidgetComponent->ShowWidget(!bNewHidden); }
+	OnFogOfWarProxyActorVisibilityChangedDelegate.Broadcast(!bNewHidden);
 }
 
 void AFogOfWarProxyActor::BeginPlay()
@@ -28,5 +29,8 @@ void AFogOfWarProxyActor::BeginPlay()
 	Super::BeginPlay();
 
 	SetActorEnableCollision(false);
-	// if (FogOfWarProxyWidgetComponent) { FogOfWarProxyWidgetComponent->SetWorldRotation(GetActorRotation()); }
+	FogOfWarProxyWidgetComponent->OnWidgetVisibilityChangedDelegate.AddWeakLambda(this, [this](const ESlateVisibility InVisibility)
+	{
+		OnFogOfWarProxyActorVisibilityChangedDelegate.Broadcast(InVisibility == ESlateVisibility::Visible);
+	});
 }

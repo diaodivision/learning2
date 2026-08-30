@@ -19,6 +19,8 @@ class AGrenadeBulletBase;
 class UMeshComponent;
 class UArrowComponent;
 class AFogOfWarProxyActor;
+class UGameplayAbility;
+struct FGameplayAbilitySpecHandle;
 
 UCLASS(BlueprintType, Blueprintable, Abstract)
 class ADoorBase :
@@ -85,6 +87,13 @@ protected:
 	void ShowFogOfWarProxy(const AActor* InInstigator);
 	UFUNCTION(BlueprintCallable)
 	void HideFogOfWarProxy();
+
+	virtual void OnFogOfWarProxyActorVisibilityChanged(const bool bIsVisible);
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Fog Of War Proxy Actor Visibility Changed"))
+	void K2_OnFogOfWarProxyActorVisibilityChanged(const bool bIsVisible);
+	
+	UFUNCTION(BlueprintCallable)
+	void CancelAbility(const TSubclassOf<UGameplayAbility> AbilityClass);
 
 public:
 	UPROPERTY(BlueprintAssignable)

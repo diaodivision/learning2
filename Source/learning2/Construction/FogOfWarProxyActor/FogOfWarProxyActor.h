@@ -4,10 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Delegates/DelegateCombinations.h"
 #include "FogOfWarProxyActor.generated.h"
 
 class UFogOfWarComponent;
 class UFogOfWarProxyWidgetComponent;
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnFogOfWarProxyActorVisibilityChangedDelegate, const bool bIsVisible);
 
 UCLASS(BlueprintType, Blueprintable)
 class LEARNING2_API AFogOfWarProxyActor : public AActor
@@ -21,6 +24,9 @@ public:
 
 protected:
 	void BeginPlay() override;
+
+public:
+	FOnFogOfWarProxyActorVisibilityChangedDelegate OnFogOfWarProxyActorVisibilityChangedDelegate;
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))

@@ -4,7 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Components/WidgetComponent.h"
+#include "Delegates/DelegateCombinations.h"
 #include "FogOfWarProxyWidgetComponent.generated.h"
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnWidgetVisibilityChangedDelegate, const ESlateVisibility InVisibility);
 
 /**
  *
@@ -19,4 +22,12 @@ public:
 
     UFUNCTION(BlueprintCallable)
 	void ShowWidget(const bool bIsShow);
+
+protected:
+    void BeginPlay() override;
+
+    virtual void OnWidgetVisibilityChanged(const ESlateVisibility InVisibility);
+
+public:
+    FOnWidgetVisibilityChangedDelegate OnWidgetVisibilityChangedDelegate;
 };

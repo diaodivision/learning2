@@ -17,3 +17,18 @@ void UFogOfWarProxyWidgetComponent::ShowWidget(const bool bIsShow)
         ViewInstance->ShowWidget(bIsShow ? ESlateVisibility::Visible : ESlateVisibility::Hidden, Cast<AFogOfWarProxyActor>(GetOwner()));
     }
 }
+
+void UFogOfWarProxyWidgetComponent::BeginPlay()
+{
+    Super::BeginPlay();
+
+    if (GetWidget()) 
+    { 
+        GetWidget()->OnNativeVisibilityChanged.AddUObject(this, &UFogOfWarProxyWidgetComponent::OnWidgetVisibilityChanged);
+    }
+}
+
+void UFogOfWarProxyWidgetComponent::OnWidgetVisibilityChanged(const ESlateVisibility InVisibility)
+{
+    OnWidgetVisibilityChangedDelegate.Broadcast(InVisibility);
+}
