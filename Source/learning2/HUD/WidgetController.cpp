@@ -139,11 +139,6 @@ void UWidgetController::BroadcastInitialData()
 		OnMaxHealthChangedDelegate.Broadcast(0.f, AttributeSet->GetMaxHealth());
 	}
 
-	//if (const URewindSubsystem * RewindSubsystem{ GetRewindSubsystem() })
-	//{
-	//	OnRewindSubsystemStateChangedDelegate.Broadcast(ERecordState::Idle, RewindSubsystem->GetCurrentState());
-	//}
-
 	for (AWeaponActorBase* Weapon : MyCharacter->GetWeapons())
 	{
 		const AWeaponActorBase* ControlledWeapon{ MyCharacter.IsValid() ? MyCharacter->GetControlledWeapon() : nullptr };

@@ -107,6 +107,7 @@ public:
 	virtual void OnEnemyDisappear_Implementation(const AMyCharacterBase* Enemy);
 
 	TArray<AWeaponActorBase*> GetWeapons() const;
+	FORCEINLINE USwitchableActorCollection* GetWeaponContainer() const { return Weapons; }
 
 	UFUNCTION(BlueprintPure)
 	bool ContainsWeapon(const AWeaponActorBase* Weapon) const;

@@ -21,6 +21,7 @@
 #include "WorldPauseSubsystem.h"
 #include "AbilitySystemComponent.h"
 #include "Targeting/TargetingInstigatorTypes.h"
+#include "Switchable/SwitchableActorCollection.h"
 
 AMyPlayerController::AMyPlayerController()
 {
@@ -342,10 +343,16 @@ void AMyPlayerController::SetAimMode(bool bAim)
 	bAimMode = bAim;
 }
 
-USwitchableCollection* AMyPlayerController::GetCharacterWeapons_Internal() const
+USwitchableCollection* AMyPlayerController::GetCharacterWeapons()
 {
 	USwitchableCollection* Weapons = CharacterWeapons.Get();
-	if (!Weapons) { Weapons = GetCharacterWeapons(); }
+	if (!Weapons) 
+	{
+		if (AMyCharacterBase* Ch{ Cast<AMyCharacterBase>(GetCharacter()) })
+		{
+			CharacterWeapons = Ch->GetWeaponContainer();
+		}
+	}
 
 	return Weapons;
 }
@@ -360,7 +367,7 @@ USwitchableCollection* AMyPlayerController::GetCharacterWeapons_Internal() const
 
 void AMyPlayerController::SwitchWeaponByIndex(int32 Index)
 {
-	USwitchableCollection* Weapons = GetCharacterWeapons_Internal();
+	USwitchableCollection* Weapons = GetCharacterWeapons();
 	if (!Weapons) { return; }
 
 	const UObject* LastControlledWeapon{ Weapons->GetControlledObject() };
@@ -420,7 +427,7 @@ void AMyPlayerController::OnShoot()
 	}
 	else
 	{
-		USwitchableCollection* Weapons = GetCharacterWeapons_Internal();
+		USwitchableCollection* Weapons = GetCharacterWeapons();
 		if (!Weapons) { return; }
 
 		UE_LOG(LogTemp, Warning, TEXT("Shooting Weapons->GetControlledObject(): %s"), *GetNameSafe(Weapons->GetControlledObject()));
@@ -454,7 +461,7 @@ void AMyPlayerController::OnShootStop()
 
 void AMyPlayerController::OnReload()
 {
-	USwitchableCollection* Weapons = GetCharacterWeapons_Internal();
+	USwitchableCollection* Weapons = GetCharacterWeapons();
 	if (!Weapons) { return; }
 
 	if (IWeaponInterface* Weapon = Cast<IWeaponInterface>(Weapons->GetControlledObject()))
@@ -504,7 +511,8 @@ void AMyPlayerController::SetupMouseAndInput()
 	FInputModeGameAndUI InputMode;
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockInFullscreen);
 	// 开启消费捕获点击，防止点击时出现奇怪的视口焦点丢失
-	//InputMode.SetConsumeCaptureMouseDown(false);
+	// InputMode.SetConsumeCaptureMouseDown(false);
+	InputMode.SetHideCursorDuringCapture(false);
 	SetInputMode(InputMode);
 
 	// 2. 强行在 GameOnly 模式下把鼠标画出来
@@ -584,7 +592,7 @@ void AMyPlayerController::OnPossess(APawn* NewPawn)
 		NewCharacter->OnCharacterMovementUpdated.AddUniqueDynamic(this, &AMyPlayerController::OnPossessedCharacterMovementUpdated);
 	}
 
-	CharacterWeapons = GetCharacterWeapons();
+	// CharacterWeapons = GetCharacterWeapons();
 
 	Super::OnPossess(NewPawn);
 }
@@ -597,6 +605,7 @@ void AMyPlayerController::OnUnPossess()
 	}
 	OnShootStop();
 	OnCancelTargeting();
+	CharacterWeapons = nullptr;
 
 	Super::OnUnPossess();
 }

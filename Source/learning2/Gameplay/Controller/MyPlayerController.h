@@ -106,9 +106,9 @@ protected:
 	//virtual void SwitchToAimMode(bool bIsSwitch);
 	virtual void SetAimMode(bool bAim);
 
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Character Weapons")
-	USwitchableCollection* GetCharacterWeapons() const;
-	USwitchableCollection* GetCharacterWeapons_Internal() const;
+	// UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Character Weapons")
+	// USwitchableCollection* GetCharacterWeapons() const;
+	USwitchableCollection* GetCharacterWeapons();
 	TWeakObjectPtr<USwitchableCollection> CharacterWeapons{ nullptr };
 
 	//UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gameplay|Input")
