@@ -118,6 +118,9 @@ private:
 	TObjectPtr<AFogOfWarProxyActor> FogOfWarProxyActor;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+	TSubclassOf<AFogOfWarProxyActor> FogOfWarProxyActorClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	TObjectPtr<UArrowComponent> FogOfWarProxyTarget1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true))

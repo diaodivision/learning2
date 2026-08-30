@@ -52,6 +52,7 @@ protected:
 
 	virtual void OnInputRecordOperationPreview(const bool bIsPreview, const IRecordedDataObjectInterface* Data);
 
+	UFUNCTION()
 	virtual void CancelRewindingState();
 
 	UFUNCTION()

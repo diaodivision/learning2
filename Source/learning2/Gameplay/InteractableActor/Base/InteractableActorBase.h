@@ -148,8 +148,7 @@ protected:
 	TArray<FOptionInfo> OptionClasses;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI"/*, meta = (AllowPrivateAccess = "true")*/)
-	UActorWidgetComponent* WidgetComponent;
-	//TObjectPtr<UWidgetComponent> WidgetComponent;
+	TObjectPtr<UActorWidgetComponent> WidgetComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Collision")
 	TObjectPtr<UBoxComponent> BoxComponent;

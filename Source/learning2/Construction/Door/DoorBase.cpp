@@ -26,6 +26,8 @@ ADoorBase::ADoorBase()
 
 	FogOfWarProxyTarget1 = CreateDefaultSubobject<UArrowComponent>(TEXT("FogOfWarProxyTarget1"));
 	FogOfWarProxyTarget2 = CreateDefaultSubobject<UArrowComponent>(TEXT("FogOfWarProxyTarget2"));
+	FogOfWarProxyTarget1->SetupAttachment(RootComponent);
+	FogOfWarProxyTarget2->SetupAttachment(RootComponent);
 }
 
 void ADoorBase::BeginPlay()
@@ -198,7 +200,7 @@ void ADoorBase::CreateFogOfWarProxyActor()
 {
 	FActorSpawnParameters ActorSpawnParameters;
 	ActorSpawnParameters.Owner = this;
-	FogOfWarProxyActor = GetWorld()->SpawnActor<AFogOfWarProxyActor>(AFogOfWarProxyActor::StaticClass(), FTransform{ GetActorRotation(), GetActorLocation() }, ActorSpawnParameters);
+	FogOfWarProxyActor = GetWorld()->SpawnActor<AFogOfWarProxyActor>(FogOfWarProxyActorClass, FTransform{ GetActorRotation(), GetActorLocation() }, ActorSpawnParameters);
 	if (ensureAlways(FogOfWarProxyActor)) 
 	{ 
 		FogOfWarProxyActor->SetActorHiddenInGame(true);
@@ -225,13 +227,11 @@ void ADoorBase::ShowFogOfWarProxy(const AActor* InInstigator)
 	const FVector ProxyTargetLocation2{ FogOfWarProxyTarget2->GetComponentLocation() };
 	if (FVector::DistSquaredXY(InstigatorLocation, ProxyTargetLocation1) > FVector::DistSquaredXY(InstigatorLocation, ProxyTargetLocation2))
 	{
-		FogOfWarProxyActor->SetActorLocation(ProxyTargetLocation1);
-		FogOfWarProxyActor->SetActorRotation(FogOfWarProxyTarget1->GetComponentRotation());
+		FogOfWarProxyActor->SetActorTransform(FogOfWarProxyTarget1->GetComponentTransform(), false, nullptr, ETeleportType::TeleportPhysics);
 	}
 	else
 	{
-		FogOfWarProxyActor->SetActorLocation(ProxyTargetLocation2);
-		FogOfWarProxyActor->SetActorRotation(FogOfWarProxyTarget2->GetComponentRotation());
+		FogOfWarProxyActor->SetActorTransform(FogOfWarProxyTarget2->GetComponentTransform(), false, nullptr, ETeleportType::TeleportPhysics);
 	}
 	FogOfWarProxyActor->SetActorHiddenInGame(false);
 }

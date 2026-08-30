@@ -7,6 +7,7 @@
 #include "FogOfWarProxyActor.generated.h"
 
 class UFogOfWarComponent;
+class UFogOfWarProxyWidgetComponent;
 
 UCLASS(BlueprintType, Blueprintable)
 class LEARNING2_API AFogOfWarProxyActor : public AActor
@@ -24,4 +25,7 @@ protected:
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UFogOfWarComponent> FogOfWarComponent;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UFogOfWarProxyWidgetComponent> FogOfWarProxyWidgetComponent;
 };

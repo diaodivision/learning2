@@ -135,7 +135,7 @@ void APlayerCharacterBase::PossessedBy(AController* NewController)
 			HUD->SetUpHUD({ PlayerController, AttributeSet, GetPlayerState(), AbilitySystemComponent, InputRecordComponent, this });
 		}
 
-		PlayerController->OnReceiveMoveInputDelegate.AddUObject(this, &APlayerCharacterBase::CancelRewindingState);
+		PlayerController->OnReceiveMoveInputDelegate.AddUniqueDynamic(this, &APlayerCharacterBase::CancelRewindingState);
 		PlayerController->OnReceiveShootInputDelegate.AddUObject(this, &APlayerCharacterBase::CancelRewindingState);
 	}
 	else if (NewController != nullptr)
@@ -216,7 +216,7 @@ void APlayerCharacterBase::InitializeDelegates()
 
 	if (AMyPlayerController* PlayerController{ Cast<AMyPlayerController>(GetController()) })
 	{
-		PlayerController->OnReceiveMoveInputDelegate.AddUObject(this, &APlayerCharacterBase::CancelRewindingState);
+		PlayerController->OnReceiveMoveInputDelegate.AddUniqueDynamic(this, &APlayerCharacterBase::CancelRewindingState);
 		PlayerController->OnReceiveShootInputDelegate.AddUObject(this, &APlayerCharacterBase::CancelRewindingState);
 	}
 

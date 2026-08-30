@@ -19,7 +19,7 @@ class UAbilitySystemComponent;
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnHoveredActorChangedDelegate, AActor*, AActor*);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSelectedActorChangedDelegate, AActor*, AActor*);
-DECLARE_MULTICAST_DELEGATE(FOnReceiveMoveInputDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnReceiveMoveInputDelegate);
 DECLARE_MULTICAST_DELEGATE(FOnReceiveShootInputDelegate);
 
 USTRUCT(BlueprintType)
@@ -166,6 +166,7 @@ public:
 	FOnHoveredActorChangedDelegate OnHoveredActorChangedDelegate;
 	FOnSelectedActorChangedDelegate OnSelectedActorChangedDelegate;
 
+	UPROPERTY(BlueprintAssignable)
 	FOnReceiveMoveInputDelegate OnReceiveMoveInputDelegate;
 	FOnReceiveShootInputDelegate OnReceiveShootInputDelegate;
 

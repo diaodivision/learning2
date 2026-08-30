@@ -1,6 +1,7 @@
 #include "FogOfWarProxyActor.h"
 #include "FogOfWarComponent.h"
 #include "Components/SceneComponent.h"
+#include "FogOfWarProxyWidgetComponent.h"
 
 AFogOfWarProxyActor::AFogOfWarProxyActor() : Super()
 {
@@ -8,6 +9,8 @@ AFogOfWarProxyActor::AFogOfWarProxyActor() : Super()
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SceneComponent"));
 	FogOfWarComponent = CreateDefaultSubobject<UFogOfWarComponent>(TEXT("FogOfWarComponent"));
+	FogOfWarProxyWidgetComponent = CreateDefaultSubobject<UFogOfWarProxyWidgetComponent>(TEXT("FogOfWarProxyWidgetComponent"));
+	if (FogOfWarProxyWidgetComponent) { FogOfWarProxyWidgetComponent->SetupAttachment(RootComponent); }
 }
 
 void AFogOfWarProxyActor::SetActorHiddenInGame(bool bNewHidden)
@@ -16,6 +19,8 @@ void AFogOfWarProxyActor::SetActorHiddenInGame(bool bNewHidden)
 
 	if (bNewHidden) { FogOfWarComponent->Deactivate(); }
 	else { FogOfWarComponent->Activate(); }
+
+	if (FogOfWarProxyWidgetComponent) { FogOfWarProxyWidgetComponent->ShowWidget(!bNewHidden); }
 }
 
 void AFogOfWarProxyActor::BeginPlay()
@@ -23,4 +28,5 @@ void AFogOfWarProxyActor::BeginPlay()
 	Super::BeginPlay();
 
 	SetActorEnableCollision(false);
+	// if (FogOfWarProxyWidgetComponent) { FogOfWarProxyWidgetComponent->SetWorldRotation(GetActorRotation()); }
 }
