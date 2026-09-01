@@ -510,12 +510,6 @@ bool UMyGameplayAbilityBase::GetGameplayAbilityID(GameplayAbilityIDType& ID, con
 	uint32 GAHash{ GetTypeHash(GA) };
 	using ASCHashType = decltype(ASCHash);
 
-#if !UE_BUILD_SHIPPING
-#include <type_traits>
-	using GAHashType = decltype(GAHash);
-	static_assert(std::is_same_v<uint32, ASCHashType> && std::is_same_v<ASCHashType, GAHashType>);
-#endif
-
 	uint64 Key = (static_cast<uint64>(ASCHash) << 32) & static_cast<uint64>(GAHash);
 
 	static TMap<uint64, GameplayAbilityIDType> UsedIDMap;
@@ -528,10 +522,6 @@ bool UMyGameplayAbilityBase::GetGameplayAbilityID(GameplayAbilityIDType& ID, con
 		static GameplayAbilityIDType NextID{ 1 };
 		ID = NextID++;
 	}
-	UE_LOG(LogTemp, Error, TEXT("ASCHash: %u"), ASCHash);
-	UE_LOG(LogTemp, Error, TEXT("GAHash: %u"), GAHash);
-	UE_LOG(LogTemp, Error, TEXT("Key: %u"), Key);
-	UE_LOG(LogTemp, Error, TEXT("ID: %u"), ID);
 
 	return true;
 }

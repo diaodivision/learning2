@@ -231,8 +231,6 @@ void AMyPlayerController::Move_Implementation(const FInputActionValue& Value)
 
 void AMyPlayerController::Aim_Implementation()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Aim"));
-
 	if (!InputEnabled()) { return; }
 
 	if (bIsTargeting) { return; }
@@ -430,12 +428,9 @@ void AMyPlayerController::OnShoot()
 		USwitchableCollection* Weapons = GetCharacterWeapons();
 		if (!Weapons) { return; }
 
-		UE_LOG(LogTemp, Warning, TEXT("Shooting Weapons->GetControlledObject(): %s"), *GetNameSafe(Weapons->GetControlledObject()));
-
 		if (IWeaponInterface* Weapon = Cast<IWeaponInterface>(Weapons->GetControlledObject()))
 		{
 			const bool bSucceed{ Weapon->Fire() };
-			UE_LOG(LogTemp, Warning, TEXT("Weapon->Fire(): %d"), bSucceed);
 
 			if (bSucceed)
 			{

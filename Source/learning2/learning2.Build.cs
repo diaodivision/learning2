@@ -26,7 +26,9 @@ public class learning2 : ModuleRules
             "Niagara",
             "WorldPauseSystem",
             "TopDownCameraSystem",
-            "DeveloperSettings"
+            "DeveloperSettings",
+            "MoviePlayer",
+            "RenderCore"
         });
 
 
