@@ -134,8 +134,8 @@ void AMyPlayerController::SetupInputComponent()
 
 	UEnhancedInputComponent* EnhanceInputComponent = CastChecked<UEnhancedInputComponent>(InputComponent);
 	EnhanceInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMyPlayerController::Move);
-	EnhanceInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &AMyPlayerController::SetAimMode, false);
-	EnhanceInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AMyPlayerController::SetAimMode, true);
+	EnhanceInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &AMyPlayerController::SetAimMode, true);
+	EnhanceInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AMyPlayerController::SetAimMode, false);
 	//EnhanceInputComponent->BindAction(LookAtAction, ETriggerEvent::Triggered, this, &AMyPlayerController::HandleLookAt);
 
 	EnhanceInputComponent->BindAction(SwitchWeaponAction.SwitchToMainWeapon.Get(), ETriggerEvent::Started, this, &AMyPlayerController::SwitchWeaponByIndex, 0);

@@ -28,6 +28,7 @@ class LEARNING2_API ULoadingScreenWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+    UFUNCTION(BlueprintCallable, meta = (DisplayName = "Update Loading Info"))
     void UpdateLoadingInfo(const FLoadingInfo& LoadingInfo);
     UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "Update Loading Info"))
     void K2_UpdateLoadingInfo(const FLoadingInfo& LoadingInfo);

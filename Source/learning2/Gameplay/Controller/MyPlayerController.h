@@ -187,7 +187,7 @@ protected:
 	bool bLeftMousePressed{ false };
 
 	UPROPERTY(BlueprintReadOnly, Category = "Gameplay|Input|State")
-	bool bAimMode{ true };
+	bool bAimMode{ false };
 
 	//bool GetActorLastLocation(FVector& Location, const AActor& Actor);
 	//void SetActorLastLocation(const FVector& Location, const AActor& Actor);

@@ -17,7 +17,14 @@ void UMyGameInstance::EndLoadingScreen(UWorld* InLoadedWorld)
     if (!World) { return; }
     
     const UMyGameInstanceSettings* Settings = GetDefault<UMyGameInstanceSettings>();
-    const TSubclassOf<ULoadingScreenWidget> LoadingWidgetClass{ Settings && !Settings->LoadingScreen.IsNull() ? Settings->LoadingScreen.LoadSynchronous() : nullptr };
+    if (!Settings) { return; }
+
+    TSubclassOf<ULoadingScreenWidget> LoadingWidgetClass;
+    if (Settings->ShouCoverLevelList.ContainsByPredicate([World](const TSoftObjectPtr<UWorld>& Level) { return !Level.IsNull() && Level->GetClass() == World->GetClass(); }))
+    {
+        LoadingWidgetClass = !Settings->LoadingScreen_Covered.IsNull() ? Settings->LoadingScreen_Covered.LoadSynchronous() : nullptr;
+    }
+    else { LoadingWidgetClass = !Settings->LoadingScreen.IsNull() ? Settings->LoadingScreen.LoadSynchronous() : nullptr; }
 	if (!LoadingWidgetClass) { return; }
     
     TotalPSOs = FShaderPipelineCache::NumPrecompilesRemaining();
