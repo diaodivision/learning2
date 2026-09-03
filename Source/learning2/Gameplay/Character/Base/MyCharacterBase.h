@@ -57,6 +57,8 @@ public:
 	// Sets default values for this character's properties
 	AMyCharacterBase();
 
+	virtual void PossessedBy(AController* NewController) override;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -64,6 +66,8 @@ protected:
 
 	virtual void PostRegisterAllComponents() override;
 	virtual void PostUnregisterAllComponents() override;
+
+	virtual void PostBehaviorTreeRun();
 
 public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;

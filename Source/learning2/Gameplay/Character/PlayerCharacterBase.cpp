@@ -138,60 +138,6 @@ void APlayerCharacterBase::PossessedBy(AController* NewController)
 		PlayerController->OnReceiveMoveInputDelegate.AddUniqueDynamic(this, &APlayerCharacterBase::CancelRewindingState);
 		PlayerController->OnReceiveShootInputDelegate.AddUObject(this, &APlayerCharacterBase::CancelRewindingState);
 	}
-	else if (NewController != nullptr)
-	{
-		UBehaviorTreeStatics::SetSelfActor(this);
-
-		const TArray<const AWeaponActorBase*> WeaponsList{ GetWeapons() };
-		for (int32 i = 0; i < 2; i++)
-		{
-			if (!WeaponsList.IsValidIndex(i)) { break; }
-
-			const AWeaponActorBase* Weapon{ WeaponsList[i] };
-
-			UBehaviorTreeStatics::SetWeaponMagazineAmmo(this, Weapon->GetMagazineAmmo(), Weapon->GetWeaponSlot());
-			UBehaviorTreeStatics::SetWeaponMaxMagazineAmmo(this, Weapon->GetMagazineAmmoMax(), Weapon->GetWeaponSlot());
-			if (Weapon->IsOnControl()) { UBehaviorTreeStatics::SetControlledWeaponSlot(Weapon->GetWeaponSlot(), this); }
-		}
-
-		ACharacter* EnemyCharacter{ nullptr };
-		ACharacter* SensedEnemyCharacter{ nullptr };
-		if (UBattleSubsystem* BattleSubsystem{ UBattleSubsystemStatics::GetBattleSubsystem(this) })
-		{
-			SensedEnemyCharacter = Cast<ACharacter>(BattleSubsystem->GetOneTeamSensedActor(GetGenericTeamId()));
-
-			if (SensedEnemyCharacter)
-			{
-				FHitResult HitResult;
-
-				FCollisionObjectQueryParams Params;
-				Params.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
-				Params.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
-				Params.AddObjectTypesToQuery(ECollisionChannel::ECC_Destructible);
-				GetWorld()->LineTraceSingleByObjectType(HitResult, GetActorLocation(), SensedEnemyCharacter->GetActorLocation(), Params);
-
-				if (HitResult.GetActor())
-				{
-					if (HitResult.GetActor() == SensedEnemyCharacter)
-					{
-						EnemyCharacter = SensedEnemyCharacter;
-					}
-					else if (const IGenericTeamAgentInterface * TeamAgent{ Cast<IGenericTeamAgentInterface>(HitResult.GetActor()) })
-					{
-						if (TeamAgent->GetTeamAttitudeTowards(*this) == ETeamAttitude::Hostile)
-						{
-							EnemyCharacter = Cast<ACharacter>(HitResult.GetActor());
-						}
-					}
-				}
-			}
-
-		}
-		else { UBehaviorTreeStatics::SetSensedEnemyCharacter(nullptr, this); }
-
-		UBehaviorTreeStatics::SetEnemyCharacter(EnemyCharacter, this);
-		UBehaviorTreeStatics::SetSensedEnemyCharacter(SensedEnemyCharacter, this);
-	}
 }
 
 void APlayerCharacterBase::UnPossessed()

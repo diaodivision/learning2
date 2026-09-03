@@ -35,10 +35,9 @@ void UBehaviorTreeStatics::SetWeaponMagazineAmmo(AActor* Actor, const int32 Ammo
 	UBlackboardComponent* BlackboardComponent{ UAIBlueprintHelperLibrary::GetBlackboard(Actor) };
 	if (!BlackboardComponent) { return; }
 
-	EWeaponSlot CurrentWeaponSlot;
-	if (!GetControlledWeaponSlot(CurrentWeaponSlot, Actor)) { return; }
+	const TOptional<EWeaponSlot> CurrentWeaponSlot{ GetControlledWeaponSlot(Actor) };
 
-	const FName KeyName{ CurrentWeaponSlot == Slot ? BattleSubsystemConst::BlackboardKeyName::ControlledWeaponAmmo : BattleSubsystemConst::BlackboardKeyName::UncontrolledWeaponAmmo };
+	const FName KeyName{ !CurrentWeaponSlot.IsSet() || CurrentWeaponSlot.GetValue() == Slot ? BattleSubsystemConst::BlackboardKeyName::ControlledWeaponAmmo : BattleSubsystemConst::BlackboardKeyName::UncontrolledWeaponAmmo };
 	BlackboardComponent->SetValueAsInt(KeyName, Ammo);
 }
 
@@ -49,22 +48,21 @@ void UBehaviorTreeStatics::SetWeaponMaxMagazineAmmo(AActor* Actor, const int32 A
 	UBlackboardComponent* BlackboardComponent{ UAIBlueprintHelperLibrary::GetBlackboard(Actor) };
 	if (!BlackboardComponent) { return; }
 
-	EWeaponSlot CurrentWeaponSlot;
-	if (!GetControlledWeaponSlot(CurrentWeaponSlot, Actor)) { return; }
+	const TOptional<EWeaponSlot> CurrentWeaponSlot{ GetControlledWeaponSlot(Actor) };
 
-	const FName KeyName{ CurrentWeaponSlot == Slot ? BattleSubsystemConst::BlackboardKeyName::ControlledWeaponMaxAmmo : BattleSubsystemConst::BlackboardKeyName::UncontrolledWeaponMaxAmmo };
+	const FName KeyName{ !CurrentWeaponSlot.IsSet() || CurrentWeaponSlot.GetValue() == Slot ? BattleSubsystemConst::BlackboardKeyName::ControlledWeaponMaxAmmo : BattleSubsystemConst::BlackboardKeyName::UncontrolledWeaponMaxAmmo };
 	BlackboardComponent->SetValueAsInt(KeyName, AmmoMax);
 }
 
-bool UBehaviorTreeStatics::GetControlledWeaponSlot(EWeaponSlot& WeaponSlot, AActor* Actor)
+TOptional<EWeaponSlot> UBehaviorTreeStatics::GetControlledWeaponSlot(AActor* Actor)
 {
-	if (!Actor) { return false; }
+	if (!Actor) { return NullOpt; }
 
 	const UBlackboardComponent* BlackboardComponent{ UAIBlueprintHelperLibrary::GetBlackboard(Actor) };
-	if (!BlackboardComponent) { return false; }
+	if (!BlackboardComponent) { return NullOpt; }
 
-	WeaponSlot = static_cast<EWeaponSlot>(BlackboardComponent->GetValueAsInt(BattleSubsystemConst::BlackboardKeyName::ControlledWeaponSlot));
-	return true;
+	const EWeaponSlot WeaponSlot{ static_cast<EWeaponSlot>(BlackboardComponent->GetValueAsInt(BattleSubsystemConst::BlackboardKeyName::ControlledWeaponSlot)) };
+	return FMath::IsWithin(WeaponSlot, EWeaponSlot::Ammo1, EWeaponSlot::MAX) ? TOptional<EWeaponSlot>(WeaponSlot) : NullOpt;
 }
 
 void UBehaviorTreeStatics::SetTargetLocation(const FVector& TargetLocation, AActor* Actor)
@@ -117,4 +115,13 @@ ACharacter* UBehaviorTreeStatics::GetEnemyCharacter(AActor* Actor)
 	if (!BlackboardComponent) { return nullptr; }
 
 	return Cast<ACharacter>(BlackboardComponent->GetValueAsObject(BattleSubsystemConst::BlackboardKeyName::EnemyCharacter));
+}
+
+bool UBehaviorTreeStatics::GetControlledWeaponSlot(EWeaponSlot& WeaponSlot, AActor* Actor)
+{
+	const TOptional<EWeaponSlot> WeaponSlotOptional{ GetControlledWeaponSlot(Actor) };
+	if (!WeaponSlotOptional.IsSet()) { return false; }
+
+	WeaponSlot = WeaponSlotOptional.GetValue();
+	return true;
 }

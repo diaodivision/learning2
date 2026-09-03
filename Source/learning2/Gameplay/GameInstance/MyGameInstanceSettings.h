@@ -20,7 +20,7 @@ public:
     TSoftClassPtr<ULoadingScreenWidget> LoadingScreen_Covered;
     
     UPROPERTY(Config, EditAnywhere, BlueprintReadOnly)
-    TArray<TSoftObjectPtr<UWorld>> ShouCoverLevelList;
+    TArray<TSoftObjectPtr<UWorld>> NoCoveredLevelList;
 
 public:
     // 1. 指定顶级容器：通常为 "Project"（项目设置）或 "Editor"

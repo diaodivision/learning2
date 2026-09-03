@@ -36,6 +36,8 @@ void UWeaponFireBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 
 void UWeaponFireBase::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+	if (AFirearmActorBase* Firearm = Cast<AFirearmActorBase>(Weapon.Get())) { Firearm->NotifyShootFinish(); }
+
 	Instigator.Reset();
 	Weapon.Reset();
 	CachedTriggerEventData.Reset();
@@ -103,23 +105,21 @@ void UWeaponFireBase::ExecuteFire_Internal()
 	{
 		Firearm->NotifyShootCooldownFinished();
 	}
-
+	
 	if (!Instigator.IsValid() || !Weapon.IsValid() || !CanExecuteShoot() || !CheckCost(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), nullptr))
 	{
 		if (AFirearmActorBase* Firearm = Cast<AFirearmActorBase>(Weapon.Get())) { Firearm->NotifyShootFinish(); }
 		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfoRef(), true, true);
 		return;
 	}
-
-	OnExecuteShoot();
+	
 	Super::ActivateAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfoRef(), CachedTriggerEventData.GetPtrOrNull());
-
-	if (AFirearmActorBase* Firearm = Cast<AFirearmActorBase>(Weapon.Get())) { Firearm->NotifyShootFinish(); }
 }
 
 void UWeaponFireBase::FinishShoot()
 {
 	if (!IsActive() || !Weapon.IsValid()) { return; }
+	OnExecuteShoot();
 
 	for (int32 i = 0; i < Weapon->GetBulletSpawnsOnFire(); i++)
 	{

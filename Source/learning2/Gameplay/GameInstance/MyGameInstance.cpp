@@ -8,27 +8,30 @@ void UMyGameInstance::Init()
 {
 	Super::Init();
 	
-	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &UMyGameInstance::EndLoadingScreen);
+	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &UMyGameInstance::PostLoadMapWithWorld);
 }
 
-void UMyGameInstance::EndLoadingScreen(UWorld* InLoadedWorld)
+void UMyGameInstance::PostLoadMapWithWorld(UWorld* InLoadedWorld)
 {
     UWorld* World{ GetWorld() };
     if (!World) { return; }
     
     const UMyGameInstanceSettings* Settings = GetDefault<UMyGameInstanceSettings>();
     if (!Settings) { return; }
+    const FSoftObjectPath CurrentWorldPath{ World };
 
     TSubclassOf<ULoadingScreenWidget> LoadingWidgetClass;
-    if (Settings->ShouCoverLevelList.ContainsByPredicate([World](const TSoftObjectPtr<UWorld>& Level) { return !Level.IsNull() && Level->GetClass() == World->GetClass(); }))
+    if (Settings->NoCoveredLevelList.ContainsByPredicate([&CurrentWorldPath](const TSoftObjectPtr<UWorld>& Level) { return !Level.IsNull() && Level.ToSoftObjectPath() == CurrentWorldPath; }))
     {
-        LoadingWidgetClass = !Settings->LoadingScreen_Covered.IsNull() ? Settings->LoadingScreen_Covered.LoadSynchronous() : nullptr;
+        LoadingWidgetClass = !Settings->LoadingScreen.IsNull() ? Settings->LoadingScreen.LoadSynchronous() : nullptr;
     }
-    else { LoadingWidgetClass = !Settings->LoadingScreen.IsNull() ? Settings->LoadingScreen.LoadSynchronous() : nullptr; }
+    else { LoadingWidgetClass = !Settings->LoadingScreen_Covered.IsNull() ? Settings->LoadingScreen_Covered.LoadSynchronous() : nullptr; }
 	if (!LoadingWidgetClass) { return; }
     
     TotalPSOs = FShaderPipelineCache::NumPrecompilesRemaining();
     
+    if (CachedLoadingWidget) { CancelPSOCheck(); }
+
     CachedLoadingWidget = CreateWidget<ULoadingScreenWidget>(World, LoadingWidgetClass);
     if (CachedLoadingWidget) { CachedLoadingWidget->AddToViewport(9999); }
 

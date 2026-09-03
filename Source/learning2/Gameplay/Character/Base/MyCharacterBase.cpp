@@ -26,6 +26,7 @@
 #include "FogOfWarSubsystem.h"
 #include "FogOfWarComponentStatics.h"
 #include "Ability/Tags/PlayerStateGameplayTags.h"
+#include "Controller/MyAIController.h"
 
 // Sets default values
 AMyCharacterBase::AMyCharacterBase()
@@ -35,6 +36,23 @@ AMyCharacterBase::AMyCharacterBase()
 	CreateAndSetupComponents();
 
 	AttributeSet = CreateDefaultSubobject<UMyAttributeSet>("AttributeSet");
+}
+
+void AMyCharacterBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (NewController->IsA<AAIController>())
+	{
+		if (UAIBlueprintHelperLibrary::GetBlackboard(this)) { PostBehaviorTreeRun(); }
+		else if (AMyAIController* AIController{ Cast<AMyAIController>(NewController) }) 
+		{ 
+			if (!AIController->PostBehaviorTreeRunDelegate.IsBoundToObject(this))
+			{
+				AIController->PostBehaviorTreeRunDelegate.AddUObject(this, &AMyCharacterBase::PostBehaviorTreeRun);
+			}
+		}
+	}
 }
 
 // Called when the game starts or when spawned
@@ -92,6 +110,65 @@ void AMyCharacterBase::PostUnregisterAllComponents()
 	if (!WorldPauseSubsystem) { return; }
 
 	WorldPauseSubsystem->OnFreezableObjectUnregistered(this);
+}
+
+void AMyCharacterBase::PostBehaviorTreeRun()
+{
+	if (GetController() && GetController()->IsA<AAIController>())
+	{
+		UBehaviorTreeStatics::SetSelfActor(this);
+
+		const TArray<const AWeaponActorBase*> WeaponsList{ GetWeapons() };
+		for (int32 i = 0; i < 2; i++)
+		{
+			if (!WeaponsList.IsValidIndex(i)) { break; }
+
+			const AWeaponActorBase* Weapon{ WeaponsList[i] };
+
+			if (Weapon->IsOnControl()) { UBehaviorTreeStatics::SetControlledWeaponSlot(Weapon->GetWeaponSlot(), this); }
+			UBehaviorTreeStatics::SetWeaponMagazineAmmo(this, Weapon->GetMagazineAmmo(), Weapon->GetWeaponSlot());
+			UBehaviorTreeStatics::SetWeaponMaxMagazineAmmo(this, Weapon->GetMagazineAmmoMax(), Weapon->GetWeaponSlot());
+		}
+
+		ACharacter* EnemyCharacter{ nullptr };
+		ACharacter* SensedEnemyCharacter{ nullptr };
+		if (UBattleSubsystem* BattleSubsystem{ UBattleSubsystemStatics::GetBattleSubsystem(this) })
+		{
+			SensedEnemyCharacter = Cast<ACharacter>(BattleSubsystem->GetOneTeamSensedActor(GetGenericTeamId()));
+
+			if (SensedEnemyCharacter)
+			{
+				FHitResult HitResult;
+
+				FCollisionObjectQueryParams Params;
+				Params.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
+				Params.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
+				Params.AddObjectTypesToQuery(ECollisionChannel::ECC_Destructible);
+				GetWorld()->LineTraceSingleByObjectType(HitResult, GetActorLocation(), SensedEnemyCharacter->GetActorLocation(), Params);
+
+				if (HitResult.GetActor())
+				{
+					if (HitResult.GetActor() == SensedEnemyCharacter)
+					{
+						EnemyCharacter = SensedEnemyCharacter;
+					}
+					else if (const IGenericTeamAgentInterface * TeamAgent{ Cast<IGenericTeamAgentInterface>(HitResult.GetActor()) })
+					{
+						if (TeamAgent->GetTeamAttitudeTowards(*this) == ETeamAttitude::Hostile)
+						{
+							EnemyCharacter = Cast<ACharacter>(HitResult.GetActor());
+						}
+
+					}
+				}
+			}
+
+		}
+		else { UBehaviorTreeStatics::SetSensedEnemyCharacter(nullptr, this); }
+
+		UBehaviorTreeStatics::SetEnemyCharacter(EnemyCharacter, this);
+		UBehaviorTreeStatics::SetSensedEnemyCharacter(SensedEnemyCharacter, this);
+	}
 }
 
 UAbilitySystemComponent* AMyCharacterBase::GetAbilitySystemComponent() const
@@ -387,6 +464,7 @@ void AMyCharacterBase::OnWeaponAdded_Internal(AActor* AddedActor)
 		//Weapon->OnMagazineAmmoChangedDelegate.AddDynamic(this, &AMyCharacterBase::OnWeaponMagazineAmmoChanged);
 		//Weapon->OnReserveAmmoChangedDelegate.AddDynamic(this, &AMyCharacterBase::OnWeaponReserveAmmoChanged);
 
+		if (Weapon == GetControlledWeapon()) { UBehaviorTreeStatics::SetControlledWeaponSlot(Weapon->GetWeaponSlot(), this); }
 		UBehaviorTreeStatics::SetWeaponMagazineAmmo(this, Weapon->GetMagazineAmmo(), Weapon->GetWeaponSlot());
 		UBehaviorTreeStatics::SetWeaponMaxMagazineAmmo(this, Weapon->GetMagazineAmmoMax(), Weapon->GetWeaponSlot());
 	}

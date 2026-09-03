@@ -22,10 +22,11 @@ void AFirearmActorBase::OnControlReleased_Implementation()
 {
 	Super::OnControlReleased_Implementation();
 
-	if (AvatarAbilitySystemComponent.IsValid() && ReloadAbilityHandle.IsValid()) { return; }
-
-	AvatarAbilitySystemComponent->ClearAbility(ReloadAbilityHandle);
-	ReloadAbilityHandle = FGameplayAbilitySpecHandle{};
+	if (AvatarAbilitySystemComponent.IsValid() && ReloadAbilityHandle.IsValid())
+	{
+		AvatarAbilitySystemComponent->ClearAbility(ReloadAbilityHandle);
+		ReloadAbilityHandle = FGameplayAbilitySpecHandle{};
+	}
 }
 
 bool AFirearmActorBase::Reload() const

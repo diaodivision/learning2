@@ -34,8 +34,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	static void SetTargetLocation(const FVector& TargetLocation, AActor* Actor);
 
-	UFUNCTION(BlueprintPure)
-	static bool GetControlledWeaponSlot(EWeaponSlot& WeaponSlot, AActor* Actor);
+	static TOptional<EWeaponSlot> GetControlledWeaponSlot(AActor* Actor);
 
 	UFUNCTION(BlueprintPure)
 	static bool GetTargetLocation(FVector& TargetLocation, AActor* Actor);
@@ -48,4 +47,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	static void SetWeaponMaxMagazineAmmo(AActor* Actor, const int32 AmmoMax, const EWeaponSlot Slot);
+
+private:
+	UFUNCTION(BlueprintPure)
+	static bool GetControlledWeaponSlot(EWeaponSlot& WeaponSlot, AActor* Actor);
 };

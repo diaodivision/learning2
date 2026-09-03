@@ -15,7 +15,7 @@ public:
 	virtual void Init() override;
 
 protected:
-	virtual void EndLoadingScreen(UWorld* InLoadedWorld);
+	virtual void PostLoadMapWithWorld(UWorld* InLoadedWorld);
 	
 	// 轮询检查 PSO 编译状态
 	void CheckPSOPrecacheCompletion();

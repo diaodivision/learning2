@@ -33,21 +33,9 @@ public:
     UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "Update Loading Info"))
     void K2_UpdateLoadingInfo(const FLoadingInfo& LoadingInfo);
 
-    UFUNCTION(BlueprintPure)
-    FORCEINLINE FText GetCurrentPSOCountText() const { return FText::AsNumber(CachedInfo.CurrentPSOCount); }
+    // UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
+    // TObjectPtr<UTextBlock> Count;
 
-    UFUNCTION(BlueprintPure)
-    FORCEINLINE FText GetTotalPSOCountText() const { return FText::AsNumber(CachedInfo.TotalPSOCount); }
-
-    UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
-    TObjectPtr<UTextBlock> Count;
-
-    UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
-    TObjectPtr<UTextBlock> Total;
-
-    virtual void NativeConstruct() override;
-    virtual void NativeDestruct() override;
-
-private:
-    FLoadingInfo CachedInfo;
+    // UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
+    // TObjectPtr<UTextBlock> Total;
 };

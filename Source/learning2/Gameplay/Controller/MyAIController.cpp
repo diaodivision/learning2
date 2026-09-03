@@ -27,6 +27,7 @@ void AMyAIController::BeginPlay()
 	Super::BeginPlay();
 
 	RunBehaviorTree(BehaviorTreeAsset);
+	PostBehaviorTreeRunDelegate.Broadcast();
 }
 
 void AMyAIController::OnPossess(APawn* NewPawn)

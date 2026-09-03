@@ -5,12 +5,15 @@
 #include "CoreMinimal.h"
 #include "AIController.h"
 #include "Interface/FreezableInterface.h"
+#include "Delegates/DelegateCombinations.h"
 #include "MyAIController.generated.h"
 
 class UAIPerceptionComponent;
 class UBehaviorTreeComponent;
 class UBehaviorTree;
 class APawn;
+
+DECLARE_MULTICAST_DELEGATE(FPostBehaviorTreeRunDelegate);
 
 UCLASS(Blueprintable, BlueprintType)
 class LEARNING2_API AMyAIController : public AAIController, public IFreezableInterface
@@ -33,6 +36,9 @@ protected:
 
 	void CreateAIPerceptionComponent();
 	void CreateBehaviorTreeComponent();
+
+public:
+	FPostBehaviorTreeRunDelegate PostBehaviorTreeRunDelegate;
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
