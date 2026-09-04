@@ -8,7 +8,7 @@
 
 struct ReloadStatics
 {
-	// ²¶»ñÄ¿±êµÄ»¤¼×ÊôÐÔ
+	// ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Ä»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	DECLARE_ATTRIBUTE_CAPTUREDEF(MagazineAmmo1);
 	DECLARE_ATTRIBUTE_CAPTUREDEF(ReserveAmmo1);
 	DECLARE_ATTRIBUTE_CAPTUREDEF(MagazineAmmo2);
@@ -20,13 +20,13 @@ struct ReloadStatics
 	DECLARE_ATTRIBUTE_CAPTUREDEF(MagazineAmmo5);
 	DECLARE_ATTRIBUTE_CAPTUREDEF(ReserveAmmo5);
 
-	// Èç¹ûÐèÒª²¶»ñÔ´»òÆäËûÊôÐÔ£¬¿ÉÒÔ¼ÌÐøÌí¼Ó
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô£ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	// DECLARE_ATTRIBUTE_CAPTUREDEF(AttackPower);
 
 	ReloadStatics()
 	{
-		// ¶¨ÒåÈçºÎ²¶»ñÄ¿±êµÄ»¤¼×ÊôÐÔ
-		// ²ÎÊý£ºÊôÐÔÀà£¬Ä¿±ê£¨Target£©£¬ÊÇ·ñ¿ìÕÕ
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î²ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Ä»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½à£¬Ä¿ï¿½ê£¨Targetï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
 		DEFINE_ATTRIBUTE_CAPTUREDEF(UMyAttributeSet, MagazineAmmo1, Source, false);
 		DEFINE_ATTRIBUTE_CAPTUREDEF(UMyAttributeSet, ReserveAmmo1, Source, false);
 		DEFINE_ATTRIBUTE_CAPTUREDEF(UMyAttributeSet, MagazineAmmo2, Source, false);
@@ -46,7 +46,7 @@ struct ReloadStatics
 	//	const EWeaponSlot WeaponSlot) const;
 };
 
-// µ¥ÀýÄ£Ê½£¬·½±ãÔÚÆäËûµØ·½ÒýÓÃ
+// ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø·ï¿½ï¿½ï¿½ï¿½ï¿½
 static const ReloadStatics& GetReloadStatics()
 {
 	static ReloadStatics Statics;
@@ -69,12 +69,10 @@ UGEEC_WeaponReload::UGEEC_WeaponReload()
 
 void UGEEC_WeaponReload::Execute_Implementation(const FGameplayEffectCustomExecutionParameters& ExecutionParams, FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const
 {
-	// »ñÈ¡Effect Spec£¬ÀïÃæ°üº¬ÎÒÃÇÖ®Ç°ÉèÖÃµÄSetByCallerÊý¾Ý
+	// ï¿½ï¿½È¡Effect Specï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö®Ç°ï¿½ï¿½ï¿½Ãµï¿½SetByCallerï¿½ï¿½ï¿½ï¿½
 	const FGameplayEffectSpec& Spec = ExecutionParams.GetOwningSpec();
 
 	const EWeaponSlot WeaponSlot{ static_cast<EWeaponSlot>(Spec.GetSetByCallerMagnitude(WeaponSlotTag)) };
-	UE_LOG(LogTemp, Warning, TEXT("Spec.GetSetByCallerMagnitude(WeaponSlotTag): %f"), Spec.GetSetByCallerMagnitude(WeaponSlotTag));
-	UE_LOG(LogTemp, Warning, TEXT("WeaponSlot: %d"), WeaponSlot);
 
 	FGameplayAttribute MatchedMagazineAmmoAttribute, MatchedReserveAmmoAttribute;
 	if (!ensure(UWeaponActorBlueprintLibrary::GetWeaponAttributeFromAttributeSetByWeaponSlot(MatchedMagazineAmmoAttribute, MatchedReserveAmmoAttribute, WeaponSlot)))
@@ -83,18 +81,17 @@ void UGEEC_WeaponReload::Execute_Implementation(const FGameplayEffectCustomExecu
 	}
 
 	const int32 AmountToReload{ static_cast<int32>(Spec.GetSetByCallerMagnitude(AmountToReloadTag)) };
-	UE_LOG(LogTemp, Warning, TEXT("AmountToReload: %d"), AmountToReload);
 	if (!ensure(AmountToReload >= 0)) { return; }
 
 	OutExecutionOutput.AddOutputModifier(
-		FGameplayModifierEvaluatedData(MatchedMagazineAmmoAttribute, // Ä¿±êÊôÐÔ
-			EGameplayModOp::Additive, // ²Ù×÷ÀàÐÍ£º¼õ·¨£¨Í¨¹ý¸ºÊýÊµÏÖ£©
+		FGameplayModifierEvaluatedData(MatchedMagazineAmmoAttribute, // Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+			EGameplayModOp::Additive, // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½Ö£ï¿½
 			AmountToReload
 		)
 	);
 	OutExecutionOutput.AddOutputModifier(
-		FGameplayModifierEvaluatedData(MatchedReserveAmmoAttribute, // Ä¿±êÊôÐÔ
-			EGameplayModOp::Additive, // ²Ù×÷ÀàÐÍ£º¼Ó·¨
+		FGameplayModifierEvaluatedData(MatchedReserveAmmoAttribute, // Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+			EGameplayModOp::Additive, // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£ï¿½ï¿½Ó·ï¿½
 			-AmountToReload
 		)
 	);
@@ -109,29 +106,27 @@ void UGEEC_WeaponReload::Execute_Implementation(const FGameplayEffectCustomExecu
 //
 //	//if (!SourceASC || !TargetASC) { return; }
 //
-//	// »ñÈ¡Effect Spec£¬ÀïÃæ°üº¬ÎÒÃÇÖ®Ç°ÉèÖÃµÄSetByCallerÊý¾Ý
+//	// ï¿½ï¿½È¡Effect Specï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö®Ç°ï¿½ï¿½ï¿½Ãµï¿½SetByCallerï¿½ï¿½ï¿½ï¿½
 //	const FGameplayEffectSpec& Spec = ExecutionParams.GetOwningSpec();
 //
 //	int32 AmountToReload{ static_cast<int32>(Spec.GetSetByCallerMagnitude(AmountToReloadTag)) };
-//	UE_LOG(LogTemp, Warning, TEXT("AmountToReload: %d"), AmountToReload);
 //
 //	EWeaponSlot WeaponSlot{ static_cast<std::underlying_type_t<EWeaponSlot>>(Spec.GetSetByCallerMagnitude(WeaponSlotTag)) };
-//	UE_LOG(LogTemp, Warning, TEXT("AmountToReload: %d"), WeaponSlot);
 //
 //	FGameplayEffectAttributeCaptureDefinition MagazineAmmoDefinition;
 //	FGameplayEffectAttributeCaptureDefinition ReserveAmmoDefinition;
 //	if (!GetReloadStatics().GetAmmoAttributeByWeaponSlot(MagazineAmmoDefinition, ReserveAmmoDefinition, WeaponSlot)) { return; }
 //
 //	OutExecutionOutput.AddOutputModifier(
-//		FGameplayModifierEvaluatedData(MagazineAmmoDefinition.AttributeToCapture, // Ä¿±êÊôÐÔ
-//			EGameplayModOp::Additive, // ²Ù×÷ÀàÐÍ£º¼õ·¨£¨Í¨¹ý¸ºÊýÊµÏÖ£©
-//			AmountToReload // ×¢ÒâÕâÀïÊÇ¸ºÊý£¬ÒòÎªÎÒÃÇÒª¼õÉÙÉúÃüÖµ
+//		FGameplayModifierEvaluatedData(MagazineAmmoDefinition.AttributeToCapture, // Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//			EGameplayModOp::Additive, // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½Ö£ï¿½
+//			AmountToReload // ×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
 //		)
 //	);
 //	OutExecutionOutput.AddOutputModifier(
-//		FGameplayModifierEvaluatedData(ReserveAmmoDefinition., // Ä¿±êÊôÐÔ
-//			EGameplayModOp::Additive, // ²Ù×÷ÀàÐÍ£º¼õ·¨£¨Í¨¹ý¸ºÊýÊµÏÖ£©
-//			-AmountToReload // ×¢ÒâÕâÀïÊÇ¸ºÊý£¬ÒòÎªÎÒÃÇÒª¼õÉÙÉúÃüÖµ
+//		FGameplayModifierEvaluatedData(ReserveAmmoDefinition., // Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//			EGameplayModOp::Additive, // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½Ö£ï¿½
+//			-AmountToReload // ×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
 //		)
 //	);
 //}

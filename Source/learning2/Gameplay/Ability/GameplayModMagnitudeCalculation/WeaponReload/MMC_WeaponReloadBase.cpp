@@ -6,9 +6,6 @@ float UMMC_WeaponReloadBase::CalculateBaseMagnitude_Implementation(const FGamepl
 	if (!Spec.Def) { return 0.f; }
 
 	const EWeaponSlot WeaponSlot{ static_cast<EWeaponSlot>(Spec.GetSetByCallerMagnitude(WeaponSlotTag)) };
-	UE_LOG(LogTemp, Warning, TEXT("Spec.GetSetByCallerMagnitude(WeaponSlotTag): %f"), Spec.GetSetByCallerMagnitude(WeaponSlotTag));
-	UE_LOG(LogTemp, Warning, TEXT("WeaponSlot: %d"), WeaponSlot);
-	UE_LOG(LogTemp, Warning, TEXT("GetAssociatedWeaponSlot(): %d"), GetAssociatedWeaponSlot());
 
 	if (GetAssociatedWeaponSlot() != WeaponSlot) { return 0.f; }
 
@@ -19,7 +16,6 @@ float UMMC_WeaponReloadBase::CalculateBaseMagnitude_Implementation(const FGamepl
 	}
 
 	const int32 AmountToReload{ static_cast<int32>(Spec.GetSetByCallerMagnitude(AmountToReloadTag)) };
-	UE_LOG(LogTemp, Warning, TEXT("AmountToReload: %d"), AmountToReload);
 	if (!ensure(AmountToReload >= 0)) { return 0.f; }
 
 	for (const FGameplayModifierInfo& ModifierInfo : Spec.Def->Modifiers)

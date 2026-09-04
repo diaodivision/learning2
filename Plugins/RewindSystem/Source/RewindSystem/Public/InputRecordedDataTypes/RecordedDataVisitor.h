@@ -6,17 +6,17 @@
 
 //namespace RecordedDataVisitorPrivate
 //{
-//	// ·ºÐÍ²ÎÊýÌáÈ¡¹¤¾ß
+//	// ï¿½ï¿½ï¿½Í²ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½
 //	template <typename T>
 //	struct GetLambdaParam;
 //
-//	// Æ¥Åä³£¹æ Lambda (operator() ÊÇ const µÄ)
+//	// Æ¥ï¿½ä³£ï¿½ï¿½ Lambda (operator() ï¿½ï¿½ const ï¿½ï¿½)
 //	template <typename ClassType, typename ReturnType, typename ParamType>
 //	struct GetLambdaParam<ReturnType(ClassType::*)(ParamType) const> {
 //		using Type = ParamType;
 //	};
 //
-//	// Æ¥Åä´ø mutable µÄ Lambda (operator() ²»ÊÇ const)
+//	// Æ¥ï¿½ï¿½ï¿½ mutable ï¿½ï¿½ Lambda (operator() ï¿½ï¿½ï¿½ï¿½ const)
 //	template <typename ClassType, typename ReturnType, typename ParamType>
 //	struct GetLambdaParam<ReturnType(ClassType::*)(ParamType)> {
 //		using Type = ParamType;
@@ -24,28 +24,28 @@
 //
 //	template <typename LambdaToken>
 //	struct GetFirstArgument {
-//		// ¡¾ÐÞ¸´ 1¡¿Ê¹ÓÃ std::decay_t ÒÆ³ý LambdaToken µÄÒýÓÃÐÞÊÎ£¬È·±£ÄÜÕýÈ·»ñÈ¡Æä operator()
+//		// ï¿½ï¿½ï¿½Þ¸ï¿½ 1ï¿½ï¿½Ê¹ï¿½ï¿½ std::decay_t ï¿½Æ³ï¿½ LambdaToken ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î£ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½È¡ï¿½ï¿½ operator()
 //		using CleanToken = std::decay_t<LambdaToken>;
 //		using Type = typename GetLambdaParam<decltype(&CleanToken::operator())>::Type;
 //	};
 //
-//	// ÌáÈ¡ÕæÕýµÄÄ¿±êÀà£¨ÎÞÂÛ´«ÈëµÄÊÇÖ¸Õë»¹ÊÇÒýÓÃ£©
+//	// ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½à£¨ï¿½ï¿½ï¿½Û´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ë»¹ï¿½ï¿½ï¿½ï¿½ï¿½Ã£ï¿½
 //	template <typename T>
 //	struct ExtractTargetClass {
 //		using WithoutRef = std::remove_reference_t<T>;
 //		using WithoutPtr = std::remove_pointer_t<WithoutRef>;
-//		// ¡¾ºËÐÄÐÞ¸Ä¡¿È·±£ TargetClass ²»´ø const£¬ÈÃ CustomCast ÄÚ²¿ºÃ×ö static_cast
+//		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ¸Ä¡ï¿½È·ï¿½ï¿½ TargetClass ï¿½ï¿½ï¿½ï¿½ constï¿½ï¿½ï¿½ï¿½ CustomCast ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ static_cast
 //		using Type = std::remove_const_t<WithoutPtr>;
 //	};
 //}
 //
 //namespace RecordedDataVisitor
 //{
-//	// 1. overloaded »ù´¡ÉèÊ©
+//	// 1. overloaded ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê©
 //	template<class... Ts> struct TOverloaded : Ts... { using Ts::operator()...; };
 //	template<class... Ts> TOverloaded(Ts...) -> TOverloaded<Ts...>;
 //
-//	// 3. Visit µÄºËÐÄÊµÏÖ (·Ç³£Á¿°æ±¾)
+//	// 3. Visit ï¿½Äºï¿½ï¿½ï¿½Êµï¿½ï¿½ (ï¿½Ç³ï¿½ï¿½ï¿½ï¿½æ±¾)
 //	template <typename... Fs>
 //	void Visit(TOverloaded<Fs...> Visitor, IRecordedDataObjectInterface* BasePtr)
 //	{
@@ -61,7 +61,7 @@
 //
 //			if (auto* CastedPtr = CustomCast<TargetClass>(BasePtr))
 //			{
-//				// ¡¾ÐÞ¸´ 2¡¿ÖÇÄÜÊÊÅä£ºÈç¹û Lambda ÆÚÍûÖ¸Õë£¬´«Ö¸Õë£»Èç¹ûÆÚÍûÒýÓÃ£¬½âÒýÓÃ´«¹ýÈ¥
+//				// ï¿½ï¿½ï¿½Þ¸ï¿½ 2ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ä£ºï¿½ï¿½ï¿½ Lambda ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ë£¬ï¿½ï¿½Ö¸ï¿½ë£»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã´ï¿½ï¿½ï¿½È¥
 //				if constexpr (std::is_pointer_v<std::remove_reference_t<RawParamType>>)
 //				{
 //					SingleVisitor(CastedPtr);
@@ -77,7 +77,7 @@
 //		(TryCastAndCall(static_cast<Fs&>(Visitor)), ...);
 //	}
 //
-//	// Visit µÄºËÐÄÊµÏÖ (³£Á¿°æ±¾)
+//	// Visit ï¿½Äºï¿½ï¿½ï¿½Êµï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½æ±¾)
 //	template <typename... Fs>
 //	void Visit(TOverloaded<Fs...> Visitor, const IRecordedDataObjectInterface* BasePtr)
 //	{
@@ -91,11 +91,9 @@
 //			using RawParamType = typename RecordedDataVisitorPrivate::GetFirstArgument<decltype(SingleVisitor)>::Type;
 //			using TargetClass = typename RecordedDataVisitorPrivate::ExtractTargetClass<RawParamType>::Type;
 //
-//			UE_LOG(LogTemp, Error, TEXT("Visit BasePtr->GetClassID() %d"), BasePtr->GetClassID());
-//
 //			if (auto* CastedPtr = CustomCast<TargetClass>(BasePtr))
 //			{
-//				// ¡¾ÐÞ¸´ 2¡¿ÖÇÄÜÊÊÅä£º¸ù¾Ý Lambda ²ÎÊýÀàÐÍ¾ö¶¨´« CastedPtr »¹ÊÇ *CastedPtr
+//				// ï¿½ï¿½ï¿½Þ¸ï¿½ 2ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ä£ºï¿½ï¿½ï¿½ï¿½ Lambda ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¾ï¿½ï¿½ï¿½ï¿½ï¿½ CastedPtr ï¿½ï¿½ï¿½ï¿½ *CastedPtr
 //				if constexpr (std::is_pointer_v<std::remove_reference_t<RawParamType>>)
 //				{
 //					SingleVisitor(CastedPtr);
@@ -111,7 +109,7 @@
 //		(TryCastAndCall(static_cast<Fs&>(Visitor)), ...);
 //	}
 //
-//	// Visit µÄºËÐÄÊµÏÖ (µ¥ Lambda °æ±¾)
+//	// Visit ï¿½Äºï¿½ï¿½ï¿½Êµï¿½ï¿½ (ï¿½ï¿½ Lambda ï¿½æ±¾)
 //	template <typename F>
 //	void Visit(F Visitor, IRecordedDataObjectInterface* BasePtr)
 //	{
@@ -125,11 +123,9 @@
 //			using RawParamType = typename RecordedDataVisitorPrivate::GetFirstArgument<decltype(SingleVisitor)>::Type;
 //			using TargetClass = typename RecordedDataVisitorPrivate::ExtractTargetClass<RawParamType>::Type;
 //
-//			UE_LOG(LogTemp, Error, TEXT("Visit BasePtr->GetClassID() %d"), BasePtr->GetClassID());
-//
 //			if (auto* CastedPtr = CustomCast<TargetClass>(BasePtr))
 //			{
-//				// ¡¾ÐÞ¸´ 2¡¿ÖÇÄÜÊÊÅä£º¸ù¾Ý Lambda ²ÎÊýÀàÐÍ¾ö¶¨´« CastedPtr »¹ÊÇ *CastedPtr
+//				// ï¿½ï¿½ï¿½Þ¸ï¿½ 2ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ä£ºï¿½ï¿½ï¿½ï¿½ Lambda ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¾ï¿½ï¿½ï¿½ï¿½ï¿½ CastedPtr ï¿½ï¿½ï¿½ï¿½ *CastedPtr
 //				if constexpr (std::is_pointer_v<std::remove_reference_t<RawParamType>>)
 //				{
 //					SingleVisitor(CastedPtr);
@@ -145,7 +141,7 @@
 //		(TryCastAndCall(static_cast<F&>(Visitor)));
 //	}
 //
-//	// Visit µÄºËÐÄÊµÏÖ (µ¥ Lambda °æ±¾, ³£Á¿)
+//	// Visit ï¿½Äºï¿½ï¿½ï¿½Êµï¿½ï¿½ (ï¿½ï¿½ Lambda ï¿½æ±¾, ï¿½ï¿½ï¿½ï¿½)
 //	template <typename F>
 //	void Visit(F Visitor, const IRecordedDataObjectInterface* BasePtr)
 //	{
@@ -159,11 +155,9 @@
 //			using RawParamType = typename RecordedDataVisitorPrivate::GetFirstArgument<decltype(SingleVisitor)>::Type;
 //			using TargetClass = typename RecordedDataVisitorPrivate::ExtractTargetClass<RawParamType>::Type;
 //
-//			UE_LOG(LogTemp, Error, TEXT("Visit BasePtr->GetClassID() %d"), BasePtr->GetClassID());
-//
 //			if (auto* CastedPtr = CustomCast<TargetClass>(BasePtr))
 //			{
-//				// ¡¾ÐÞ¸´ 2¡¿ÖÇÄÜÊÊÅä£º¸ù¾Ý Lambda ²ÎÊýÀàÐÍ¾ö¶¨´« CastedPtr »¹ÊÇ *CastedPtr
+//				// ï¿½ï¿½ï¿½Þ¸ï¿½ 2ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ä£ºï¿½ï¿½ï¿½ï¿½ Lambda ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¾ï¿½ï¿½ï¿½ï¿½ï¿½ CastedPtr ï¿½ï¿½ï¿½ï¿½ *CastedPtr
 //				if constexpr (std::is_pointer_v<std::remove_reference_t<RawParamType>>)
 //				{
 //					SingleVisitor(CastedPtr);
@@ -180,23 +174,23 @@
 //	}
 //}
 
-// Overloaded Ä£Ê½Æ¥Åä¹¤¾ß
+// Overloaded Ä£Ê½Æ¥ï¿½ä¹¤ï¿½ï¿½
 template<class... Ts> struct TOverloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> TOverloaded(Ts...) -> TOverloaded<Ts...>;
 
 namespace RecordedDataVisitorPrivate
 {
-	// ·ºÐÍ²ÎÊýÌáÈ¡¹¤¾ß
+	// ï¿½ï¿½ï¿½Í²ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½
 	template <typename T>
 	struct GetLambdaParam;
 
-	// Æ¥ÅäÆÕÍ¨ Lambda (operator() ÊÇ const)
+	// Æ¥ï¿½ï¿½ï¿½ï¿½Í¨ Lambda (operator() ï¿½ï¿½ const)
 	template <typename ClassType, typename ReturnType, typename ParamType>
 	struct GetLambdaParam<ReturnType(ClassType::*)(ParamType) const> {
 		using Type = ParamType;
 	};
 
-	// Æ¥Åä´ø mutable µÄ Lambda (operator() ²»ÊÇ const)
+	// Æ¥ï¿½ï¿½ï¿½ mutable ï¿½ï¿½ Lambda (operator() ï¿½ï¿½ï¿½ï¿½ const)
 	template <typename ClassType, typename ReturnType, typename ParamType>
 	struct GetLambdaParam<ReturnType(ClassType::*)(ParamType)> {
 		using Type = ParamType;
@@ -204,17 +198,17 @@ namespace RecordedDataVisitorPrivate
 
 	template <typename LambdaToken>
 	struct GetFirstArgument {
-		// Ê¹ÓÃ std::decay_t ÒÆ³ý LambdaToken µÄÒýÓÃÐÞÊÎ£¬È·±£ÄÜÕýÈ·»ñÈ¡Æä operator()
+		// Ê¹ï¿½ï¿½ std::decay_t ï¿½Æ³ï¿½ LambdaToken ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î£ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½È¡ï¿½ï¿½ operator()
 		using CleanToken = std::decay_t<LambdaToken>;
 		using Type = typename GetLambdaParam<decltype(&CleanToken::operator())>::Type;
 	};
 
-	// ÌáÈ¡ÕæÕýµÄÄ¿±êÀà£¨ÎÞÂÛ´«ÈëµÄÊÇÖ¸Õë»¹ÊÇÒýÓÃ£©
+	// ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½à£¨ï¿½ï¿½ï¿½Û´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ë»¹ï¿½ï¿½ï¿½ï¿½ï¿½Ã£ï¿½
 	template <typename T>
 	struct ExtractTargetClass {
 		using WithoutRef = std::remove_reference_t<T>;
 		using WithoutPtr = std::remove_pointer_t<WithoutRef>;
-		// È·±£ TargetClass ²»´ø const£¬ÈÃ CustomCast ÄÚ²¿ºÃ×ö static_cast
+		// È·ï¿½ï¿½ TargetClass ï¿½ï¿½ï¿½ï¿½ constï¿½ï¿½ï¿½ï¿½ CustomCast ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ static_cast
 		using Type = std::remove_const_t<WithoutPtr>;
 	};
 
@@ -226,12 +220,10 @@ namespace RecordedDataVisitorPrivate
 		using RawParamType = typename GetFirstArgument<decltype(SingleVisitor)>::Type;
 		using TargetClass = typename ExtractTargetClass<RawParamType>::Type;
 
-		 //UE_LOG(LogTemp, Error, TEXT("Visit BasePtr->GetClassID() %d"), BasePtr->GetClassID());
-
-		// ±£³ÖÔ­ÓÐµÄ const ÊôÐÔ½øÐÐ×ª»»
+		// ï¿½ï¿½ï¿½ï¿½Ô­ï¿½Ðµï¿½ const ï¿½ï¿½ï¿½Ô½ï¿½ï¿½ï¿½×ªï¿½ï¿½
 		if (auto* CastedPtr = CustomCast<TargetClass>(BasePtr))
 		{
-			// ÖÇÄÜÊÊÅä£º¸ù¾Ý Lambda ²ÎÊýÀàÐÍ¾ö¶¨´«Ö¸Õë»¹ÊÇÒýÓÃ
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ä£ºï¿½ï¿½ï¿½ï¿½ Lambda ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¾ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ë»¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			if constexpr (std::is_pointer_v<std::remove_reference_t<RawParamType>>)
 			{
 				SingleVisitor(CastedPtr);
@@ -240,15 +232,15 @@ namespace RecordedDataVisitorPrivate
 			{
 				SingleVisitor(*CastedPtr);
 			}
-			return true; // ³É¹¦´¦Àí
+			return true; // ï¿½É¹ï¿½ï¿½ï¿½ï¿½ï¿½
 		}
-		return false; // Î´Æ¥Åä³É¹¦
+		return false; // Î´Æ¥ï¿½ï¿½É¹ï¿½
 	}
 }
 
 namespace RecordedDataVisitor
 {
-	// 1. ¶à Lambda (TOverloaded) °æ±¾ ¡ª¡ª Ö§³Ö const ºÍ·Ç const
+	// 1. ï¿½ï¿½ Lambda (TOverloaded) ï¿½æ±¾ ï¿½ï¿½ï¿½ï¿½ Ö§ï¿½ï¿½ const ï¿½Í·ï¿½ const
 	template <typename... Fs, typename TBasePtr>
 	void Visit(TOverloaded<Fs...> Visitor, TBasePtr* BasePtr)
 	{
@@ -257,15 +249,15 @@ namespace RecordedDataVisitor
 		if (!BasePtr) return;
 
 		bool bHandled = false;
-		// ÀûÓÃÕÛµþ±í´ïÊ½±éÀúÃ¿Ò»¸ö Lambda£¬Ò»µ© bHandled Îª true ÔòºóÐø¶ÌÂ·£¨²»ÔÙÖ´ÐÐÇ¿×ª£©
+		// ï¿½ï¿½ï¿½ï¿½ï¿½Ûµï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½Ã¿Ò»ï¿½ï¿½ Lambdaï¿½ï¿½Ò»ï¿½ï¿½ bHandled Îª true ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½Ç¿×ªï¿½ï¿½
 		(
 			(bHandled || (bHandled = RecordedDataVisitorPrivate::TryCastAndCallSingle(static_cast<Fs&>(Visitor), BasePtr))),
 			...
 			);
 	}
 
-	// 2. µ¥ Lambda °æ±¾ ¡ª¡ª Ö§³Ö const ºÍ·Ç const
-	// Ê¹ÓÃ std::enable_if_t ±ÜÃâËüÓë TOverloaded ²úÉúÆçÒå£¨µ±Ö»´«Ò»¸ö Lambda Ê±£©
+	// 2. ï¿½ï¿½ Lambda ï¿½æ±¾ ï¿½ï¿½ï¿½ï¿½ Ö§ï¿½ï¿½ const ï¿½Í·ï¿½ const
+	// Ê¹ï¿½ï¿½ std::enable_if_t ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ TOverloaded ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½å£¨ï¿½ï¿½Ö»ï¿½ï¿½Ò»ï¿½ï¿½ Lambda Ê±ï¿½ï¿½
 	template <typename F, typename TBasePtr,
 		typename = std::enable_if_t<!std::is_base_of_v<IRecordedDataObjectInterface, std::remove_pointer_t<F>>>>
 		void Visit(F Visitor, TBasePtr* BasePtr)

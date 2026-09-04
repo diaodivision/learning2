@@ -207,6 +207,15 @@ protected:
 	void K2_OnCharacterDeath();
 
 	virtual void OnCharacterDeath_Internal();
+
+	FCollisionObjectQueryParams ConstructCharacterVisionParam()
+	{
+		FCollisionObjectQueryParams Params;
+		Params.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
+		Params.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
+		Params.AddObjectTypesToQuery(ECollisionChannel::ECC_Destructible);
+		return Params;
+	}
 	
 private:
 	void CreateAndSetupComponents();	

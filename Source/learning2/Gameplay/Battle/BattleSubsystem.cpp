@@ -192,12 +192,16 @@ void UBattleSubsystem::UnregisterToBattleSubsystem(AMyCharacterBase* Character)
 {
 	if (!Character) { return; }
 
-	const BattleSubsystemTypes::TeamIDType TeamID{ Character->GetGenericTeamId().GetId() };
-	if (FTeamSensesContainer* Container = TeamSensesMap.Find(TeamID)) 
-	{ 
-		Container->OnActorEndPlayed(*Character);
+	// if (FTeamSensesContainer* Container = TeamSensesMap.Find(TeamID)) 
+	// { 
+	// 	Container->OnActorEndPlayed(*Character);
+	// }
+	for (auto It{ TeamSensesMap.CreateIterator() }; It; ++It)
+	{
+		It.Value().OnActorEndPlayed(*Character);
 	}
-
+		
+	const BattleSubsystemTypes::TeamIDType TeamID{ Character->GetGenericTeamId().GetId() };
 	if (TSet<TWeakObjectPtr<AMyCharacterBase>>*Members{ TeamMembersMap.Find(TeamID) })
 	{
 		Members->Remove(Character);
@@ -207,8 +211,8 @@ void UBattleSubsystem::UnregisterToBattleSubsystem(AMyCharacterBase* Character)
 	Character->OnSenseUpdatedDelegate.RemoveAll(this);
 	Character->OnEndPlay.RemoveAll(this);
 
-	UpdateAllSensesActor(false, *Character);
-	OnNoLongerSensedByAnyTeamMember(Character->GetGenericTeamId(), *Character);
+	// UpdateAllSensesActor(false, *Character);
+	// OnNoLongerSensedByAnyTeamMember(Character->GetGenericTeamId(), *Character);
 }
 
 bool UBattleSubsystem::K2_IsSensedByTeam(int32 TeamID, const AMyCharacterBase* Enemy) const
@@ -310,15 +314,18 @@ void UBattleSubsystem::OnSenseUpdated(const bool bSuccessfullySensed, AMyCharact
 
 	const BattleSubsystemTypes::TeamIDType TeamID{ Observer->GetGenericTeamId().GetId() };
 
-	const bool bNewTeam{ !TeamSensesMap.Contains(TeamID) };
-	FTeamSensesContainer& Container{ TeamSensesMap.FindOrAdd(TeamID) };
-
-	if (bNewTeam)
+	if (FTeamSensesContainer* Container{ TeamSensesMap.Find(TeamID) }; bSuccessfullySensed)
 	{
-		Container.OnTeamSenseAddedDelegate.AddUObject(this, &UBattleSubsystem::OnTeamSenseAdded);
-		Container.OnNoLongerSensedByAnyTeamMemberDelegate.AddUObject(this, &UBattleSubsystem::OnNoLongerSensedByAnyTeamMember);
+		if (!Container)
+		{
+			Container = &TeamSensesMap.Add(TeamID);
+			Container->OnTeamSenseAddedDelegate.AddUObject(this, &UBattleSubsystem::OnTeamSenseAdded);
+			Container->OnNoLongerSensedByAnyTeamMemberDelegate.AddUObject(this, &UBattleSubsystem::OnNoLongerSensedByAnyTeamMember);
+		}
+		
+		Container->OnSenseUpdated(FSenseUpdateInfo{bSuccessfullySensed, Observer, Enemy});
 	}
-	Container.OnSenseUpdated(FSenseUpdateInfo{bSuccessfullySensed, Observer, Enemy});
+	else if (Container) { Container->OnSenseUpdated(FSenseUpdateInfo{bSuccessfullySensed, Observer, Enemy}); }
 }
 
 void UBattleSubsystem::OnTeamMemberEndPlay(AActor* TeamMember, const EEndPlayReason::Type EndPlayReason)
@@ -427,7 +434,5 @@ void UBattleSubsystem::InitializeCharacters()
 	for (AActor* Actor : OutActors)
 	{
 		if (AMyCharacterBase * Ch{ Cast<AMyCharacterBase>(Actor) }) { RegisterToBattleSubsystem(Ch); }
-
-		//UE_LOG(LogTemp, Error, TEXT("UBattleSubsystem::InitializeCharacters %s"), *GetNameSafe(Actor));
 	}
 }

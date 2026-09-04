@@ -97,11 +97,6 @@ void UDynamicTextureComponent::SetPostProcessVolume(APostProcessVolume* InPostPr
 
 void UDynamicTextureComponent::UpdateTextureFromArray(const TArray<FColor>& ColorArray)
 {
-	/*if (const int32 ExpectedSize = TextureWidth * TextureHeight; ColorArray.Num() != ExpectedSize)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Array size mismatch: Expected %d, Got %d"), ExpectedSize, ColorArray.Num());
-		return;
-	}*/
 
 	if (DynamicTexture) { UpdateTextureResource(ColorArray); }
 }
@@ -115,14 +110,11 @@ void UDynamicTextureComponent::CalculateVisionArea(UPARAM(ref)TArray<FColor>& Co
 {
 	if (const int32 ExpectedSize = TextureWidth * TextureHeight; ColorArray.Num() != ExpectedSize)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Array size mismatch: Expected %d, Got %d"), ExpectedSize, ColorArray.Num());
 		return;
 	}
 
 	if (VisionStartPos.Num() * 2 != Vision.Num() || Vision.Num() % 2)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Input array named Vision's length mismatch"));
-
 		return;
 	}
 
@@ -153,7 +145,7 @@ void UDynamicTextureComponent::CalculateVisionArea(UPARAM(ref)TArray<FColor>& Co
 		for (int32 x = 0; x < TextureWidth; x++)
 		{
 			int32 Index = y * TextureWidth + x;
-			if (Index >= ColorArray.Num()) { /*UE_LOG(LogTemp, Warning, TEXT("Out of Range!!!!")); */continue; }
+			if (Index >= ColorArray.Num()) { continue; }
 
 			FColor& Color = ColorArray[Index];
 
@@ -172,12 +164,6 @@ void UDynamicTextureComponent::CalculateVisionArea(UPARAM(ref)TArray<FColor>& Co
 				}
 
 				FVector2f GridDirection = FVector2f(FIntVector2(x, y) - VisionStartPosOnGrid[0]);
-				if (Count++ < 10 && Weight > 1)
-				{
-
-					UE_LOG(LogTemp, Warning, TEXT("Weight: %f"), Weight);
-					UE_LOG(LogTemp, Warning, TEXT("FVector2f::CrossProduct(Vision[0], GridDirection): %f"), FVector2f::CrossProduct(Vision[0], GridDirection));
-				}
 
 				Weight = FMath::Clamp(Weight, 0.f, 1.f);
 
@@ -201,38 +187,17 @@ void UDynamicTextureComponent::CalculateVisionArea(UPARAM(ref)TArray<FColor>& Co
 		}
 		}
 	);
-	// for (int32 y = 0; y < TextureHeight; y++)
-	//{
-	//	for (int32 x = 0; x < TextureWidth; x++)
-	//	{
-	//		int32 Index = y * TextureWidth + x;
-	//		if (Index >= ColorArray.Num()) { UE_LOG(LogTemp, Warning, TEXT("Out of Range!!!!")); return; }
-
-	//		FColor& Color = ColorArray[Index];
-	//		Color.B = IsGridInVision(FIntVector2(x, y), VisionStartPosOnGrid, Vision, bLogged) ? 255 : 0;
-	//		Color.R = 0;
-
-	//		/*if (FMath::Abs(x - VisionStartPosOnGrid[0].X) < 10 && FMath::Abs(y - VisionStartPosOnGrid[0].Y) < 10)
-	//		{
-	//			Color.B = 0;
-	//			Color.R = 255;
-	//		}*/
-	//	}
-	//}
 }
 
 void UDynamicTextureComponent::CalculateVisionAreaPFG8(UPARAM(ref)TArray<uint8>& ColorArray, const TArray<FVector2D>& VisionStartPos, TArray<FVector2f> Vision, const FVector2D& GroundOrigin, const FIntVector2& GroundSize) const
 {
 	if (const int32 ExpectedSize = TextureWidth * TextureHeight; ColorArray.Num() != ExpectedSize)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Array size mismatch: Expected %d, Got %d"), ExpectedSize, ColorArray.Num());
 		return;
 	}
 
 	if (VisionStartPos.Num() * 2 != Vision.Num() || Vision.Num() % 2)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Input array named Vision's length mismatch"));
-
 		return;
 	}
 
@@ -263,7 +228,7 @@ void UDynamicTextureComponent::CalculateVisionAreaPFG8(UPARAM(ref)TArray<uint8>&
 		for (int32 x = 0; x < TextureWidth; x++)
 		{
 			int32 Index = y * TextureWidth + x;
-			if (Index >= ColorArray.Num()) { /*UE_LOG(LogTemp, Warning, TEXT("Out of Range!!!!")); */continue; }
+			if (Index >= ColorArray.Num()) { continue; }
 
 			uint8& Color = ColorArray[Index];
 
@@ -282,12 +247,6 @@ void UDynamicTextureComponent::CalculateVisionAreaPFG8(UPARAM(ref)TArray<uint8>&
 				}
 
 				FVector2f GridDirection = FVector2f(FIntVector2(x, y) - VisionStartPosOnGrid[0]);
-				if (Count++ < 10 && Weight > 1)
-				{
-
-					UE_LOG(LogTemp, Warning, TEXT("Weight: %f"), Weight);
-					UE_LOG(LogTemp, Warning, TEXT("FVector2f::CrossProduct(Vision[0], GridDirection): %f"), FVector2f::CrossProduct(Vision[0], GridDirection));
-				}
 
 				Weight = FMath::Clamp(Weight, 0.f, 1.f);
 
@@ -313,7 +272,6 @@ void UDynamicTextureComponent::UpdateTextureFromArrayCompressed(const TArray<FCo
 {
 	if (const int32 ExpectedSize = TextureWidth * TextureHeight; ColorArray.Num() * 32 != ExpectedSize)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Array size mismatch: Expected %d, Got %d"), ExpectedSize, ColorArray.Num());
 		return;
 	}
 
@@ -326,13 +284,11 @@ void UDynamicTextureComponent::CalculateVisionAreaCompressed(UPARAM(ref)TArray<F
 {
 	if (const int32 ExpectedSize = TextureWidth * TextureHeight; ColorArray.Num() * 32 != ExpectedSize)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Array size mismatch: Expected %d, Got %d"), ExpectedSize, ColorArray.Num());
 		return;
 	}
 
 	if (VisionStartPos.Num() * 2 != Vision.Num() || Vision.Num() % 2)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Input array named Vision's length mismatch"));
 
 		return;
 	}
@@ -362,7 +318,7 @@ void UDynamicTextureComponent::CalculateVisionAreaCompressed(UPARAM(ref)TArray<F
 			int32 IndexOnArray = Index / 32;
 			int8 IndexOnFColor = Index % 32;	//todo assert( (y * TextureWidth) % 32 == 0); int8 IndexOnFColor = Index % x;
 
-			if (IndexOnArray >= ColorArray.Num()) { UE_LOG(LogTemp, Warning, TEXT("IndexOnArray: %d, Out of Range!!!!"), IndexOnArray); return; }
+			if (IndexOnArray >= ColorArray.Num()) { return; }
 
 			FColor& Color = ColorArray[IndexOnArray];
 
@@ -374,35 +330,11 @@ void UDynamicTextureComponent::CalculateVisionAreaCompressed(UPARAM(ref)TArray<F
 			//Color.B = IsGridInVision(FIntVector2(x, y), VisionStartPosOnGrid, Vision, bLogged) ? 255 : 0;
 			uint8 OffsetOfColorByte = 1 << (IndexOnFColor % 8);
 
-			/*bool op = IsGridInVision(FIntVector2(x, y), VisionStartPosOnGrid, Vision, bLogged);
-			if (Count < Loop || op)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Count %d, OffsetOfColorByte: %d, ColorByte Before: %d"), Count, OffsetOfColorByte, *ColorByte);
-			}*/
-
 			//if (op) { *ColorByte |= OffsetOfColorByte; }
 			if (IsGridInVision(FIntVector2(x, y), VisionStartPosOnGrid, Vision)) { *ColorByte |= OffsetOfColorByte; }
 			else if (*ColorByte & OffsetOfColorByte) { *ColorByte ^= OffsetOfColorByte; }
-
-			/*if (Count++ < Loop || op)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("IsGridInVision: %c, ColorByte After: %d"), op ? '|' : '^', *ColorByte);
-			}*/
 		}
 	}
-
-	/*for (int32 y = 0; y < TextureWidth; y++)
-	{
-		for (int32 x = 0, Count = 0; x < TextureHeight; x++)
-		{
-			int32 Index = y * TextureWidth + x;
-			int32 IndexOnArray = Index / 32;
-
-			if (Count++ == 100) { return; }
-
-			UE_LOG(LogTemp, Warning, TEXT("IndexOnArray: %d, Content: %s"), IndexOnArray, *ColorArray[IndexOnArray].ToString());
-		}
-	}*/
 }
 
 int32 UDynamicTextureComponent::RandomArray(UPARAM(ref) TArray<FColor>& ColorArray) const
@@ -430,8 +362,6 @@ void UDynamicTextureComponent::DrawLineTest(FIntVector2 StartPos, FIntVector2 En
 		Color.G = 0;
 		Color.B = 0;
 	}
-	//UE_LOG(LogTemp, Warning, TEXT("StartPos: %s"), *StartPos.ToString());
-	//UE_LOG(LogTemp, Warning, TEXT("EndPos: %s"), *EndPos.ToString());
 
 	BresenhamAlgo LineGenerator{ StartPos, EndPos };
 	FIntVector2 Pos = LineGenerator.GetNext();
@@ -440,49 +370,28 @@ void UDynamicTextureComponent::DrawLineTest(FIntVector2 StartPos, FIntVector2 En
 		ColorArray[Index].R = 255;
 	}
 
-	//UE_LOG(LogTemp, Warning, TEXT("Pos %d: %s"), 0, *Pos.ToString());
-
-	//int32 DrawCount{ 1 };
 
 	const FIntVector2 Distance{ EndPos - StartPos };
 	for (bool bEnd = false; bEnd == false /*&& DrawCount < FMath::Abs(Distance.X) + FMath::Abs(Distance.Y)*/; Pos = LineGenerator.GetNext())
 	{
-		//if (DrawCount < 255) { UE_LOG(LogTemp, Warning, TEXT("Pos %d: %s"), DrawCount, *Pos.ToString()); }
-		//else { UE_LOG(LogTemp, Warning, TEXT("Pos %d: %s"), DrawCount, *Pos.ToString()); }
-
 		//DrawCount++;
 		if (Pos == EndPos) { bEnd = true; }
 
 		const int32 Index = Pos.Y * TextureWidth + Pos.X;
 		if (Index < 0 || Index >= ColorArray.Num())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("X: %d"), Pos.X);
-			UE_LOG(LogTemp, Warning, TEXT("Y: %d"), Pos.Y);
-			UE_LOG(LogTemp, Warning, TEXT("Index: %d"), Index);
-			UE_LOG(LogTemp, Warning, TEXT("Max Index: %d"), ColorArray.Num());
-
 			return;
 		}
 
 		ColorArray[Index].R = 255;
-		/*for (int32 x = Pos.X - 5, y = Pos.Y - 5; x < Pos.X + 5 && y < Pos.Y; x++, y++)
-		{
-			if (x >= 0 && x < ColorArray.Num() && y >= 0 && y < ColorArray.Num())
-			{
-				ColorArray[Index].R = 255;
-			}
-		}*/
 	}
 
-	//UE_LOG(LogTemp, Warning, TEXT("DrawCount: %d"), DrawCount);
 }
 
 bool UDynamicTextureComponent::Equals(const TArray<FColor>& Arr1, const TArray<FColor>& Arr2) const
 {
 	if (Arr1.Num() * 32 != Arr2.Num() && Arr1.Num() != Arr2.Num() * 32)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Arr1 != Arr2, Arr1: %d, Arr2: %d"), Arr1.Num(), Arr2.Num());
-
 		return false;
 	}
 
@@ -512,10 +421,6 @@ bool UDynamicTextureComponent::Equals(const TArray<FColor>& Arr1, const TArray<F
 			{
 				return true;
 			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Value in i: %d Index: %d are not equal! Common Value: %d, Compressed Value: %d"), IndexForCompressed, IndexForCommon, ValueOfCommon, ValueOfCompressed);
-			}
 		}
 	}
 
@@ -539,7 +444,7 @@ bool UDynamicTextureComponent::Equals(const TArray<FColor>& Arr1, const TArray<F
 
 bool UDynamicTextureComponent::IsGridInVision(const FIntVector2& GridPos, const TArray<FIntVector2>& VisionStartPos, const TArray<FVector2f>& VisionDirection)
 {
-	if (VisionStartPos.Num() * 2 != VisionDirection.Num()) { UE_LOG(LogTemp, Warning, TEXT("Input array named Vision's length mismatch")); return false; }
+	if (VisionStartPos.Num() * 2 != VisionDirection.Num()) { return false; }
 
 	bool bIsVisible{ false };
 

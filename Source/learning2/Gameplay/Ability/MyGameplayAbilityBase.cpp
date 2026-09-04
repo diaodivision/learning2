@@ -92,37 +92,25 @@ FCombinedAbilityHandle UMyGameplayAbilityBase::BindWith(const FBindAbilityParame
 	FBindAbilityParameter* TargetPtr = &Target;*/
 	const FBindAbilityParameter* Instigator{ &InInstigator }, * Target{ &InTarget };
 
-	UE_LOG(LogTemp, Warning, TEXT("BindWith 111"));
 	if (!ensureMsgf(Instigator->IsValid() && Target->IsValid(), TEXT("Input GameplayAbility is nullptr"))) { return FCombinedAbilityHandle{ nullptr }; };
-	UE_LOG(LogTemp, Warning, TEXT("BindWith 222"));
 
 	if (!CanBindWith(Instigator->AbilityInstance.Get(), Target->AbilityInstance.Get())) { Swap(Instigator, Target); }
-	UE_LOG(LogTemp, Warning, TEXT("BindWith 333"));
 
 	UMyGameplayAbilityBase* InstigatorGA = Instigator->AbilityInstance.Get();
 	UMyGameplayAbilityBase* TargetGA = Target->AbilityInstance.Get();
 	if (!ensureMsgf(InstigatorGA, TEXT("%s: %s is not a UMyGameplayAbilityBase type"), *GetNameSafe(Instigator->AbilityInstance.Get()), *Instigator->AbilityInstance.Get()->GetClass()->GetName())) { return FCombinedAbilityHandle{ nullptr }; }
-	UE_LOG(LogTemp, Warning, TEXT("BindWith 444"));
 	if (!ensureMsgf(TargetGA, TEXT("%s: %s is not a UMyGameplayAbilityBase type"), *GetNameSafe(Target->AbilityInstance.Get()), *Target->AbilityInstance.Get()->GetClass()->GetName())) { return FCombinedAbilityHandle{ nullptr }; }
-	UE_LOG(LogTemp, Warning, TEXT("BindWith 555"));
-
 	if (!ensureMsgf(CanBindWith(Instigator->AbilityInstance.Get(), Target->AbilityInstance.Get()), TEXT("%s can't bind with %s"), *GetNameSafe(InstigatorGA), *GetNameSafe(TargetGA))) { return FCombinedAbilityHandle{ nullptr }; }
-	UE_LOG(LogTemp, Warning, TEXT("BindWith 666"));
-
 	if (InstigatorGA->IsBound()) { return FCombinedAbilityHandle{ nullptr }; }
-	UE_LOG(LogTemp, Warning, TEXT("BindWith 777"));
 
 	InstigatorGA->BoundAbilityInfo = FBoundAbilityInfo{ *Target, InInstigator, InTarget, RedoCallback };
 
-	UE_LOG(LogTemp, Display, TEXT("Ability %s bind with %s"), *GetNameSafe(InstigatorGA), *GetNameSafe(TargetGA));
 
 	return FCombinedAbilityHandle{ *Instigator };
 }
 
 void UMyGameplayAbilityBase::Unbind()
 {
-	UE_LOG(LogTemp, Warning, TEXT("BindWith unbind"));
-
 	if (IsBound())
 	{
 		BoundAbilityInfo.Ability->Unbind();
@@ -336,11 +324,6 @@ void UMyGameplayAbilityBase::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 	}
 	ApplyCost(Handle, ActorInfo, ActivationInfo);
 
-	//if (!ensureAlwaysMsgf(CombinableAbilityData.IsNull(), TEXT("Memory does not reset!")))
-	//{
-	//	UE_LOG(LogTemp, Error, TEXT("Memory does not reset %s"), *GetNameSafe(this));
-	//	CombinableAbilityData.Reset();
-	//}
 	if (TriggerEventData)
 	{
 		CombinableAbilityData.EventDataToBoundAbility = MakeUnique<FGameplayEventWeakData>(FGameplayEventWeakData{ *TriggerEventData });
@@ -349,8 +332,6 @@ void UMyGameplayAbilityBase::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 	if (!IRecordableInterface::Execute_ShouldRecord(this))
 	{
 		Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-
-		UE_LOG(LogTemp, Display, TEXT("Activate ability %s TriggerEventData"), TriggerEventData ? TEXT("With") : TEXT("WithOut"));
 	}
 	else
 	{
@@ -426,8 +407,6 @@ void UMyGameplayAbilityBase::ExecuteBindAbility()
 #if WITH_EDITOR
 void UMyGameplayAbilityBase::HandleFailToExecuteBindAbility(const FString& InReason)
 {
-	UE_LOG(LogTemp, Error, TEXT("Fail to execute bound ability: %s"), *InReason);
-
 	K2_EndAbility();
 }
 #endif

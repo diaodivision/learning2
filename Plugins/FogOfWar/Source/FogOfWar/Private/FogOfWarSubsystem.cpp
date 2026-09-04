@@ -148,10 +148,6 @@ void UFogOfWarSubsystem::Tick_Internal()
 	const TOptional<FIntPoint> GridPositionOnWorld{UFogOfWarComponentStatics::GetGridPositionOnWorld(FVector2D{ CameraBounds.GetValue().Max.X, CameraBounds.GetValue().Min.Y}, this, EAllowMinusPosition::Yes)};
 	if (!GridPositionOnWorld.IsSet()) { return; }
 
-	// FGridTransformContext GridTransformContext;
-	// GridTransformContext.ScreenGridOriginInWorldGrid = GridPositionOnWorld.GetValue();
-	// const FVector2D ScreenToWorldGridScale{ScreenGridSize.GetValue() / WorldGridSize.GetValue()};
-	// GridTransformContext.ScreenToWorldGridScale = FVector2f{static_cast<float>(ScreenToWorldGridScale.X), static_cast<float>(ScreenToWorldGridScale.Y)};
 	const FVector2D ScreenToWorldGridScale{ScreenGridSize.GetValue().GetGridSizeOnScreenCoordinate() / WorldGridSize.GetValue().GetGridSizeOnScreenCoordinate()};
 	const FVector2f ScreenToWorldGridScaleFVector2f{static_cast<float>(ScreenToWorldGridScale.X), static_cast<float>(ScreenToWorldGridScale.Y)};
 
@@ -335,13 +331,6 @@ void UFogOfWarSubsystem::GetFogOfWarActorData(TArray<FIntPoint>& ActorPositions,
 		const TOptional<FBox2D> LandBoundingBox{UFogOfWarComponentStatics::GetLandBoundingBox(this)};
 		const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
 		if (!GridSize.IsSet() || !ScreenGridSize.IsSet() || !LandBoundingBox.IsSet() || !ScreenSize.IsSet()) { return; }
-		// const TOptional<FIntPoint> PositionOnScreen{UFogOfWarComponentStatics::GetGridPositionOnScreen(Data.GetValue().ActorLocation, ScreenSize.GetValue(), ScreenBox.GetValue()) };
-		// if (!PositionOnScreen.IsSet()) { continue; }
-		// ActorPositions.Add(PositionOnScreen.GetValue());
-		
-		// const TOptional<FIntPoint> GridPositionOnLand{UFogOfWarComponentStatics::GetGridPosition(Data.GetValue().ActorLocation, this)};
-		// if (!GridPositionOnLand.IsSet()) {continue;}
-		// ActorPositions.Add(GridPositionOnLand.GetValue());
 
 		const TOptional<FIntPoint> ActorPositionOnScreen{UFogOfWarComponentStatics::GetGridPositionOnScreen(Data.GetValue().ActorLocation, this, EAllowMinusPosition::Yes)};
 		if (!ActorPositionOnScreen.IsSet()) {continue;}
@@ -399,10 +388,6 @@ void UFogOfWarSubsystem::SetComputeShaderOutputTextureCache(FRDGTextureRef& Shad
 		);
 		ShaderOutputTexture = GraphBuilder.CreateTexture(TextureDesc, TEXT("OutputTexture"));
 	}
-	// else
-	// {
-	// 	ShaderOutputTexture = GraphBuilder.RegisterExternalTexture(CachedOutputTexture);
-	// }
 
 	Parameter.OutputTexture = GraphBuilder.CreateUAV(ShaderOutputTexture);
 }
@@ -415,18 +400,6 @@ TOptional<FIntPoint> UFogOfWarSubsystem::ProjectWorldToLand(const FVector2D& Wor
 	const TOptional<FBox2D> ScreenAABB {UFogOfWarComponentStatics::GetCameraFrustumGroundIntersections(this)};
 	if (!ScreenAABB.IsSet()) { return NullOpt; }
 
-	// // 1. 正确构建 2D 包围盒（自动计算正确的 Min/Max，避免相机旋转导致 Min/Max 颠倒）
-	// FBox2D ScreenAABB{ ForceInit };
-	// ScreenAABB += FVector2D{ Corners[static_cast<int32>(ECorner::LeftDown)] };
-	// ScreenAABB += FVector2D{ Corners[static_cast<int32>(ECorner::RightTop)] };
-	// //FBox2D ScreenAABB{ FVector2D{Corners[static_cast<int32>(ECorner::LeftDown)]},  FVector2D{Corners[static_cast<int32>(ECorner::RightTop)]} };
-
-	// // 2. 与 LandBoundingBox 求交集
-	// ScreenAABB.Min.X = FMath::Max(ScreenAABB.Min.X, LandBoundingBox.Min.X);
-	// ScreenAABB.Min.Y = FMath::Max(ScreenAABB.Min.Y, LandBoundingBox.Min.Y);
-	// ScreenAABB.Max.X = FMath::Min(ScreenAABB.Max.X, LandBoundingBox.Max.X);
-	// ScreenAABB.Max.Y = FMath::Min(ScreenAABB.Max.Y, LandBoundingBox.Max.Y);
-
 	// 3. 检查交集包围盒是否有效（防止除以零或负尺寸）
 	const FVector2D BoxSize = ScreenAABB.GetValue().GetSize();
 	if (BoxSize.X <= 0.0f || BoxSize.Y <= 0.0f) { return NullOpt; }
@@ -438,50 +411,8 @@ TOptional<FIntPoint> UFogOfWarSubsystem::ProjectWorldToLand(const FVector2D& Wor
 		FMath::FloorToInt32(NormalizedPos.Y * ScreenSize.GetValue().Y)
 	};
 
-	//// 5. 校验最终坐标范围，如果不合规则返回 NullOpt（这步最关键！）
-	//const FIntPoint MaxSize = ScreenSize.GetValue();
-	//if (GridPos.X < 0 || GridPos.Y < 0 || GridPos.X >= MaxSize.X || GridPos.Y >= MaxSize.Y)
-	//{
-	//	return NullOpt;
-	//}
-
 	return GridPos;
 }
-
-//bool UFogOfWarSubsystem::ProjectWorldToLand(FIntPoint& Position, const FVector2D& WorldLocation, const FBox2D& LandBoundingBox) const
-//{
-//	//FVector2f PositionOnLand = WorldLocation - LandLeftDownLocation;
-//	//Position.X = FMath::Floor(PositionOnLand.X * FogOfWarConst::kTextureWidth / LandSize.X);
-//	//Position.Y = FMath::Floor(PositionOnLand.Y * FogOfWarConst::kTextureHeight / LandSize.Y);
-//
-//	//return Position.X >= 0 && Position.Y >= 0;
-//
-//
-//	TArray<FVector> Corners = UFogOfWarComponentStatics::GetCameraFrustumGroundIntersections(this);
-//	if (Corners.Num() < 4) { return false; }
-//
-//	FGridBoundsDataType ScreenAABB{ Corners[static_cast<int32>(ECorner::LeftDown)], Corners[static_cast<int32>(ECorner::RightTop)] };
-//	ScreenAABB.Box.Min.X = FMath::Max(ScreenAABB.Box.Min.X, LandBoundingBox.Min.X);
-//	ScreenAABB.Box.Min.Y = FMath::Max(ScreenAABB.Box.Min.Y, LandBoundingBox.Min.Y);
-//	ScreenAABB.Box.Max.X = FMath::Min(ScreenAABB.Box.Max.X, LandBoundingBox.Max.X);
-//	ScreenAABB.Box.Max.Y = FMath::Min(ScreenAABB.Box.Max.Y, LandBoundingBox.Max.Y);
-//	ScreenAABB.Box.Max.Z = ScreenAABB.Box.Min.Z + 1;
-//
-//	//UE_LOG(LogTemp, Error, TEXT("UFogOfWarSubsystem::SetLandLocationAndSizeParameters LandLeftDownLocation %s"), *LandLeftDownLocation.ToString());
-//	//UE_LOG(LogTemp, Error, TEXT("UFogOfWarSubsystem::SetLandLocationAndSizeParameters WorldLocation %s"), *WorldLocation.ToString());
-//	//UE_LOG(LogTemp, Error, TEXT("UFogOfWarSubsystem::SetLandLocationAndSizeParameters ScreenAABB %s"), *ScreenAABB.Box.ToString());
-//	//UE_LOG(LogTemp, Error, TEXT("UFogOfWarSubsystem::SetLandLocationAndSizeParameters WorldLocation %d"), ScreenAABB.IsInsideXY(WorldLocation));
-//	//if (!ScreenAABB.IsInsideXY(WorldLocation)) { return false; }
-//
-//	const TOptional<FIntPoint> ScreenSize{ GetScreenSize() };
-//	if (!ScreenSize.IsSet()) { return false; }
-//
-//	FVector2D PositionOnLand = WorldLocation - FVector2D{ ScreenAABB.Box.Min };
-//	Position.X = FMath::Floor(PositionOnLand.X * ScreenSize.GetValue().X / (ScreenAABB.Box.Max.X - ScreenAABB.Box.Min.X));
-//	Position.Y = FMath::Floor(PositionOnLand.Y * ScreenSize.GetValue().Y / (ScreenAABB.Box.Max.Y - ScreenAABB.Box.Min.Y));
-//
-//	return Position.X >= 0 && Position.Y >= 0;
-//}
 
 void UFogOfWarSubsystem::SetupScaleFactor()
 {

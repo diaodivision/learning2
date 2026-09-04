@@ -5,21 +5,21 @@
 
 struct DamageStatics
 {
-	// ²¶»ñÄ¿±êµÄ»¤¼×ÊôĞÔ
+	// ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Ä»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	DECLARE_ATTRIBUTE_CAPTUREDEF(ArmorThickness);
 
-	// Èç¹ûĞèÒª²¶»ñÔ´»òÆäËûÊôĞÔ£¬¿ÉÒÔ¼ÌĞøÌí¼Ó
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô£ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	// DECLARE_ATTRIBUTE_CAPTUREDEF(AttackPower);
 
 	DamageStatics()
 	{
-		// ¶¨ÒåÈçºÎ²¶»ñÄ¿±êµÄ»¤¼×ÊôĞÔ
-		// ²ÎÊı£ºÊôĞÔÀà£¬Ä¿±ê£¨Target£©£¬ÊÇ·ñ¿ìÕÕ
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î²ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Ä»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½à£¬Ä¿ï¿½ê£¨Targetï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
 		DEFINE_ATTRIBUTE_CAPTUREDEF(UMyAttributeSet, ArmorThickness, Target, false);
 	}
 };
 
-// µ¥ÀıÄ£Ê½£¬·½±ãÔÚÆäËûµØ·½ÒıÓÃ
+// ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø·ï¿½ï¿½ï¿½ï¿½ï¿½
 static const DamageStatics& GetDamageStatics()
 {
 	static DamageStatics Statics;
@@ -38,35 +38,32 @@ void UGEEC_WeaponDamage::Execute_Implementation(const FGameplayEffectCustomExecu
 
 	if (!SourceASC || !TargetASC) { return; }
 
-	// »ñÈ¡Effect Spec£¬ÀïÃæ°üº¬ÎÒÃÇÖ®Ç°ÉèÖÃµÄSetByCallerÊı¾İ
+	// ï¿½ï¿½È¡Effect Specï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö®Ç°ï¿½ï¿½ï¿½Ãµï¿½SetByCallerï¿½ï¿½ï¿½ï¿½
 	const FGameplayEffectSpec& Spec = ExecutionParams.GetOwningSpec();
 
 	float Damage{ Spec.GetSetByCallerMagnitude(DamageTag) };
-	UE_LOG(LogTemp, Warning, TEXT("Damage: %f"), Damage);
 
 	float WeaponPenetration{ Spec.GetSetByCallerMagnitude(WeaponPenetrationTag) };
-	UE_LOG(LogTemp, Warning, TEXT("WeaponPenetration: %f"), WeaponPenetration);
 
 	float TargetArmorThickness{ 0.f };
 	if (!ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(
-		GetDamageStatics().ArmorThicknessDef, // ÎÒÃÇÒª»ñÈ¡µÄÊôĞÔ¶¨Òå
-		FAggregatorEvaluateParameters(), // ÆÀ¹À²ÎÊı
-		TargetArmorThickness // Êä³öÖµ
+		GetDamageStatics().ArmorThicknessDef, // ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½
+		FAggregatorEvaluateParameters(), // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		TargetArmorThickness // ï¿½ï¿½ï¿½Öµ
 	))
 	{
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("TargetArmorThickness: %f"), TargetArmorThickness);
 	TargetArmorThickness = FMath::Max(0.f, TargetArmorThickness);
 
 	float OutputDamage{ CalculateFinalDamage(Damage, WeaponPenetration, TargetArmorThickness) };
 	ensure(OutputDamage >= 0);
 
 	OutExecutionOutput.AddOutputModifier(
-		FGameplayModifierEvaluatedData(UMyAttributeSet::GetCurrentHealthAttribute(), // Ä¿±êÊôĞÔ
-			EGameplayModOp::Additive, // ²Ù×÷ÀàĞÍ£º¼õ·¨£¨Í¨¹ı¸ºÊıÊµÏÖ£©
-			-OutputDamage // ×¢ÒâÕâÀïÊÇ¸ºÊı£¬ÒòÎªÎÒÃÇÒª¼õÉÙÉúÃüÖµ
+		FGameplayModifierEvaluatedData(UMyAttributeSet::GetCurrentHealthAttribute(), // Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+			EGameplayModOp::Additive, // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½Ö£ï¿½
+			-OutputDamage // ×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
 		)
 	);
 }

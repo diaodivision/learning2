@@ -121,8 +121,6 @@ bool AWeaponActorBase::ExecuteFireOnce()
 	if (!AvatarAbilitySystemComponent.IsValid()) { return false; }
 
 	OnShoot();
-	UE_LOG(LogTemp, Error, TEXT("AvatarAbilitySystemComponent->HasMatchingGameplayTag(GetOnShootTag()) %d"), AvatarAbilitySystemComponent->HasMatchingGameplayTag(GetOnShootTag()));
-	UE_LOG(LogTemp, Error, TEXT("AvatarAbilitySystemComponent %d"), AvatarAbilitySystemComponent->GetUniqueID());
 	const bool bSucceed = AvatarAbilitySystemComponent->TryActivateAbility(FireAbilityHandle);
 	OnShootStop();
 
@@ -294,8 +292,6 @@ void AWeaponActorBase::InstantiateAbilityOnBeginPlay()
 	{
 		FireAbilityHandle = AvatarAbilitySystemComponent->K2_GiveAbility(FireAbilityClass.AbilityClass, GetWeaponLevel());
 	}
-
-	UE_LOG(LogTemp, Error, TEXT("this: %s"), *GetNameSafe(this));
 
 	for (const FWeaponAbilityInfo& AbilityInfo : WeaponAbilities)
 	{

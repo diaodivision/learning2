@@ -243,7 +243,7 @@ UMaterialInterface* UFogOfWarComponentStatics::GetFogOfWarMaterial()
 			Result = FogOfWarMaterial.IsValid() ? FogOfWarSettings->FogOfWarMaterial.Get() : FogOfWarMaterial.LoadSynchronous();
     		if (!Result) { UE_LOG(LogTemp, Error, TEXT("Load resource failed, path: %s"), *FogOfWarMaterial.ToString()); }
 		}
-		else { UE_LOG(LogTemp, Warning, TEXT("UFogOfWarSettings::FogOfWarMaterial 222 is not be specified")); }
+		else { UE_LOG(LogTemp, Warning, TEXT("UFogOfWarSettings::FogOfWarMaterial is not be specified")); }
 	}
 	else { UE_LOG(LogTemp, Warning, TEXT("Fail to get UFogOfWarSettings")); }
 

@@ -24,7 +24,6 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	static void SetEnemyCharacter(ACharacter* Enemy, AActor* Actor);
-
 	UFUNCTION(BlueprintPure)
 	static ACharacter* GetEnemyCharacter(AActor* Actor);
 
@@ -44,6 +43,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	static void SetSensedEnemyCharacter(ACharacter* Enemy, AActor* Actor);
+	UFUNCTION(BlueprintPure)
+	static ACharacter* GetSensedEnemyCharacter(AActor* Actor);
 
 	UFUNCTION(BlueprintCallable)
 	static void SetWeaponMaxMagazineAmmo(AActor* Actor, const int32 AmmoMax, const EWeaponSlot Slot);

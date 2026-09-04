@@ -92,41 +92,9 @@ TOptional<FGridSizeType> UWorldHeightSubsystem::GetGridSize() const
 
 FogOfWarTypes::GridIndexType UWorldHeightSubsystem::GetGridIndex(const FVector2D& Location2D, const EAllowMinusPosition AllowMinusPosition) const
 {
-	// if (!LandBounds.IsSet() || (AllowMinusPosition != EAllowMinusPosition::Yes && !LandBounds.GetValue().IsInsideOrOnXY(FVector{ Location2D.X, Location2D.Y, 0 })))
-	// {
-	// 	return INDEX_NONE;
-	// }
-
-	// const TOptional<FIntPoint> GridNum{ GetGridNum() };
-	// if (!GridNum.IsSet()) { return INDEX_NONE; }
-
-	// const FBox& LandBox{ LandBounds.GetValue() };
-
 	const TOptional<FIntPoint> GridPosition{ GetGridPosition(Location2D, AllowMinusPosition) };
 	if (!GridPosition.IsSet()) { return INDEX_NONE; }
 	return GridPosition.GetValue().Y * GetGridNum().GetValue().X + GridPosition.GetValue().X;
-
-	// // 1. 获得 0.0 ~ 1.0 的比例
-	// double RatioX = (Location2D.X - LandBox.Min.X) / (LandBox.GetExtent().X * 2.0);
-	// double RatioY = (Location2D.Y - LandBox.Min.Y) / (LandBox.GetExtent().Y * 2.0);
-
-	// // 2. 转换为离散的整数行列号，并严格防止越界
-	// int32 GridX = FMath::Min(FMath::FloorToInt(RatioX * GridNumX), GridNumX); // 列 (Column)
-	// int32 GridY = FMath::Min(FMath::FloorToInt(RatioY * GridNumY), GridNumY); // 行 (Row)
-
-	// // 3. 标准一维化公式：Row * Width + Column
-	// return GridY * GridNumX + GridX;
-
-	// const FVector2D NormalizedPosition{(Location2D.Y - LandBox.Min.Y) / LandBox.GetSize().Y, (LandBox.Max.X - Location2D.X) / LandBox.GetSize().X};
-	// if (IsDebug) 
-	// {
-	// 	UE_LOG(LogTemp, Error, TEXT("UFogOfWarSubsystem::Tick_Internal NormalizedPosition %s"),*NormalizedPosition.ToString());
-	// }
-	// if (AllowMinusPosition == EAllowMinusPosition::Yes || (NormalizedPosition.GetMin() >= 0. && NormalizedPosition.GetMax() <= 1.))
-	// {
-	// 	return FMath::FloorToInt32(NormalizedPosition.X * GridNum.GetValue().X) + FMath::FloorToInt32(NormalizedPosition.Y * GridNum.GetValue().Y) * GridNum.GetValue().X;
-	// }
-	// return INDEX_NONE;
 }
 
 TOptional<FIntPoint> UWorldHeightSubsystem::GetGridPosition(const FVector2D& WorldLocation, const EAllowMinusPosition AllowMinusPosition) const
@@ -147,47 +115,6 @@ TOptional<FIntPoint> UWorldHeightSubsystem::GetGridPosition(const FVector2D& Wor
 	}
 	return NullOpt;
 }
-
-// TOptional<FIntPoint> UWorldHeightSubsystem::IndexToGridPosition(const FogOfWarTypes::GridIndexType Index, const EAllowMinusPosition AllowMinusPosition, bool IsDebug) const
-// {
-// 	const TOptional<FIntPoint> GridNum{ GetGridNum() };
-// 	if (!GridNum.IsSet()) { return NullOpt; }
-
-// 	if (AllowMinusPosition != EAllowMinusPosition::Yes && (Index < 0 || Index >= (GridNum.GetValue().X * GridNum.GetValue().Y))) { return NullOpt; }
-
-// 	// return FIntPoint{ static_cast<int32>(Index % GridNumX), static_cast<int32>(Index / GridNumX) };
-// 	const int32 Y{ FMath::FloorToInt32(static_cast<float>(Index) / GridNum.GetValue().X) };
-// 	const int32 X{ Index - Y * GridNum.GetValue().X };
-// 	if (IsDebug)
-// 	{
-// 		UE_LOG(LogTemp, Error, TEXT("UFogOfWarSubsystem::Tick_Internal X %d"),X);
-// 		UE_LOG(LogTemp, Error, TEXT("UFogOfWarSubsystem::Tick_Internal Y %d"),Y);
-
-// 	}
-	
-
-// 	return FIntPoint{ X, Y };
-// }
-
-// TOptional<FVector> UWorldHeightSubsystem::GetGridLocationByIndex(const FogOfWarTypes::GridIndexType Index, const EAllowMinusPosition AllowMinusPosition) const
-// {
-// 	const TOptional<FIntPoint> GridNum{ GetGridNum() };
-// 	const TOptional<FGridSizeType> GridSize{ GetGridSize() };
-// 	if (!GridNum.IsSet() || !GridSize.IsSet() || !Land.IsValid()) {return NullOpt;}
-// 	if (AllowMinusPosition == EAllowMinusPosition::Yes || (Index >= 0 && Index < (GridNum.GetValue().X * GridNum.GetValue().Y)))
-// 	{
-// 		const TOptional<FIntPoint> GridPosition{IndexToGridPosition(Index, AllowMinusPosition)};
-// 		if (!GridPosition.IsSet()) {return NullOpt;}
-// 		// const int32 GridX = static_cast<int32>(Index % GridNumX);
-// 		// const int32 GridY = static_cast<int32>(Index / GridNumX);
-
-// 		const FVector GridSizeOnWorld{ GridSize->GetGridSizeOnWorldCoordinate() };
-// 		const FBox& LandBox{ LandBounds.GetValue() };
-// 		return FVector{ LandBox.Max.X - (GridPosition.GetValue().Y + 0.5f) * GridSizeOnWorld.X, LandBox.Min.Y + (GridPosition.GetValue().X + 0.5f) * GridSizeOnWorld.Y, LandBox.Max.Z };
-// 	}
-
-// 	return NullOpt;
-// }
 
 bool UWorldHeightSubsystem::IsWorldHeightVolumeOverlapWithGround(const AWorldHeightVolume& Volume) const
 {

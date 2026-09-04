@@ -49,13 +49,6 @@ void UAbilityTask_WeaponPlayMontageAndWait::Activate()
 			const float CharacterMontagePlayRate = FMath::Max(1.f, MontageToPlay->GetPlayLength() / Duration * Rate);
 			const float WeaponMontagePlayRate = FMath::Max(1.f, WeaponMontageToPlay->GetPlayLength() / Duration * Rate);
 
-			UE_LOG(LogTemp, Error, TEXT("MontageToPlay->GetPlayLength(): %f"), MontageToPlay->GetPlayLength());
-			UE_LOG(LogTemp, Error, TEXT("WeaponMontageToPlay->GetPlayLength(): %f"), WeaponMontageToPlay->GetPlayLength());
-			UE_LOG(LogTemp, Error, TEXT("Duration: %f"), Duration);
-			UE_LOG(LogTemp, Error, TEXT("Rate: %f"), Rate);
-			UE_LOG(LogTemp, Error, TEXT("CharacterMontagePlayRate: %f"), CharacterMontagePlayRate);
-			UE_LOG(LogTemp, Error, TEXT("WeaponMontagePlayRate: %f"), WeaponMontagePlayRate);
-
 			float MontagePlayResult = ASC->PlayMontage(Ability, Ability->GetCurrentActivationInfo(), MontageToPlay, CharacterMontagePlayRate, StartSection, StartTimeSeconds);
 			float WeaponMontagePlayResult = WeaponAnimInstance->Montage_Play(WeaponMontageToPlay, WeaponMontagePlayRate, EMontagePlayReturnType::MontageLength, StartTimeSeconds * (Rate / WeaponMontagePlayRate));
 			if (MontagePlayResult > 0.f && WeaponMontagePlayResult > 0.f)

@@ -63,6 +63,8 @@ protected:
 
 	virtual void OnCharacterDeath_Internal() override;
 
+	virtual void OnEnemySensed_Implementation(AMyCharacterBase* Enemy) override;
+
 private:
 	void CreateAndSetupComponents();
 

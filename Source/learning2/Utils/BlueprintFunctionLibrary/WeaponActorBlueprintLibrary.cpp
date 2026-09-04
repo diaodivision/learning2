@@ -648,7 +648,6 @@ void UWeaponActorBlueprintLibrary::PauseCharacter(ACharacter* Character)
 		{
 			if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Pause Animation"));
 				// 暂停动画更新
 				Mesh->bPauseAnims = true;
 			}
@@ -657,7 +656,6 @@ void UWeaponActorBlueprintLibrary::PauseCharacter(ACharacter* Character)
 		// 4. 暂停物理模拟
 		if (UPrimitiveComponent* RootPrimitive = Cast<UPrimitiveComponent>(Character->GetRootComponent()))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Pause Physics"));
 
 			RootPrimitive->SetSimulatePhysics(false);
 		}
@@ -665,7 +663,6 @@ void UWeaponActorBlueprintLibrary::PauseCharacter(ACharacter* Character)
 		// 3. 暂停移动组件（包括重力）
 		if (UCharacterMovementComponent* MoveComp = Character->GetCharacterMovement())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Pause Movement"));
 			//MoveComp->GravityScale = 0.0f;              // 取消重力
 			//MoveComp->SetMovementMode(MOVE_None);       // 设置为无移动模式
 			//MoveComp->StopMovementImmediately();        // 立即停止速度
@@ -685,7 +682,6 @@ void UWeaponActorBlueprintLibrary::ResumeCharacter(ACharacter* Character)
 		{
 			if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Resume Animation"));
 				// 暂停动画更新
 				Mesh->bPauseAnims = false;
 			}
@@ -694,7 +690,6 @@ void UWeaponActorBlueprintLibrary::ResumeCharacter(ACharacter* Character)
 		// 4. 暂停物理模拟
 		if (UPrimitiveComponent* RootPrimitive = Cast<UPrimitiveComponent>(Character->GetRootComponent()))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Resume Physics"));
 			RootPrimitive->SetSimulatePhysics(true);
 		}
 	}

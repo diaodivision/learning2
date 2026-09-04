@@ -438,21 +438,31 @@ void FTeamSensesContainer::Impl::OnSenseUpdated(const FSenseUpdateInfo& SenseUpd
 		if (!TeamMembers) { TeamMembers = &EnemyToTeamMembersMap.Add(SenseUpdateInfo.Enemy); }
 
 		TeamMembers->Add(SenseUpdateInfo.Observer);
-		TeamSensesEnemies.Add(SenseUpdateInfo.Enemy);
-
-		if (IGenericTeamAgentInterface * GenericTeamAgentInterface{ Cast<IGenericTeamAgentInterface>(SenseUpdateInfo.Observer) })
+		
+		if (!TeamSensesEnemies.Contains(SenseUpdateInfo.Enemy))
 		{
-			OnTeamSenseAddedDelegate.Broadcast(GenericTeamAgentInterface->GetGenericTeamId().GetId(), *SenseUpdateInfo.Enemy.Get());
+			TeamSensesEnemies.Add(SenseUpdateInfo.Enemy);
+
+			if (IGenericTeamAgentInterface * GenericTeamAgentInterface{ Cast<IGenericTeamAgentInterface>(SenseUpdateInfo.Observer) })
+			{
+				OnTeamSenseAddedDelegate.Broadcast(GenericTeamAgentInterface->GetGenericTeamId().GetId(), *SenseUpdateInfo.Enemy.Get());
+			}
 		}
 	}
 	else
 	{
-		TeamSensesEnemies.Remove(SenseUpdateInfo.Enemy);
-		if (IGenericTeamAgentInterface * GenericTeamAgentInterface{ Cast<IGenericTeamAgentInterface>(SenseUpdateInfo.Observer) })
+		const bool bIsNoLongerSensed{ TeamMembers && TeamMembers->Num() == 1 && ( !TeamMembers->begin()->IsValid() || *TeamMembers->begin() == SenseUpdateInfo.Observer) };
+		
+		if (TeamMembers) { TeamMembers->Remove(SenseUpdateInfo.Observer); }
+		
+		if (bIsNoLongerSensed)
+		{
+			TeamSensesEnemies.Remove(SenseUpdateInfo.Enemy);
+			if (IGenericTeamAgentInterface * GenericTeamAgentInterface{ Cast<IGenericTeamAgentInterface>(SenseUpdateInfo.Observer) })
 			{
 				OnNoLongerSensedByAnyTeamMemberDelegate.Broadcast(GenericTeamAgentInterface->GetGenericTeamId().GetId(), *SenseUpdateInfo.Enemy.Get());
 			}
-		if (TeamMembers) { TeamMembers->Remove(SenseUpdateInfo.Observer); }
+		}
 		// if (!TeamMembers)
 		// {
 		// 	TeamSensesEnemies.Remove(SenseUpdateInfo.Enemy);
@@ -476,13 +486,31 @@ AActor* FTeamSensesContainer::Impl::GetOneTeamSensedActor() const
 
 void FTeamSensesContainer::Impl::OnActorEndPlayed(const AActor& EndPlayedActor)
 {
+	TeamSensesEnemies.Remove(&EndPlayedActor);
 	for (auto It{ EnemyToTeamMembersMap.CreateIterator() }; It; ++It)
 	{
-		if (It->Key == &EndPlayedActor) { It.RemoveCurrent(); }
+		if (It->Key == &EndPlayedActor) 
+		{ 
+			// IGenericTeamAgentInterface* Interface{ nullptr };
+			TOptional<BattleSubsystemTypes::TeamIDType> TeamID;
+			for (auto ValueIt{ It.Value().CreateIterator() }; ValueIt; ++ValueIt)
+			{
+				if (const IGenericTeamAgentInterface* Interface = Cast<IGenericTeamAgentInterface>(ValueIt->Get())) 
+				{ 
+					TeamID = Interface->GetGenericTeamId().GetId();
+					break;
+				}
+			}
+
+			It.RemoveCurrent();
+
+			if (TeamID.IsSet())
+			{
+				OnNoLongerSensedByAnyTeamMemberDelegate.Broadcast(TeamID.GetValue(), EndPlayedActor);
+			}
+		}
 		else { It->Value.Remove(&EndPlayedActor); }
 	}
-
-	TeamSensesEnemies.Remove(&EndPlayedActor);
 }
 
 FTeamSensesContainer::FTeamSensesContainer() : pImpl(MakeUnique<Impl>())
@@ -554,6 +582,7 @@ AActor* FTeamSensesContainer::GetOneTeamSensedActor() const
 void FTeamSensesContainer::OnActorEndPlayed(const AActor& EndPlayedActor)
 {
 	pImpl->OnActorEndPlayed(EndPlayedActor);
+	// OnNoLongerSensedByAnyTeamMember(Cast<IGenericTeamAgentInterface>(&EndPlayedActor)->GetGenericTeamId().GetId(), EndPlayedActor);
 }
 
 void FTeamSensesContainer::OnTeamSenseAdded(const BattleSubsystemTypes::TeamIDType TeamID, AActor& SensedActor)

@@ -77,8 +77,6 @@ void UInteractiveTraceComponent::TickComponent(float DeltaTime, ELevelTick TickT
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	//UE_LOG(LogTemp, Warning, TEXT("UInteractiveTraceComponent::TickComponent"));
-
 	if (HoveredActor.IsValid() && HoveredActor->Implements<UHoverReactiveInterface>() && GetWorld())
 	{
 		IHoverReactiveInterface::Execute_OnHovered(HoveredActor.Get(), GetWorld()->GetTimeSeconds() - HoveredStartSeconds);
@@ -91,46 +89,9 @@ void UInteractiveTraceComponent::TickComponent(float DeltaTime, ELevelTick TickT
 
 	if (AActor* HitActor = HitResult.GetActor(); HoveredActor.Get() != HitActor)
 	{
-		//if (LastHoveredActor) { IHighLightInterface::Execute_UnhighLightActor(LastHoveredActor); }
-		//if (HitActor) { IHighLightInterface::Execute_HighLightActor(HitActor); }
 		OnHoveredActorChanged(HoveredActor.Get(), HitActor);
 		HoveredActor = HitActor;
-
-
-		////����ѡ�����ʾ������
-		//if (HitActor->Implements<UInteractableTargetInterface>())
-		//{
-		//	FInteractionQuery InteractQuery;
-		//	InteractQuery.RequestingAvatar = Controller->GetPawn();
-		//	InteractQuery.RequestingController = Controller;
-
-		//	if (!Controller->GetPawn()) { UE_LOG(LogTemp, Warning, TEXT("Failed to Controller->GetPawn()")); }
-
-		//	IInteractableTargetInterface::Execute_ShowOptions(HitActor, InteractQuery);
-
-		//	if (LastActor && HitActor != LastActor)
-		//	{
-		//		if (LastActor->Implements<UInteractableTargetInterface>())
-		//		{
-		//			IInteractableTargetInterface::Execute_HideOptions(LastActor);
-		//		}
-		//	}
-		//}
 	}
-
-	////�������ߵ���ʾ������
-	//if (HitActor->Implements<UHighLightInterface>())
-	//{
-	//	IHighLightInterface::Execute_HighLightActor(HitActor);
-
-	//	if (LastActor && HitActor != LastActor)
-	//	{
-	//		if (LastActor->Implements<UHighLightInterface>())
-	//		{
-	//			IHighLightInterface::Execute_UnhighLightActor(LastActor);
-	//		}
-	//	}
-	//}
 
 
 }

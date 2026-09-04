@@ -28,6 +28,16 @@ void UBehaviorTreeStatics::SetEnemyCharacter(ACharacter* Enemy, AActor* Actor)
 	else { BlackboardComponent->ClearValue(BattleSubsystemConst::BlackboardKeyName::EnemyCharacter); }
 }
 
+ACharacter* UBehaviorTreeStatics::GetEnemyCharacter(AActor* Actor)
+{
+	if (!Actor) { return nullptr; }
+
+	UBlackboardComponent* BlackboardComponent{ UAIBlueprintHelperLibrary::GetBlackboard(Actor) };
+	if (!BlackboardComponent) { return nullptr; }
+
+	return Cast<ACharacter>(BlackboardComponent->GetValueAsObject(BattleSubsystemConst::BlackboardKeyName::EnemyCharacter));
+}
+
 void UBehaviorTreeStatics::SetWeaponMagazineAmmo(AActor* Actor, const int32 Ammo, const EWeaponSlot Slot)
 {
 	if (!Actor) { return; }
@@ -99,22 +109,22 @@ void UBehaviorTreeStatics::SetControlledWeaponSlot(const EWeaponSlot& WeaponSlot
 void UBehaviorTreeStatics::SetSensedEnemyCharacter(ACharacter* Enemy, AActor* Actor)
 {
 	if (!Actor) { return; }
-
+	
 	UBlackboardComponent* BlackboardComponent{ UAIBlueprintHelperLibrary::GetBlackboard(Actor) };
 	if (!BlackboardComponent) { return; }
-
+	
 	if (Enemy) { BlackboardComponent->SetValueAsObject(BattleSubsystemConst::BlackboardKeyName::SensedCharacter, Enemy); }
 	else { BlackboardComponent->ClearValue(BattleSubsystemConst::BlackboardKeyName::SensedCharacter); }
 }
 
-ACharacter* UBehaviorTreeStatics::GetEnemyCharacter(AActor* Actor)
+ACharacter* UBehaviorTreeStatics::GetSensedEnemyCharacter(AActor* Actor)
 {
 	if (!Actor) { return nullptr; }
 
 	UBlackboardComponent* BlackboardComponent{ UAIBlueprintHelperLibrary::GetBlackboard(Actor) };
 	if (!BlackboardComponent) { return nullptr; }
 
-	return Cast<ACharacter>(BlackboardComponent->GetValueAsObject(BattleSubsystemConst::BlackboardKeyName::EnemyCharacter));
+	return Cast<ACharacter>(BlackboardComponent->GetValueAsObject(BattleSubsystemConst::BlackboardKeyName::SensedCharacter));
 }
 
 bool UBehaviorTreeStatics::GetControlledWeaponSlot(EWeaponSlot& WeaponSlot, AActor* Actor)

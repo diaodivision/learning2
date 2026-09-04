@@ -32,10 +32,7 @@ void AWorldHeightVolume::PostRegisterAllComponents()
 	{
 		WorldHeightSubsystem->OnWorlHeightVolumeRegisteredComponents(*this);
 		//WorldHeightSubsystem->RequestUpdateWorldHeightData(*this);
-		UE_LOG(LogTemp, Warning, TEXT("AWorldHeightVolume::PostRegisterAllComponents RequestUpdateWorldHeightData"));
 	}
-
-	UE_LOG(LogTemp, Warning, TEXT("AWorldHeightVolume::PostRegisterAllComponents"));
 }
 
 void AWorldHeightVolume::PostUnregisterAllComponents()
@@ -46,17 +43,11 @@ void AWorldHeightVolume::PostUnregisterAllComponents()
 	{
 		WorldHeightSubsystem->OnWorlHeightVolumeUnregisteredComponents(*this);
 	}
-	UE_LOG(LogTemp, Warning, TEXT("AWorldHeightVolume::PostUnregisterAllComponents"));
 }
 
 void AWorldHeightVolume::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
-
-	if (OtherActor && OtherActor != this)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("%s Begin overlap with %s"), *GetNameSafe(this), *GetNameSafe(OtherActor));
-	}
 }
 
 void AWorldHeightVolume::NotifyActorEndOverlap(AActor* OtherActor)
@@ -69,8 +60,6 @@ void AWorldHeightVolume::NotifyActorEndOverlap(AActor* OtherActor)
 		{
 			//HeightSubsystem->RequestUpdateWorldHeightData(*OtherActor);
 		}
-
-		UE_LOG(LogTemp, Warning, TEXT("%s end overlap with %s"), *GetNameSafe(this), *GetNameSafe(OtherActor));
 	}
 }
 
@@ -92,8 +81,6 @@ void AWorldHeightVolume::PostEditChangeProperty(FPropertyChangedEvent& PropertyC
 			HeightSubsystem->RequestUpdateWorldHeightData(*this);
 		}
 	}
-
-	UE_LOG(LogTemp, Warning, TEXT("AWorldHeightVolume::PostEditChangeProperty"));
 }
 
 void AWorldHeightVolume::PostEditUndo()
@@ -104,8 +91,6 @@ void AWorldHeightVolume::PostEditUndo()
 	{
 		HeightSubsystem->RequestUpdateWorldHeightData(*this);
 	}
-
-	UE_LOG(LogTemp, Warning, TEXT("AWorldHeightVolume::PostEditUndo"));
 }
 
 #endif  // WITH_EDITOR

@@ -137,8 +137,6 @@ void AGrenadeActorBase::CalculatePredictionLine()
 			FHitResult HitResult;
 			for (const FHitResult& Result : HitResults)
 			{
-				UE_LOG(LogTemp, Error, TEXT("Hited: %s"), *GetNameSafe(Result.GetActor()));
-
 				if (!HitResult.HasValidHitObjectHandle() && Result.GetActor() && !Result.GetActor()->IsHidden())
 				{
 					HitResult = Result;
@@ -160,9 +158,9 @@ void AGrenadeActorBase::CalculatePredictionLine()
 			SplineComponent->AddSplinePoint(HitResult.Location, ESplineCoordinateSpace::Local);
 			//{
 			//	const FVector TraceDirection = (TargetLocation - StartLocation).GetSafeNormal();
-			//	//¼ÆËã¹ì¼£ÓëÊÀ½çÉÏ·½Ïò£¨ZÖá£©¹¹³ÉµÄÆ½ÃæµÄ·¨Ïß
+			//	//ï¿½ï¿½ï¿½ï¿½ì¼£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï·ï¿½ï¿½ï¿½Zï¿½á£©ï¿½ï¿½ï¿½Éµï¿½Æ½ï¿½ï¿½Ä·ï¿½ï¿½ï¿½
 			//	const FVector PlaneNormal = FVector::CrossProduct(TraceDirection, FVector::UpVector).GetSafeNormal();
-			//	//½«Ô­Ê¼·¨ÏòÁ¿Í¶Ó°µ½¸ÃÆ½ÃæÉÏ£¨¼õÈ¥ÔÚÆ½Ãæ·¨Ïß·½ÏòµÄ·ÖÁ¿£©
+			//	//ï¿½ï¿½Ô­Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¶Ó°ï¿½ï¿½ï¿½ï¿½Æ½ï¿½ï¿½ï¿½Ï£ï¿½ï¿½ï¿½È¥ï¿½ï¿½Æ½ï¿½æ·¨ï¿½ß·ï¿½ï¿½ï¿½Ä·ï¿½ï¿½ï¿½ï¿½ï¿½
 			//	HitResult.ImpactNormal = HitResult.ImpactNormal - FVector::DotProduct(HitResult.ImpactNormal, PlaneNormal) * PlaneNormal;
 			//}
 			const FVector Direction{ FMath::GetReflectionVector(Character->GetActorForwardVector(), HitResult.ImpactNormal) };
@@ -355,15 +353,14 @@ inline FCollisionObjectQueryParams AGrenadeActorBase::GetBulletCollisionObjectQu
 
 	FCollisionObjectQueryParams ObjectQueryParams{};
 
-	// 3. ºËÐÄ£º±éÀúÐé»ÃÒýÇæÖÐËùÓÐµÄºËÐÄÎïÌåÍ¨µÀ (¹²32¸öÎ»)
+	// 3. ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÐµÄºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ (ï¿½ï¿½32ï¿½ï¿½Î»)
 	for (int32 ChannelIndex = 0; ChannelIndex < ECC_MAX; ++ChannelIndex)
 	{
 		ECollisionChannel TestChannel = static_cast<ECollisionChannel>(ChannelIndex);
 
-		// Ö»ÒªÕâ¸öÍ¨µÀµÄÏìÓ¦ÊÇ Block£¨×èµ²£©£¬¾Í¶¯Ì¬°ÑËüÈû½ø²éÑ¯ÁÐ±í
+		// Ö»Òªï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ Blockï¿½ï¿½ï¿½èµ²ï¿½ï¿½ï¿½ï¿½ï¿½Í¶ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¯ï¿½Ð±ï¿½
 		if (ResponseContainer.GetResponse(TestChannel) == ECR_Block)
 		{
-			UE_LOG(LogTemp, Error, TEXT("AGrenadeActorBase::CalculatePredictionLine %d"), TestChannel);
 			ObjectQueryParams.AddObjectTypesToQuery(TestChannel);
 		}
 	}

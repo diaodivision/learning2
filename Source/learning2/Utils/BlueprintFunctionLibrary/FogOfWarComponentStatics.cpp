@@ -54,14 +54,10 @@
 //	Actor->GetActorBounds(false, Origin, BoxExtent);
 //	Origin.Z += (Actor->GetActorUpVector() * BoxExtent.Z).Z;
 //
-//	//UE_LOG(LogTemp, Warning, TEXT("Origin: %s"), *Origin.ToString());
-//	//UE_LOG(LogTemp, Warning, TEXT("BoxExtent: %s"), *BoxExtent.ToString());
 //
 //	const FVector ForwardVector = Actor->GetActorForwardVector();
 //	const FVector RightVector = Actor->GetActorRightVector();
 //
-//	//UE_LOG(LogTemp, Warning, TEXT("ForwardVector: %s"), *ForwardVector.ToString());
-//	//UE_LOG(LogTemp, Warning, TEXT("RightVector: %s"), *RightVector.ToString());
 //
 //	TArray<FVector> Corners;
 //	Corners.Add({ Origin - RightVector * BoxExtent.X - ForwardVector * BoxExtent.Y });	// left down
@@ -76,37 +72,24 @@
 //	FVector2D RightTopScreenPosition{ -Infinity, Infinity };
 //	int32 count{ 0 };
 //
-//	/*UE_LOG(LogTemp, Warning, TEXT("FVector2D{ Infinity, 0 }.ContainsNaN(): %d"), FVector2D{ Infinity, 0 }.ContainsNaN());
-//	UE_LOG(LogTemp, Warning, TEXT("FVector2D{ -Infinity, 0 }.ContainsNaN(): %d"), FVector2D{ -Infinity, 0 }.ContainsNaN());*/
 //
 //	int32 ViewportWidth{ 0 };
 //	int32 ViewportHeight{ 0 };
 //	Controller->GetViewportSize(ViewportWidth, ViewportHeight);
-//	//UE_LOG(LogTemp, Warning, TEXT("ViewportWidth: %d"), ViewportWidth);
-//	//UE_LOG(LogTemp, Warning, TEXT("ViewportHeight: %d"), ViewportHeight);
 //	for (const FVector& Corner : Corners)
 //	{
-//		//UE_LOG(LogTemp, Warning, TEXT("Index: %d"), count++);
 //		FVector2D ScreenPosition;
 //		if (Controller->ProjectWorldLocationToScreen(Corner, ScreenPosition))
 //		{
-//			/*UE_LOG(LogTemp, Warning, TEXT("Corner.X: %f"), Corner.X);
-//			UE_LOG(LogTemp, Warning, TEXT("Corner.Y: %f"), Corner.Y);
-//			UE_LOG(LogTemp, Warning, TEXT("ScreenPosition.X: %f"), ScreenPosition.X);
-//			UE_LOG(LogTemp, Warning, TEXT("ScreenPosition.Y: %f"), ScreenPosition.Y);*/
 //
 //			ScreenPosition.X = FMath::Clamp(ScreenPosition.X, 0, ViewportWidth);
 //			ScreenPosition.Y = FMath::Clamp(ScreenPosition.Y, 0, ViewportHeight);
 //
 //			LeftDownScreenPosition.X = FMath::Min(LeftDownScreenPosition.X, ScreenPosition.X);
-//			//UE_LOG(LogTemp, Warning, TEXT("LeftDownScreenPosition.X: %f"), LeftDownScreenPosition.X);
 //			LeftDownScreenPosition.Y = FMath::Max(LeftDownScreenPosition.Y, ScreenPosition.Y);
-//			//UE_LOG(LogTemp, Warning, TEXT("LeftDownScreenPosition.Y: %f"), LeftDownScreenPosition.Y);
 //
 //			RightTopScreenPosition.X = FMath::Max(RightTopScreenPosition.X, ScreenPosition.X);
-//			//UE_LOG(LogTemp, Warning, TEXT("RightTopScreenPosition.X: %f"), RightTopScreenPosition.X);
 //			RightTopScreenPosition.Y = FMath::Min(RightTopScreenPosition.Y, ScreenPosition.Y);
-//			//UE_LOG(LogTemp, Warning, TEXT("RightTopScreenPosition.Y: %f"), RightTopScreenPosition.Y);
 //		}
 //	}
 //
@@ -117,8 +100,6 @@
 //	FVector WorldDirection;
 //	Controller->DeprojectScreenPositionToWorld(LeftDownScreenPosition.X, LeftDownScreenPosition.Y, LeftDownLocation, WorldDirection);
 //	Controller->DeprojectScreenPositionToWorld(RightTopScreenPosition.X, RightTopScreenPosition.Y, RightTopLocation, WorldDirection);
-//	/*UE_LOG(LogTemp, Warning, TEXT("RightTopLocation: %s"), *RightTopLocation.ToString());
-//	UE_LOG(LogTemp, Warning, TEXT("WorldDirection: %s"), *WorldDirection.ToString());*/
 //
 //	return FWorldLocationOnScreen2{ FVector2D{LeftDownLocation}, FVector2D{RightTopLocation}, FVector2D{ForwardVector}, FVector2D{RightVector} };
 //}

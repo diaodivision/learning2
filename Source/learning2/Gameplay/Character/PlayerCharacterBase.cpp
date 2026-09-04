@@ -101,25 +101,12 @@ UAISense_Sight::EVisibilityResult APlayerCharacterBase::CanBeSeenFrom(const FCan
 	const bool bHit{ World->LineTraceSingleByChannel(HitResult, Context.ObserverLocation, GetActorLocation(), DefaultSightCollisionChannel, QueryParams, FCollisionResponseParams::DefaultResponseParam) };
 	const bool bIsTraceConsideredVisible{ IsTraceConsideredVisible(bHit ? &HitResult : nullptr, this) };
 
-	// UE_LOG(LogTemp, Error, TEXT("APlayerCharacterBase::CanBeSeenFrom bHit %d"), bHit);
-	// UE_LOG(LogTemp, Error, TEXT("APlayerCharacterBase::CanBeSeenFrom HitResult.GetActor() %s"), *GetNameSafe(HitResult.GetActor()));
-	// UE_LOG(LogTemp, Error, TEXT("APlayerCharacterBase::CanBeSeenFrom Context.ObserverLocation %s"), *Context.ObserverLocation.ToString());
-	// UE_LOG(LogTemp, Error, TEXT("APlayerCharacterBase::CanBeSeenFrom this %s"), *GetNameSafe(this));
-	// UE_LOG(LogTemp, Error, TEXT("APlayerCharacterBase::CanBeSeenFrom Context.IgnoreActor %s"), *GetNameSafe(Context.IgnoreActor));
-
 	OutNumberOfLoSChecksPerformed = 1;
 	OutNumberOfAsyncLosCheckRequested = 0;
 	OutSightStrength = bIsTraceConsideredVisible ? 1.f : 0.f;
 	if (bIsTraceConsideredVisible) { OutSeenLocation = GetActorLocation(); }
 	return bIsTraceConsideredVisible ? UAISense_Sight::EVisibilityResult::Visible : UAISense_Sight::EVisibilityResult::NotVisible;
 }
-
-// bool APlayerCharacterBase::CanBeSeenFrom(const FVector& ObserverLocation, FVector& OutSeenLocation, int32& NumberOfLoSChecksPerformed, float& OutSightStrength, const AActor* IgnoreActor, const bool* bWasVisible, int32* UserData) const
-// {
-// 	const bool bCanBeSeenFrom{ IAISightTargetInterface::CanBeSeenFrom(ObserverLocation, OutSeenLocation, NumberOfLoSChecksPerformed, OutSightStrength, IgnoreActor, bWasVisible, UserData) && !IsDead() };
-// 	UE_LOG(LogTemp, Log, TEXT("APlayerCharacterBase::CanBeSeenFrom %d"), bCanBeSeenFrom);
-// 	return bCanBeSeenFrom;
-// }
 
 void APlayerCharacterBase::PossessedBy(AController* NewController)
 {
@@ -253,6 +240,18 @@ void APlayerCharacterBase::OnCharacterDeath_Internal()
 
 	if (InputRecordComponent) { InputRecordComponent->Deactivate(); }
 	if (FogOfWarComponent) { FogOfWarComponent->Deactivate(); }
+}
+
+void APlayerCharacterBase::OnEnemySensed_Implementation(AMyCharacterBase* Enemy)
+{
+	Super::OnEnemySensed_Implementation(Enemy);
+	// if (!Enemy || UBehaviorTreeStatics::GetEnemyCharacter(this)) { return; }
+
+	// FHitResult HitResult;
+	// const FCollisionObjectQueryParams Params{ ConstructCharacterVisionParam() };
+	// GetWorld()->LineTraceSingleByObjectType(HitResult, GetActorLocation(), Enemy->GetActorLocation(), Params);
+
+	// if (HitResult.GetActor() == Enemy) { UBehaviorTreeStatics::SetEnemyCharacter(Enemy, this); }
 }
 
 void APlayerCharacterBase::CreateAndSetupComponents()

@@ -140,10 +140,7 @@ void AMyCharacterBase::PostBehaviorTreeRun()
 			{
 				FHitResult HitResult;
 
-				FCollisionObjectQueryParams Params;
-				Params.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
-				Params.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
-				Params.AddObjectTypesToQuery(ECollisionChannel::ECC_Destructible);
+				const FCollisionObjectQueryParams Params{ ConstructCharacterVisionParam() };
 				GetWorld()->LineTraceSingleByObjectType(HitResult, GetActorLocation(), SensedEnemyCharacter->GetActorLocation(), Params);
 
 				if (HitResult.GetActor())
@@ -215,7 +212,11 @@ void AMyCharacterBase::OnEnemySensed_Implementation(AMyCharacterBase* Enemy)
 			TArray<AActor*> SightSensedActors;
 			Component->GetCurrentlyPerceivedActors(UAISense_Sight::StaticClass(), SightSensedActors);
 
-			AActor** SightSensedEnemy = SightSensedActors.FindByPredicate([this](const AActor* Actor) {return Actor && GetTeamAttitudeTowards(*Actor) == ETeamAttitude::Type::Hostile; });
+			AActor** SightSensedEnemy = SightSensedActors.FindByPredicate([this](const AActor* Actor) 
+			{ 
+				const AMyCharacterBase* Ch{ Cast<AMyCharacterBase>(Actor) };
+				return Ch && GetTeamAttitudeTowards(*Ch) == ETeamAttitude::Type::Hostile && !Ch->IsDead();
+			});
 
 			if (SightSensedEnemy) { BlackboardComponent->SetValueAsObject(EnemyCharacterKey, *SightSensedEnemy); }
 
@@ -235,10 +236,10 @@ void AMyCharacterBase::OnEnemyDisappear_Implementation(const AMyCharacterBase* E
 
 	const FName EnemyCharacterKey{ BattleSubsystemConst::BlackboardKeyName::EnemyCharacter };
 	const FName SensedCharacterKey{ BattleSubsystemConst::BlackboardKeyName::SensedCharacter };
-
+	
 	const bool bEnemyDisappeared{ BlackboardComponent->GetValueAsObject(EnemyCharacterKey) == Enemy };
 	const bool bSensedDisappeared{ BlackboardComponent->GetValueAsObject(SensedCharacterKey) == Enemy };
-
+	
 	if (!bEnemyDisappeared && !bSensedDisappeared) { return; }
 
 	const UBattleSubsystem* BattleSubsystem{ UBattleSubsystemStatics::GetBattleSubsystem(this) };
@@ -252,11 +253,19 @@ void AMyCharacterBase::OnEnemyDisappear_Implementation(const AMyCharacterBase* E
 				Component->GetCurrentlyPerceivedActors(UAISense_Sight::StaticClass(), SightSensedActors);
 
 				if (SightSensedActors.IsEmpty()) { BlackboardComponent->ClearValue(EnemyCharacterKey); }
-				else { BlackboardComponent->SetValueAsObject(EnemyCharacterKey, NextSensed); }
+				else 
+				{ 
+					BlackboardComponent->SetValueAsObject(EnemyCharacterKey, NextSensed);
+					BlackboardComponent->SetValueAsObject(SensedCharacterKey, NextSensed);
+				}
 			}
 		}
 
-		if (bSensedDisappeared && NextSensed) { BlackboardComponent->SetValueAsObject(EnemyCharacterKey, NextSensed); }
+		if (bSensedDisappeared && NextSensed) 
+		{ 
+			BlackboardComponent->SetValueAsObject(EnemyCharacterKey, NextSensed);
+			BlackboardComponent->SetValueAsObject(SensedCharacterKey, NextSensed);
+		}
 		else { BlackboardComponent->ClearValue(SensedCharacterKey); }
 	}
 	else
@@ -714,7 +723,7 @@ bool AMyCharacterBase::FindWeaponByPredicate(const UObject* Object) const
 void AMyCharacterBase::OnSenseUpdated(AActor* Enemy, FAIStimulus Stimulus)
 {
 	AMyCharacterBase* EnemyCharacter{ Cast<AMyCharacterBase>(Enemy) };
-	if (!EnemyCharacter || GetTeamAttitudeTowards(*Enemy) != ETeamAttitude::Type::Hostile || Stimulus.Type != UAISense::GetSenseID<UAISense_Sight>()) { return; }
+	if (!EnemyCharacter || EnemyCharacter->IsDead() || GetTeamAttitudeTowards(*Enemy) != ETeamAttitude::Type::Hostile || Stimulus.Type != UAISense::GetSenseID<UAISense_Sight>()) { return; }
 
 	OnEnemySensed(EnemyCharacter);
 

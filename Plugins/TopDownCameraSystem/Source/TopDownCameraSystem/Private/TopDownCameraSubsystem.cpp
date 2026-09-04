@@ -173,14 +173,11 @@ void UTopDownCameraSubsystem::Tick(float DeltaTime)
 	const TSharedPtr<SViewport> ViewportWidget = GameViewport? GameViewport->GetGameViewportWidget() : nullptr;
 	if (!ViewportWidget.IsValid()) { return;}
 	const FVector2D MousePos = FSlateApplication::Get().GetCursorPos();
-	// UE_LOG(LogTemp, Error, TEXT("UTopDownCameraSubsystem::Tick MousePos %s"), *MousePos.ToString());
 	// 2. 使用 FGeometry 自带的 IsUnderLocation 判定绝对坐标是否在 Widget 内部
 	if (!ViewportWidget->GetCachedGeometry().IsUnderLocation(MousePos)) {return;}
 
 	FVector2D MousePosition;
 	ViewportInfo.ViewportClient->GetMousePosition(MousePosition);
-
-	// UE_LOG(LogTemp, Error, TEXT("UTopDownCameraSubsystem::Tick MousePosition %s"), *MousePosition.ToString());
 
 	const FVector2D& ViewportSize{ ViewportInfo.ScreenSize.GetValue() };
 

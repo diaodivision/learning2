@@ -255,8 +255,6 @@ void AGrenadeTargetActor::CalculatePredictionLine(TOptional<FVector> TargetLocat
 			FHitResult HitResult;
 			for (const FHitResult& Result : HitResults)
 			{
-				UE_LOG(LogTemp, Error, TEXT("Hited: %s"), *GetNameSafe(Result.GetActor()));
-
 				if (!HitResult.HasValidHitObjectHandle() && Result.GetActor() && !Result.GetActor()->IsHidden())
 				{
 					HitResult = Result;
@@ -343,7 +341,6 @@ FCollisionObjectQueryParams AGrenadeTargetActor::GetBulletCollisionObjectQueryPa
 		// 只要这个通道的响应是 Block（阻挡），就动态把它塞进查询列表
 		if (ResponseContainer.GetResponse(TestChannel) == ECR_Block)
 		{
-			UE_LOG(LogTemp, Error, TEXT("AGrenadeActorBase::CalculatePredictionLine %d"), TestChannel);
 			ObjectQueryParams.AddObjectTypesToQuery(TestChannel);
 		}
 	}

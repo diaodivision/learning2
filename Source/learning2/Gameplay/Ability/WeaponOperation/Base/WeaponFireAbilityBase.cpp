@@ -35,9 +35,6 @@ void UWeaponFireAbilityBase::ApplyCooldown(const FGameplayAbilitySpecHandle Hand
 	FGameplayEffectSpecHandle CooldownSpecHandle = MakeOutgoingGameplayEffectSpec(CooldownEffectCDO->GetClass(), GetAbilityLevel(Handle, ActorInfo));
 	if (!CooldownSpecHandle.IsValid()) { return; }
 
-	UE_LOG(LogTemp, Warning, TEXT("Weapon->GetFireRate(): %f"), Weapon->GetFireRate());
-	UE_LOG(LogTemp, Warning, TEXT("1.f / Weapon->GetFireRate(): %f"), 1.f / Weapon->GetFireRate());
-
 	CooldownSpecHandle.Data.Get()->SetSetByCallerMagnitude(FireCooldownTag, 1.f / Weapon->GetFireRate());
 
 	if (UAbilitySystemComponent* AbilitySystemComponent = ActorInfo->AbilitySystemComponent.Get())
@@ -102,11 +99,7 @@ bool UWeaponFireAbilityBase::CanExecuteShoot() const
 	if (!Weapon) { return false; }
 
 	const UAbilitySystemComponent* ASC = GetCurrentActorInfo()->AbilitySystemComponent.Get();
-	UE_LOG(LogTemp, Error, TEXT("ASC->HasMatchingGameplayTag(OnShootTag) %d"), ASC->HasMatchingGameplayTag(OnShootTag));
-	UE_LOG(LogTemp, Error, TEXT("ASC %d"), ASC->GetUniqueID());
 	if (!ASC || !ASC->HasMatchingGameplayTag(OnShootTag) /*(ASC->GetGameplayTagCount(ShotCountTag) > 1 && !ASC->HasMatchingGameplayTag(OnShootTag))*/) { return false; }
-	UE_LOG(LogTemp, Error, TEXT("Weapon->IsAutomaticWeapon() %d"), Weapon->IsAutomaticWeapon());
-	UE_LOG(LogTemp, Error, TEXT("ASC->HasMatchingGameplayTag(ShotCountTag) %d"), ASC->HasMatchingGameplayTag(ShotCountTag));
 
 	return Weapon->IsAutomaticWeapon() || !ASC->HasMatchingGameplayTag(ShotCountTag);
 }

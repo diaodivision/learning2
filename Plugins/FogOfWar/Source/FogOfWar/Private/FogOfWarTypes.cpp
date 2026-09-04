@@ -334,7 +334,6 @@ bool FWorldHeightData::AddHeightEffectiveActor_Internal(const AActor& Actor, con
 			bMapChange = true;
 
 			if (*It >= 0) { WorldHeightMap.Add(*It, 1); }
-			else { UE_LOG(LogTemp, Error, TEXT("*It: %d"), *It); }
 		}
 	}
 

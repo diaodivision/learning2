@@ -11,11 +11,6 @@
 
 EBTNodeResult::Type UBTTask_FlankMoveTo::PerformMoveTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	//FBTMoveToTaskMemory* MyMemory = CastInstanceNodeMemory<FBTMoveToTaskMemory>(NodeMemory);
-	//UAITask_MoveTo* MoveTask = MyMemory->Task.Get();
-	//const bool bReuseExistingTask = (MoveTask != nullptr);
-	//if (bReuseExistingTask) { UE_LOG(LogTemp, Error, TEXT("OwnerComp GetOwner %s"), *GetNameSafe(OwnerComp.GetOwner())); }
-	//if (!bReuseExistingTask) { UE_LOG(LogTemp, Error, TEXT("OwnerComp GetOwner222 %s"), *GetNameSafe(OwnerComp.GetOwner())); }
 	EBTNodeResult::Type Result = EBTNodeResult::Failed;
 
 	if (UBattleSubsystem* BattleSubsystem{ UBattleSubsystemStatics::GetBattleSubsystem(this) }; !BattleSubsystem)

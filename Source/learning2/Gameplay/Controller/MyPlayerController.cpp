@@ -374,18 +374,6 @@ void AMyPlayerController::SwitchWeaponByIndex(int32 Index)
 	if (LastControlledWeapon != ControlledWeapon) { OnCancelTargeting(); }
 }
 
-//void AMyPlayerController::OnRightMousePressed()
-//{
-//	bAimMode = true;
-//}
-//
-//void AMyPlayerController::OnRightMouseReleased()
-//{
-//	UE_LOG(LogTemp, Warning, TEXT("Released"));
-//
-//	bAimMode = false;
-//}
-
 void AMyPlayerController::OnLeftMousePressed()
 {
 	bLeftMousePressed = true;

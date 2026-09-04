@@ -35,8 +35,6 @@ void URewindSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	//Collection.InitializeDependency<UWorldPauseSubsystem>();
 
-	UE_LOG(LogTemp, Warning, TEXT("URewindSubsystem::Initialize"));
-
 	InitializeInputRecordComponentMap();
 	InitializeDelegates();
 
@@ -46,24 +44,12 @@ void URewindSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 void URewindSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
-	UE_LOG(LogTemp, Warning, TEXT("URewindSubsystem::Deinitialize"));
 
 	DeinitializeDelegates();
 }
 
 void URewindSubsystem::Tick(float DeltaTime)
 {
-	static float Accu{ 0 };
-	static ERecordState OldState = { CurrentState };
-	Accu += DeltaTime;
-	if (Accu > 1 || OldState != CurrentState)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Record CurrentState: %d"), CurrentState);
-		UE_LOG(LogTemp, Warning, TEXT("Components.Num(): %d"), InputRecordComponentMap.Num());
-		Accu = 0;
-
-	};
-
 	switch (CurrentState)
 	{
 	case ERecordState::Idle:
@@ -105,12 +91,6 @@ void URewindSubsystem::OnPostComponentInitialize(UInputRecordComponent* Componen
 
 FRecordedDataObjectHandle URewindSubsystem::Record(TUniquePtr<IRecordedDataObjectInterface> RecordedData, const AActor& Owner, TFunctionRef<void(const FRecordedDataObjectHandle&)> PostRecordCallable) const
 {
-	//UE_LOG(LogTemp, Warning, TEXT("TTypeInfo<FLocationData>::GetClassID(): %d"), TTypeInfo<FLocationData>::GetClassID());
-	//UE_LOG(LogTemp, Warning, TEXT("TTypeInfo<FRotationData>::GetClassID(): %d"), TTypeInfo<FRotationData>::GetClassID());
-	////UE_LOG(LogTemp, Warning, TEXT("TTypeInfo<FRecordedCombinableAbilityData>::GetClassID(): %d"), TTypeInfo<FRecordedCombinableAbilityData>::GetClassID());
-	//UE_LOG(LogTemp, Warning, TEXT("RecordedData->GetClassID(): %d"), RecordedData->GetClassID());
-
-
 	const TWeakObjectPtr<UInputRecordComponent>* InputRecordComponent = InputRecordComponentMap.Find(&Owner);
 
 	if (!ensureAlwaysMsgf(InputRecordComponent, TEXT("InputRecordComponent(Owner Name: %s) is not under managed by RewindSubsystem"), *GetNameSafe(&Owner)))
@@ -132,7 +112,7 @@ void URewindSubsystem::SwitchState(ERecordState NewState)
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("URewindSubsystem::SwitchState: CurrentState From %d To %d"), CurrentState, NewState);
+	UE_LOG(LogTemp, Display, TEXT("URewindSubsystem::SwitchState: CurrentState From %d To %d"), CurrentState, NewState);
 
 	const ERecordState OldState = CurrentState;
 	CurrentState = NewState;
@@ -301,8 +281,6 @@ void URewindSubsystem::OnRecordPauseState()
 
 void URewindSubsystem::OnRecordingState()
 {
-	UE_LOG(LogTemp, Warning, TEXT("URewindSubsystem::OnRecordingState"));
-
 	for (const TWeakObjectPtr<UInputRecordComponent>& Component : GetInputRecordComponents())
 	{
 		Component->AdvanceCurrentTickOnRecordState();

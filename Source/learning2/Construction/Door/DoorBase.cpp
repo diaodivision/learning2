@@ -95,7 +95,6 @@ void ADoorBase::NotifySmartLinkReached(UNavLinkCustomComponent* LinkComp, UObjec
 		CachedDestination = PathComp->GetPathDestination();
 		//PathComp->AbortMove(*this, FPathFollowingResultFlags::UserAbort);
 		PathComp->PauseMove();
-		UE_LOG(LogTemp, Error, TEXT("CachedDestination %s"), *CachedDestination.GetValue().ToString());
 		ReceiveSmartLinkReached(PathOwner, DestPoint);
 	}
 }
@@ -103,8 +102,6 @@ void ADoorBase::NotifySmartLinkReached(UNavLinkCustomComponent* LinkComp, UObjec
 void ADoorBase::ResumePathFollowing(AActor* Agent)
 {
 	if (IsDoorOpened() || !Agent || !CachedDestination.IsSet()) { return; }
-
-	UE_LOG(LogTemp, Error, TEXT("CachedDestination 222 %s"), *CachedDestination.GetValue().ToString());
 
 	AController* Controller{ Agent->GetInstigatorController() };
 	UNavigationSystemV1* NavSys = Controller ? FNavigationSystem::GetCurrent<UNavigationSystemV1>(Controller->GetWorld()) : nullptr;

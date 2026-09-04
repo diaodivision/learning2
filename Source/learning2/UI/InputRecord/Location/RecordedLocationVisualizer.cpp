@@ -35,7 +35,6 @@ void ARecordedLocationVisualizer::PushRecordedLocation(const FVector& Location, 
 	SplineComponent->AddSplinePoint(Location, ESplineCoordinateSpace::World, false);
 
 	const int32 NumberOfSplinePoints{ SplineComponent->GetNumberOfSplinePoints() };
-	UE_LOG(LogTemp, Error, TEXT("ARecordedLocationVisualizer::PushRecordedLocation NumberOfSplinePoints %d"), NumberOfSplinePoints);
 	SplineComponent->SetSplinePointType(NumberOfSplinePoints - 1, ESplinePointType::Curve);
 
 	const int32 Index{ NumberOfSplinePoints - 1 };

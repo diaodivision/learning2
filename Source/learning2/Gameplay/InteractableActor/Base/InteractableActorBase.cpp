@@ -62,10 +62,6 @@ void AInteractableActorBase::GatherInteractionOptions_Implementation(const FInte
 				{
 					if (UMyGameplayAbilityBase* OtherGA = Cast<UMyGameplayAbilityBase>(OtherSpec.GetPrimaryInstance()))
 					{
-						//UE_LOG(LogTemp, Error, TEXT("AWeaponActorBase::OnControl GA %s"), *GetNameSafe(GA));
-						//UE_LOG(LogTemp, Error, TEXT("AWeaponActorBase::OnControl OtherGA %s"), *GetNameSafe(OtherGA));
-						//UE_LOG(LogTemp, Error, TEXT("AWeaponActorBase::OnControl GA->IsBound() %d"), GA->IsBound());
-						//UE_LOG(LogTemp, Error, TEXT("AWeaponActorBase::OnControl GA->CanBindWith(OtherGA) %d"), GA->CanBindWith(OtherGA));
 						if (!GA->IsBound() && GA->CanBindWith(OtherGA))
 						{
 							BindAbility(*GA, *AbilitySystemComponent, *OtherGA, *OtherASC, InteractionQuery);
@@ -85,14 +81,6 @@ void AInteractableActorBase::GatherInteractionOptions_Implementation(const FInte
 	}
 
 	OnInteractionOptionsUpdated();
-
-	UE_LOG(LogTemp, Warning, TEXT("OptionsBuilder.Options.Num(): %d"), OptionsBuilder.Options.Num());
-	int i = 0;
-	for (auto O : OptionsBuilder.Options)
-	{
-		if (O.IsValid()) { i++; }
-	}
-	UE_LOG(LogTemp, Warning, TEXT("OptionsBuilder.Options Valid: %d"), i);
 }
 
 void AInteractableActorBase::ShowOptions_Implementation(const FInteractionQuery& InteractionQuery)
