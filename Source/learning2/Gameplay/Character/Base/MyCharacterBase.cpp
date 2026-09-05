@@ -236,10 +236,9 @@ void AMyCharacterBase::OnEnemyDisappear_Implementation(const AMyCharacterBase* E
 
 	const FName EnemyCharacterKey{ BattleSubsystemConst::BlackboardKeyName::EnemyCharacter };
 	const FName SensedCharacterKey{ BattleSubsystemConst::BlackboardKeyName::SensedCharacter };
-	
+
 	const bool bEnemyDisappeared{ BlackboardComponent->GetValueAsObject(EnemyCharacterKey) == Enemy };
 	const bool bSensedDisappeared{ BlackboardComponent->GetValueAsObject(SensedCharacterKey) == Enemy };
-	
 	if (!bEnemyDisappeared && !bSensedDisappeared) { return; }
 
 	const UBattleSubsystem* BattleSubsystem{ UBattleSubsystemStatics::GetBattleSubsystem(this) };
@@ -263,7 +262,7 @@ void AMyCharacterBase::OnEnemyDisappear_Implementation(const AMyCharacterBase* E
 
 		if (bSensedDisappeared && NextSensed) 
 		{ 
-			BlackboardComponent->SetValueAsObject(EnemyCharacterKey, NextSensed);
+			// BlackboardComponent->SetValueAsObject(EnemyCharacterKey, NextSensed);
 			BlackboardComponent->SetValueAsObject(SensedCharacterKey, NextSensed);
 		}
 		else { BlackboardComponent->ClearValue(SensedCharacterKey); }
