@@ -12,7 +12,7 @@ void URecordedLocationVisualizationComponent::AddRecordedLocation(const RewindSy
 
 	Datas.Add(FRecordedLocationVisualizationData{ Tick, Location });
 
-	const bool bNeedVisualizeItem{ Datas.IsEmpty() || (Datas.Num() % VisualizationStep) == 0 };
+	const bool bNeedVisualizeItem{ VisualizationStep > 0 && (Datas.IsEmpty() || (Datas.Num() % VisualizationStep) == 0) };
 
 	RecordedLocationVisualizer->PushRecordedLocation(Location, bNeedVisualizeItem, *this);
 }

@@ -6,10 +6,9 @@
 #include "Ability/AbilitySystemComponent/MyAbilitySystemComponent.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Materials/MaterialInterface.h"
+#include "Interface/FreezableInterface.h"
 #include "Switchable/SwitchableActorCollection.h"
 #include "WeaponBase/WeaponActorBase.h"
-#include "Delegates/DelegateCombinations.h"
 #include "Ability/AttributeSet/MyAttributeSet.h"
 #include "BlueprintFunctionLibrary/WeaponActorBlueprintLibrary.h"
 #include "GameplayEffectTypes.h"
@@ -377,12 +376,23 @@ void AMyCharacterBase::Freeze_Implementation()
 {
 	CustomTimeDilation = 0.f;
 	bIsFreezing = true;
+	
+	IFreezableInterface::Execute_Freeze(AbilitySystemComponent);
 }
 
 void AMyCharacterBase::Unfreeze_Implementation()
 {
 	CustomTimeDilation = 1.f;
 	bIsFreezing = false;
+
+	IFreezableInterface::Execute_Unfreeze(AbilitySystemComponent);
+	if (AController* CurrentController{ GetController() }; CurrentController && CurrentController->Implements<UFreezableInterface>())
+	{
+		if (!AbilitySystemComponent->HasMatchingGameplayTag(PlayerResponseTags::State_Debuff_Stun.GetTag()))
+		{
+			IFreezableInterface::Execute_Unfreeze(CurrentController);
+		}
+	}
 }
 
 void AMyCharacterBase::UpdateFogOfWarTexture_Implementation(UTexture2D* FogOfWarTexture)
@@ -756,25 +766,29 @@ void AMyCharacterBase::OnStunTagCountChanged(const ETagCountChangeType TagCountC
 	if (!CurrentController) { return; }
 
 	CurrentController->SetIgnoreMoveInput(AbilitySystemComponent->HasMatchingGameplayTag(PlayerResponseTags::State_Debuff_Stun.GetTag()));
-	EnableTeamDuty(!AbilitySystemComponent->HasMatchingGameplayTag(PlayerResponseTags::State_Debuff_Stun.GetTag()));
-	if (UBehaviorTreeComponent* BehaviorTreeComponent{ GetController() ? GetController()->FindComponentByClass<UBehaviorTreeComponent>() : nullptr })
-	{
-		if (AbilitySystemComponent->HasMatchingGameplayTag(PlayerResponseTags::State_Debuff_Stun.GetTag()))
-		{
-			BehaviorTreeComponent->StopLogic(TEXT("Stunned"));
-		}
-		else
-		{
-			BehaviorTreeComponent->StartLogic();
-		}
-	}
+	// EnableTeamDuty(!AbilitySystemComponent->HasMatchingGameplayTag(PlayerResponseTags::State_Debuff_Stun.GetTag()));
 
-	K2_OnStunTagCountChanged(TagCountChangeType);
+	if (!Execute_IsFreezing(this))
+	{
+		if (CurrentController->Implements<UFreezableInterface>())
+		{
+			if (AbilitySystemComponent->HasMatchingGameplayTag(PlayerResponseTags::State_Debuff_Stun.GetTag()))
+			{
+				IFreezableInterface::Execute_Freeze(CurrentController);
+			}
+			else
+			{
+				IFreezableInterface::Execute_Unfreeze(CurrentController);
+			}
+		}
+
+		K2_OnStunTagCountChanged(TagCountChangeType);
+	}
 }
 
 void AMyCharacterBase::OnBlindTagCountChanged(const ETagCountChangeType TagCountChangeType)
 {
-	EnableTeamDuty(!AbilitySystemComponent->HasMatchingGameplayTag(PlayerResponseTags::State_Debuff_Blind.GetTag()));
+	// EnableTeamDuty(!AbilitySystemComponent->HasMatchingGameplayTag(PlayerResponseTags::State_Debuff_Blind.GetTag()));
 
 	K2_OnBlindTagCountChanged(TagCountChangeType);
 }

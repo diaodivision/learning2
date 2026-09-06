@@ -64,7 +64,7 @@ bool AFirearmActorBase::ExecuteFireOnce()
 AActor* AFirearmActorBase::SpawnBullet_Implementation() const
 {
 	FTransform BulletStartTransform{ GetOwner()->GetActorTransform() };
-	constexpr float BulletSpawnOffset{ 150.f };
+	constexpr float BulletSpawnOffset{ 0.f };
 	BulletStartTransform.SetLocation(GetOwner()->GetActorLocation() - GetOwner()->GetActorForwardVector() * BulletSpawnOffset);
 	AFireArmBulletBase* Bullet = Cast<AFireArmBulletBase>(UWeaponActorBlueprintLibrary::SpawnActorDeferredFromPool(this, BulletClass, BulletStartTransform));
 	if (!Bullet) { return nullptr; }

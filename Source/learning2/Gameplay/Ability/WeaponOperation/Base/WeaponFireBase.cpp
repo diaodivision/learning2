@@ -3,34 +3,32 @@
 #include "Weapon/WeaponBase/FirearmActorBase.h"
 #include "Weapon/WeaponBase/WeaponActorBase.h"
 #include "AbilitySystemComponent.h"
+#include "RewindSystemStatics.h"
+
+bool UWeaponFireBase::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
+{
+	if (URewindSystemStatics::GetRewindSubsystemState(this) != ERecordState::Idle) { return false; }
+	return Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags);
+}
 
 void UWeaponFireBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
-	if (IRecordableInterface::Execute_ShouldRecord(this))
+	UWorld* World{ GetWorld() };
+	//Instigator = TriggerEventData ? Cast<AMyCharacterBase>(TriggerEventData->Instigator) : Cast<AMyCharacterBase>(GetAvatarActorFromActorInfo());
+	Instigator = Cast<AMyCharacterBase>(GetAvatarActorFromActorInfo());
+	Weapon = Instigator.IsValid() ? Instigator->GetControlledWeapon() : nullptr;
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	if (!World || !Instigator.IsValid() || !Weapon.IsValid() || !ASC)
 	{
-		Super::ActivateAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfoRef(), CachedTriggerEventData.GetPtrOrNull());
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
 	}
+	if (TriggerEventData) { CachedTriggerEventData = *TriggerEventData; }
+	if (ASC->HasMatchingGameplayTag(OnShootTag)) { ExecuteFire(OnShootTag, ASC->GetTagCount(OnShootTag)); }
 	else
 	{
-		UWorld* World{ GetWorld() };
-		//Instigator = TriggerEventData ? Cast<AMyCharacterBase>(TriggerEventData->Instigator) : Cast<AMyCharacterBase>(GetAvatarActorFromActorInfo());
-		Instigator = Cast<AMyCharacterBase>(GetAvatarActorFromActorInfo());
-		Weapon = Instigator.IsValid() ? Instigator->GetControlledWeapon() : nullptr;
-		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-
-		if (!World || !Instigator.IsValid() || !Weapon.IsValid() || !ASC)
-		{
-			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-			return;
-		}
-
-		if (TriggerEventData) { CachedTriggerEventData = *TriggerEventData; }
-		if (ASC->HasMatchingGameplayTag(OnShootTag)) { ExecuteFire(OnShootTag, ASC->GetTagCount(OnShootTag)); }
-		else
-		{
-			RegisterGameplayTagEventHandle = ASC->RegisterGameplayTagEvent(OnShootTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UWeaponFireBase::ExecuteFire);
-			World->GetTimerManager().SetTimer(WaitForTagTimeOutHandle, FTimerDelegate::CreateUObject(this, &UWeaponFireBase::OnWaitForTagTimeOut), .2f, false);
-		}
+		RegisterGameplayTagEventHandle = ASC->RegisterGameplayTagEvent(OnShootTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UWeaponFireBase::ExecuteFire);
+		World->GetTimerManager().SetTimer(WaitForTagTimeOutHandle, FTimerDelegate::CreateUObject(this, &UWeaponFireBase::OnWaitForTagTimeOut), .2f, false);
 	}
 }
 

@@ -49,17 +49,7 @@ public:
     void OnPostComponentInitialize(UFogOfWarComponent *Component);
 
     UFUNCTION(BlueprintPure, Category = "Resolution")
-    FORCEINLINE TOptional<FIntPoint> GetScreenSize() const
-    {
-        if (!bIsInitialScale)
-        {
-            return NullOpt;
-        }
-        // return FIntPoint{ FMath::FloorToInt32(kScreenBaseWidth * WidthScaleFactor),
-        // FMath::FloorToInt32(kScreenBaseHeight * HeightScaleFactor) };
-        // return FIntPoint{874, 256};
-        return FIntPoint{FMath::FloorToInt32(kScreenBaseWidth * WidthScaleFactor), FMath::FloorToInt32(kScreenBaseHeight * HeightScaleFactor)}; 
-    }
+    TOptional<FIntPoint> GetScreenSize() const;
 
     TOptional<FGridSizeType> GetGridSize() const;
 
@@ -119,8 +109,6 @@ private:
     mutable bool bHasInvalidComponents{false};
 
     bool bIsInitialScale{false};
-    constexpr static int16 kScreenBaseWidth{ 256 };
-    constexpr static int16 kScreenBaseHeight{ 256 };
     float WidthScaleFactor{1};
     float HeightScaleFactor{1};
     bool bViewportResized{false};

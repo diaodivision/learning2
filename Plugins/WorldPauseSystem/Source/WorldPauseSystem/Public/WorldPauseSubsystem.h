@@ -29,6 +29,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "World Pause")
 	virtual void UnfreezeAllObject();
 
+	FORCEINLINE bool IsFreezing() const { return bIsFreezeAllObject; }
+
 protected:
 	void ClearInvalidObject();
 

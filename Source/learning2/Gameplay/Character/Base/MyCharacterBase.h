@@ -6,7 +6,7 @@
 #include "GameFramework/Character.h"
 #include "WeaponTypes.h"
 #include "Delegates/DelegateCombinations.h"
-#include "Interface/FreezableInterface.h"
+#include "Interface/RecordableActorInterface.h"
 #include "Ability/WeaponOperation/WeaponOperationTypes.h"
 #include "GenericTeamAgentInterface.h"
 #include "Perception/AIPerceptionTypes.h"
@@ -44,7 +44,7 @@ enum class ETargetConfirmType : uint8
 UCLASS(Blueprintable, Blueprinttype)
 class LEARNING2_API AMyCharacterBase :
 	public ACharacter,
-	public IFreezableInterface,
+	public IRecordableActorInterface,
 	public IGenericTeamAgentInterface,
 	public IAbilitySystemInterface,
 	public ICharacterWidgetControllableInterface,
@@ -216,7 +216,7 @@ protected:
 		Params.AddObjectTypesToQuery(ECollisionChannel::ECC_Destructible);
 		return Params;
 	}
-	
+
 private:
 	void CreateAndSetupComponents();	
 

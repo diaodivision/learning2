@@ -43,10 +43,15 @@ public:
     UPROPERTY(Config, VisibleAnywhere, BlueprintReadOnly)
 	int32 kThreadsZ{ FogOfWarConst::kThreadsZ };
     
-    UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "8", ClampMax = "2048", UIMin = "8", UIMax = "2048", Delta = "8"))
+    UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "8", ClampMax = "8192", UIMin = "8", UIMax = "8192", Delta = "8"))
 	int32 kTextureWidth{ 1024 };
-    UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "8", ClampMax = "8192", UIMin = "8", UIMax = "2048", Delta = "8"))
+    UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "8", ClampMax = "8192", UIMin = "8", UIMax = "8192", Delta = "8"))
 	int32 kTextureHeight{ 1024 };
+    
+    UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "8", ClampMax = "8192", UIMin = "8", UIMax = "8192", Delta = "8"))
+    int32 kScreenBaseWidth{ 1024 };
+    UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "8", ClampMax = "8192", UIMin = "8", UIMax = "8192", Delta = "8"))
+    int32 kScreenBaseHeight{ 1024 };
     
     UPROPERTY(Config, EditAnywhere, BlueprintReadOnly)
 	FString FogOfWarTextureParameterName{ TEXT("FogOfWarTexture") };

@@ -15,14 +15,10 @@ AGrenadeTargetActor::AGrenadeTargetActor()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	RootComponent = CreateDefaultSubobject<USceneComponent>(FName("RootComponent"));
 	DecalComponent = CreateDefaultSubobject<UDecalComponent>(FName("DecalComponent"));
 	DecalComponent->PrimaryComponentTick.bCanEverTick = false;
-
-	if (!RootComponent) { SetRootComponent(DecalComponent); }
-	else if (UPrimitiveComponent * PrimitiveComponent{ Cast<UPrimitiveComponent>(RootComponent) })
-	{
-		PrimitiveComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	}
+	DecalComponent->SetupAttachment(RootComponent);
 
 	SplineComponent = CreateDefaultSubobject<USplineComponent>(FName("PredictionLine"));
 }
@@ -245,6 +241,7 @@ void AGrenadeTargetActor::CalculatePredictionLine(TOptional<FVector> TargetLocat
 		FCollisionQueryParams CollisionQueryParams;
 		CollisionQueryParams.AddIgnoredActor(GetOwner());
 		CollisionQueryParams.AddIgnoredActor(PredictionLineInstigator);
+		CollisionQueryParams.bTraceComplex = true;
 
 		int32 i{ 0 };
 		do
@@ -282,6 +279,8 @@ void AGrenadeTargetActor::CalculatePredictionLine(TOptional<FVector> TargetLocat
 
 void AGrenadeTargetActor::UpdatePredictionLine()
 {
+	if (PredictionLineMesh.IsNull()) { return; }
+
 	for (int32 i = 0; i < SplineComponent->GetNumberOfSplinePoints(); i++)
 	{
 		SplineComponent->SetSplinePointType(i, ESplinePointType::Linear, false);
@@ -311,7 +310,7 @@ void AGrenadeTargetActor::UpdatePredictionLine()
 				FVector StartTangent;
 				FVector EndLocation;
 				FVector EndTangent;
-
+				
 				SplineComponent->GetLocationAndTangentAtSplinePoint(i, StartLocation, StartTangent, ESplineCoordinateSpace::World);
 				SplineComponent->GetLocationAndTangentAtSplinePoint(i + 1, EndLocation, EndTangent, ESplineCoordinateSpace::World);
 

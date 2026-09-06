@@ -2,6 +2,7 @@
 #include "Character/Base/MyCharacterBase.h"
 #include "WeaponBase/WeaponActorBase.h"
 #include "AbilitySystemComponent.h"
+#include "RewindSystemStatics.h"
 
 UWeaponReloadAbilityBase::UWeaponReloadAbilityBase()
 {
@@ -10,6 +11,8 @@ UWeaponReloadAbilityBase::UWeaponReloadAbilityBase()
 
 bool UWeaponReloadAbilityBase::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
 {
+	if (URewindSystemStatics::GetRewindSubsystemState(this) != ERecordState::Idle) { return false; }
+	
 	const AMyCharacterBase* AvatarCharacter = ActorInfo ? Cast<AMyCharacterBase>(ActorInfo->AvatarActor.Get()) : nullptr;
 	if (!AvatarCharacter) { return false; }
 

@@ -15,6 +15,7 @@
 #include "FogOfWarShaderTypes.ush"
 #include "FogOfWarSubsystemProviderInterface.h"
 #include "GameFramework/GameModeBase.h"
+#include "Configs/FogOfWarSettings.h"
 
 bool UFogOfWarSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 {
@@ -229,6 +230,14 @@ void UFogOfWarSubsystem::OnPostComponentInitialize(UFogOfWarComponent* Component
 			LastComponentOwnerOrCameraTransformMap.Add(SceneComponent);
 		}
 	}
+}
+
+TOptional<FIntPoint> UFogOfWarSubsystem::GetScreenSize() const
+{
+	const UFogOfWarSettings* FogOfWarSettings{ GetDefault<UFogOfWarSettings>() };
+	if (!FogOfWarSettings || !bIsInitialScale) { return NullOpt; }
+
+    return FIntPoint{FMath::FloorToInt32(FogOfWarSettings->kScreenBaseWidth * WidthScaleFactor), FMath::FloorToInt32(FogOfWarSettings->kScreenBaseHeight * HeightScaleFactor)}; 
 }
 
 TOptional<FGridSizeType> UFogOfWarSubsystem::GetGridSize() const

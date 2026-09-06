@@ -6,6 +6,7 @@
 #include "AIController.h"
 #include "Interface/FreezableInterface.h"
 #include "Delegates/DelegateCombinations.h"
+#include "Delegates/DelegateCombinations.h"
 #include "MyAIController.generated.h"
 
 class UAIPerceptionComponent;
@@ -30,9 +31,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void OnPossess(APawn* NewPawn) override;
-
-	virtual void PostRegisterAllComponents() override;
-	virtual void PostUnregisterAllComponents() override;
 
 	void CreateAIPerceptionComponent();
 	void CreateBehaviorTreeComponent();

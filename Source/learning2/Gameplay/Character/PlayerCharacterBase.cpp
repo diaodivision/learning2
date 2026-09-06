@@ -24,6 +24,7 @@
 #include "RewindSystemStatics.h"
 #include "TopDownCameraSubsystem.h"
 #include "TopDownCameraSystemStatics.h"
+#include "WorldPauseSystemStatics.h"
 
 APlayerCharacterBase::APlayerCharacterBase() : Super()
 {
@@ -124,6 +125,8 @@ void APlayerCharacterBase::PossessedBy(AController* NewController)
 
 		PlayerController->OnReceiveMoveInputDelegate.AddUniqueDynamic(this, &APlayerCharacterBase::CancelRewindingState);
 		PlayerController->OnReceiveShootInputDelegate.AddUObject(this, &APlayerCharacterBase::CancelRewindingState);
+
+		if (UWorldPauseSystemStatics::IsWorldFreezing(this)) { Execute_Unfreeze(this); }
 	}
 }
 
@@ -136,6 +139,8 @@ void APlayerCharacterBase::UnPossessed()
 		PlayerController->OnReceiveMoveInputDelegate.RemoveAll(this);
 		PlayerController->OnReceiveShootInputDelegate.RemoveAll(this);
 	}
+
+	if (UWorldPauseSystemStatics::IsWorldFreezing(this)) { Execute_Freeze(this); }
 }
 
 void APlayerCharacterBase::InitializeDelegates()
