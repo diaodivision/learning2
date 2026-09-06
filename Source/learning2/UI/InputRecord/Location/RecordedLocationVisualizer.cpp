@@ -137,6 +137,8 @@ void ARecordedLocationVisualizer::OnLineMeshLoaded(const int32 Index, const FVec
 	SplineComponent.GetLocationAndTangentAtSplinePoint(Index - 1, EndLocation, EndTangent, ESplineCoordinateSpace::World);
 
 	SplineMeshComponent->SetStartAndEnd(StartLocation, StartTangent, EndLocation, EndTangent);
+
+	SplineComponent.UpdateSpline();
 }
 
 void ARecordedLocationVisualizer::OnLocationItemMeshLoaded(const int32 Index, const FVector& Location, USplineComponent& SplineComponent, UStaticMesh* Mesh)
@@ -209,7 +211,7 @@ bool ARecordedLocationVisualizer::CanAddPointAfterLoadingResource(const int32 In
 
 void ARecordedLocationVisualizer::PopRecordedLocation_Internal(USplineComponent& SplineComponent, const EVisualizationDataListPopType PopType)
 {
-	if (const int32 NumberOfSplinePoints{ SplineComponent.GetNumberOfSplinePoints() }; NumberOfSplinePoints == 0)
+	if (const int32 NumberOfSplinePoints{ SplineComponent.GetNumberOfSplinePoints() }; NumberOfSplinePoints > 0)
 	{
 		SplineComponent.RemoveSplinePoint(NumberOfSplinePoints - 1);
 	}
@@ -235,4 +237,6 @@ void ARecordedLocationVisualizer::PopRecordedLocation_Internal(USplineComponent&
 
 		if (Array.IsEmpty()) { StaticMeshComponentMap.Remove(&SplineComponent); }
 	}
+
+	SplineComponent.UpdateSpline();
 }

@@ -20,8 +20,12 @@ void URecordedLocationVisualizationComponent::AddRecordedLocation(const RewindSy
 void URecordedLocationVisualizationComponent::RemoveRecordedLocation(const RewindSystemTickType Tick)
 {
 	if (!RecordedLocationVisualizer.IsValid()) { return; }
-
-	const int32 Index{ Datas.IndexOfByPredicate([Tick](const FRecordedLocationVisualizationData& Data) {return Data.Tick == Tick; }) };
+	
+	int32 Index{ Datas.IndexOfByPredicate([Tick](const FRecordedLocationVisualizationData& Data) {return Data.Tick == Tick; }) };
+	for (;Datas.IsValidIndex(Index + 1); Index++)
+	{
+		if (Datas[Index + 1].Tick != Tick) { break; }
+	}
 	if (Datas.IsValidIndex(Index))
 	{
 		if (Index == 0) { RecordedLocationVisualizer->PopRecordedLocationAtFront(*this); }
